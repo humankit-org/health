@@ -144,5 +144,17 @@ console.log('\n[7] BMI derivation');
   approx(obese.mortality.hr, 1.94, 1e-9, 'BMI 38 -> HR 1.94 (diangelantonio2016)');
 }
 
+console.log('\n[8] Citation numbering (index.html <-> sources.html)');
+{
+  const refs = engine.sourceIndex(model);
+  const cited = new Set();
+  for (const input of model.inputs) for (const e of input.effects) cited.add(e.source);
+  cited.add(model.bmi.source);
+  cited.add(model.baseline.source);
+  ok(Object.keys(refs).length === cited.size, 'sourceIndex covers every cited source');
+  const nums = Object.values(refs).sort((a, b) => a - b);
+  ok(nums.every((n, i) => n === i + 1), 'citation numbers contiguous from 1');
+}
+
 console.log(failures === 0 ? '\nAll tests passed.' : `\n${failures} test(s) FAILED.`);
 process.exit(failures === 0 ? 0 : 1);
