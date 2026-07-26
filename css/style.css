@@ -319,7 +319,39 @@ input[type="range"] {
   border-radius: 4px;
   transition: left 0.15s ease;
 }
+.band-ref {
+  position: absolute;
+  top: -4px; bottom: -4px;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink-soft);
+  opacity: 0.5;
+}
 .band-label { font-weight: 700; }
+
+/* findings card */
+.findings-blurb { font-size: 0.82rem; color: var(--ink-soft); margin: 0 0 0.5rem; }
+.findings { list-style: none; margin: 0; padding: 0; font-size: 0.85rem; }
+.findings li.finding {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--line);
+}
+.finding-icon { font-weight: 800; width: 1rem; text-align: center; flex-shrink: 0; }
+.finding.good .finding-icon { color: var(--good); }
+.finding.bad .finding-icon { color: var(--bad); }
+.finding.neutral .finding-icon { color: var(--ink-soft); }
+.finding-text { flex: 1; }
+.finding-meta { color: var(--ink-soft); font-size: 0.78rem; white-space: nowrap; }
+.findings-empty { color: var(--ink-soft); padding: 0.4rem 0; }
+
+/* gated (advanced) inputs */
+.input.gated { transition: opacity 0.15s; }
+.input.gate-closed { opacity: 0.45; }
+.input.gate-closed input[type="range"] { cursor: not-allowed; }
 
 .output-blurb { font-size: 0.85rem; color: var(--ink-soft); margin: 0.7rem 0 0; }
 

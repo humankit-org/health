@@ -47,6 +47,21 @@ const HEALTH_MODEL = {
     // And we cap the resulting life-expectancy adjustment.
     yearsCapGain: 8,
     yearsCapLoss: 15,
+    /*
+     * The less certain the evidence, the WIDER the uncertainty range.
+     * Published 95% CIs only capture sampling error of the original study —
+     * they say nothing about confounding, extrapolation to other populations,
+     * or our approximations. So each effect's CI bounds are widened around its
+     * central estimate (in log space) by these factors before being combined.
+     * High evidence keeps the published CI; low evidence more than doubles the
+     * width — and its range will often cross 1.0 ("we genuinely don't know").
+     */
+    uncertaintyWiden: { high: 1.0, moderate: 1.5, low: 2.25 },
+    // Base fuzz (half-width) of the mind-output markers, in points; grows by
+    // fuzzPerLowEvidence for every active low-evidence contributor.
+    bandFuzzBase: 0.5,
+    bandFuzzPerLowEvidence: 0.15,
+    bandFuzzMax: 1.25,
   },
 
   baseline: {
@@ -127,7 +142,7 @@ const HEALTH_MODEL = {
       label: 'Weight',
       kind: 'slider',
       unit: 'kg',
-      min: 40, max: 180, step: 1, default: 75,
+      min: 40, max: 180, step: 1, default: 68,
       hint: 'Combined with height to compute BMI.',
       effects: [],
     },
@@ -139,11 +154,12 @@ const HEALTH_MODEL = {
       label: 'Cardio (moderate-equivalent)',
       kind: 'slider',
       unit: 'min/week',
-      min: 0, max: 600, step: 15, default: 60,
+      min: 0, max: 600, step: 15, default: 0,
       hint: 'Brisk walking, cycling, jogging… count vigorous minutes double.',
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'high', source: 'arem2015',
+          supersededBy: 'vo2maxOn', // measured fitness is the better predictor — use it instead when available
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 149, hr: 0.80, hrLow: 0.78, hrHigh: 0.82 },
@@ -181,7 +197,7 @@ const HEALTH_MODEL = {
       label: 'Strength training',
       kind: 'slider',
       unit: 'sessions/week',
-      min: 0, max: 5, step: 1, default: 1,
+      min: 0, max: 5, step: 1, default: 0,
       hint: 'Lifting, bodyweight training… assume ~30 min per session.',
       effects: [
         {
@@ -213,6 +229,27 @@ const HEALTH_MODEL = {
       ],
     },
 
+    {
+      id: 'occupationalPA',
+      group: 'movement',
+      label: 'Physical activity at work',
+      kind: 'slider',
+      unit: 'hours/day',
+      min: 0, max: 10, step: 1, default: 0,
+      hint: 'Heavy physical work (construction, nursing, warehouse…). Not the same as leisure exercise!',
+      effects: [
+        {
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'coenen2018',
+          steps: [
+            { max: 2, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 6, hr: 1.10, hrLow: 1.03, hrHigh: 1.20 },
+            { max: Infinity, hr: 1.18, hrLow: 1.05, hrHigh: 1.34 },
+          ],
+          note: 'The "physical activity paradox": meta-analysis (194k workers) found HIGH occupational activity → HR 1.18 in MEN (women: HR 0.90, NS). Middle step interpolated. Leisure activity benefits don\'t transfer to heavy work.',
+        },
+      ],
+    },
+
     // -------------------------------------------------- Diet & substances
     {
       id: 'fiber',
@@ -220,7 +257,7 @@ const HEALTH_MODEL = {
       label: 'Dietary fiber',
       kind: 'slider',
       unit: 'g/day',
-      min: 0, max: 50, step: 1, default: 15,
+      min: 0, max: 50, step: 1, default: 0,
       hint: 'Vegetables, fruit, legumes, whole grains. US average ≈ 15 g/day.',
       effects: [
         {
@@ -237,7 +274,7 @@ const HEALTH_MODEL = {
       label: 'Fruit & vegetables',
       kind: 'slider',
       unit: 'servings/day',
-      min: 0, max: 10, step: 0.5, default: 3,
+      min: 0, max: 10, step: 0.5, default: 0,
       hint: 'One serving ≈ 80 g — a fist-sized portion.',
       effects: [
         {
@@ -262,7 +299,7 @@ const HEALTH_MODEL = {
       label: 'Alcohol',
       kind: 'slider',
       unit: 'drinks/week',
-      min: 0, max: 30, step: 1, default: 3,
+      min: 0, max: 30, step: 1, default: 0,
       hint: 'One drink ≈ 14 g ethanol (a beer, glass of wine, or shot).',
       effects: [
         {
@@ -333,7 +370,7 @@ const HEALTH_MODEL = {
       label: 'Coffee',
       kind: 'slider',
       unit: 'cups/day',
-      min: 0, max: 6, step: 1, default: 2,
+      min: 0, max: 6, step: 1, default: 0,
       hint: 'Regular or decaf — the umbrella review covers both.',
       effects: [
         {
@@ -345,6 +382,80 @@ const HEALTH_MODEL = {
             { max: Infinity, hr: 0.88, hrLow: 0.82, hrHigh: 0.95 },
           ],
           note: 'Umbrella review: largest all-cause risk reduction at 3–4 cups/day (RR 0.83, 0.79–0.88). The 1–2 and 5+ steps are interpolated/U-shaped approximations — verify against the paper.',
+        },
+      ],
+    },
+
+    {
+      id: 'snus',
+      group: 'diet',
+      label: 'Snus / smokeless tobacco',
+      kind: 'segmented',
+      default: 'no',
+      options: [
+        { value: 'no', label: 'No' },
+        { value: 'yes', label: 'Yes' },
+      ],
+      hint: 'Swedish-style snus has the best data. Less harmful than smoking — not harmless.',
+      effects: [
+        {
+          output: 'mortality', type: 'byOption', evidence: 'moderate', source: 'byhamre2021',
+          byOption: {
+            no: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            yes: { hr: 1.28, hrLow: 1.20, hrHigh: 1.35 },
+          },
+          note: 'Pooled 8 Swedish cohorts, 169k never-smoking men: exclusive current snus use → aHR 1.28 all-cause, 1.27 cardiovascular, 1.12 cancer mortality. Men-only data; other smokeless products may differ.',
+        },
+      ],
+    },
+    {
+      id: 'cannabis',
+      group: 'diet',
+      label: 'Cannabis',
+      kind: 'segmented',
+      default: 'never',
+      options: [
+        { value: 'never', label: 'Never' },
+        { value: 'occasional', label: 'Occasional' },
+        { value: 'regular', label: 'Regular' },
+      ],
+      hint: 'Smoked or otherwise. Honest summary: mortality data weak, mental-health data concerning.',
+      effects: [
+        {
+          output: 'mortality', type: 'byOption', evidence: 'low', source: 'sidney1997',
+          byOption: {
+            never: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            occasional: { hr: 1.05, hrLow: 0.90, hrHigh: 1.25 },
+            regular: { hr: 1.12, hrLow: 0.89, hrHigh: 1.39 },
+          },
+          note: 'Kaiser Permanente cohort (65k): current use NOT significantly associated with mortality (men RR 1.12, CI crosses 1.0). An honest null — but "no mortality signal" ≠ safe; see findings below. Smoked cannabis likely shares combustion harms with tobacco (not yet quantified).',
+        },
+        {
+          output: 'cognition', type: 'byOption', evidence: 'low', source: 'moore2007',
+          byOption: { never: { points: 0 }, occasional: { points: -0.1 }, regular: { points: -0.3 } },
+          note: 'Systematic review: psychosis risk rises dose-dependently (ever-use OR 1.41; heavy use OR 2.09). Evidence for depression/anxiety outcomes less consistent. Cognitive points are qualitative.',
+        },
+        {
+          output: 'happiness', type: 'byOption', evidence: 'low', source: 'moore2007',
+          byOption: { never: { points: 0 }, occasional: { points: -0.05 }, regular: { points: -0.25 } },
+          note: 'Affective outcomes (depression, anxiety) associated in some cohorts but confounding is substantial — the review calls the evidence "less strong" than for psychosis.',
+        },
+      ],
+    },
+    {
+      id: 'magnesium',
+      group: 'diet',
+      label: 'Dietary magnesium',
+      kind: 'slider',
+      unit: 'mg/day',
+      min: 0, max: 600, step: 10, default: 250,
+      hint: 'Nuts, legumes, whole grains, leafy greens. Typical intake ≈ 250–350 mg/day.',
+      effects: [
+        {
+          output: 'mortality', type: 'perUnit', per: 100, ref: 250, capAt: 450,
+          hr: 0.90, hrLow: 0.81, hrHigh: 0.99,
+          evidence: 'moderate', source: 'fang2016',
+          note: 'Dose-response meta-analysis (40 cohorts, >1M people): RR 0.90 (0.81–0.99) per +100 mg/day, anchored here at 250 mg and capped at 450 mg. Dietary intake — partly a marker of overall diet quality; supplement trials are weaker.',
         },
       ],
     },
@@ -372,7 +483,7 @@ const HEALTH_MODEL = {
           output: 'cognition', type: 'steps', evidence: 'low', source: 'cappuccio2010',
           steps: [
             { max: 6.4, points: -0.5 },
-            { max: 9.4, points: 0.2 },
+            { max: 9.4, points: 0 },
             { max: Infinity, points: -0.2 },
           ],
           note: 'Sleep loss acutely impairs attention and memory (well-established experimentally); points here are a qualitative extrapolation. Replace with a dedicated source.',
@@ -381,7 +492,7 @@ const HEALTH_MODEL = {
           output: 'happiness', type: 'steps', evidence: 'low', source: 'cappuccio2010',
           steps: [
             { max: 6.4, points: -0.4 },
-            { max: 9.4, points: 0.2 },
+            { max: 9.4, points: 0 },
             { max: Infinity, points: -0.1 },
           ],
           note: 'Short sleep is strongly tied to same-day mood; bidirectional. Indirect citation — replace with a dedicated source.',
@@ -394,7 +505,7 @@ const HEALTH_MODEL = {
       label: 'Perceived stress',
       kind: 'slider',
       unit: '/ 10',
-      min: 1, max: 10, step: 1, default: 5,
+      min: 1, max: 10, step: 1, default: 2,
       hint: '1 = calm, 10 = overwhelmed, most days.',
       effects: [
         {
@@ -418,8 +529,8 @@ const HEALTH_MODEL = {
         {
           output: 'happiness', type: 'steps', evidence: 'low', source: 'russ2012',
           steps: [
-            { max: 3, points: 0.4 },
-            { max: 7, points: -0.1 },
+            { max: 3, points: 0 },
+            { max: 7, points: -0.2 },
             { max: Infinity, points: -0.8 },
           ],
           note: 'Near-tautological (stress and unhappiness overlap by definition); included so the slider visibly does something.',
@@ -432,7 +543,7 @@ const HEALTH_MODEL = {
       label: 'Time with friends & family',
       kind: 'slider',
       unit: 'days/week',
-      min: 0, max: 7, step: 1, default: 3,
+      min: 0, max: 7, step: 1, default: 5,
       hint: 'Days with meaningful in-person social contact.',
       effects: [
         {
@@ -448,10 +559,31 @@ const HEALTH_MODEL = {
           output: 'happiness', type: 'steps', evidence: 'low', source: 'holtlunstad2010',
           steps: [
             { max: 1, points: -0.5 },
-            { max: 3, points: 0 },
-            { max: Infinity, points: 0.4 },
+            { max: 3, points: -0.1 },
+            { max: Infinity, points: 0 },
           ],
           note: 'Social connection is among the strongest correlates of life satisfaction; correlational. Indirect citation — replace with a dedicated source.',
+        },
+      ],
+    },
+
+    {
+      id: 'meditation',
+      group: 'mind',
+      label: 'Meditation',
+      kind: 'slider',
+      unit: 'min/week',
+      min: 0, max: 300, step: 15, default: 0,
+      hint: 'Mindfulness-style practice.',
+      effects: [
+        {
+          output: 'happiness', type: 'steps', evidence: 'moderate', source: 'goyal2014',
+          steps: [
+            { max: 0, points: 0 },
+            { max: 59, points: 0.1 },
+            { max: Infinity, points: 0.3 },
+          ],
+          note: 'Meta-analysis of 47 RCTs with active controls: mindfulness meditation gave small-moderate reductions in anxiety (effect size 0.38) and depression (0.30) — but no evidence it beats other active treatments (exercise, therapy).',
         },
       ],
     },
@@ -492,6 +624,134 @@ const HEALTH_MODEL = {
         },
       ],
     },
+    {
+      id: 'vitaminD',
+      group: 'extras',
+      label: 'Vitamin D status',
+      kind: 'segmented',
+      default: 'sufficient',
+      options: [
+        { value: 'deficient', label: 'Deficient' },
+        { value: 'sufficient', label: 'Sufficient' },
+        { value: 'supplement', label: 'I supplement' },
+      ],
+      hint: 'Best guess of your 25(OH)D level if you haven\'t measured it.',
+      effects: [
+        {
+          output: 'mortality', type: 'byOption', evidence: 'moderate', source: 'schottker2014',
+          byOption: {
+            deficient: { hr: 1.57, hrLow: 1.36, hrHigh: 1.81 },
+            sufficient: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            supplement: { hr: 0.99, hrLow: 0.87, hrHigh: 1.12 },
+          },
+          note: 'Deficiency (bottom vs top quintile) → RR 1.57 in pooled cohorts — BUT the VITAL RCT (26k people) found supplements did NOT reduce cancer, CVD or mortality (HR 0.99). Deficiency likely marks poor health; whether correcting it helps is unresolved.',
+        },
+        {
+          output: 'cognition', type: 'byOption', evidence: 'low', source: 'schottker2014',
+          byOption: { deficient: { points: -0.2 }, sufficient: { points: 0 }, supplement: { points: 0 } },
+          note: 'Deficiency is associated with worse cognitive outcomes observationally; supplementation trials show no clear cognitive benefit. Indirect citation — replace with a dedicated source.',
+        },
+      ],
+    },
+    {
+      id: 'ironDeficiency',
+      group: 'extras',
+      label: 'Untreated iron deficiency',
+      kind: 'toggle',
+      default: false,
+      hint: 'Low ferritin without anaemia — common in menstruating women, vegetarians, endurance athletes. Ask for a ferritin test.',
+      effects: [
+        {
+          output: 'happiness', type: 'toggle', points: -0.4,
+          evidence: 'moderate', source: 'houston2018',
+          note: 'RCT meta-analysis: correcting non-anaemic iron deficiency REDUCES fatigue (SMD −0.38) — so leaving it untreated costs you that. No effect on measured physical capacity.',
+        },
+        {
+          output: 'cognition', type: 'toggle', points: -0.2,
+          evidence: 'low', source: 'houston2018',
+          note: 'Iron deficiency is linked to reduced attention/cognitive performance, mostly studied in children and anaemic patients; effect size in non-anaemic adults unclear. Indirect citation — replace with a dedicated source.',
+        },
+      ],
+    },
+    {
+      id: 'cognitiveTraining',
+      group: 'extras',
+      label: 'Brain training (puzzles, sudoku)',
+      kind: 'slider',
+      unit: 'sessions/week',
+      min: 0, max: 7, step: 1, default: 0,
+      hint: 'Sudoku, crosswords, brain-training apps.',
+      effects: [
+        {
+          output: 'cognition', type: 'steps', evidence: 'low', source: 'edwards2017',
+          steps: [
+            { max: 0, points: 0 },
+            { max: Infinity, points: 0.15 },
+          ],
+          note: 'ACTIVE trial: speed-of-processing training cut 10-year dementia risk ~29% — but gains are mostly domain-specific (you get better at the task). Broad "brain boost" from puzzles is unproven.',
+        },
+      ],
+    },
+
+    // ------------------- Advanced (measured values, optional) -------------
+    {
+      id: 'vo2maxOn',
+      group: 'advanced',
+      label: 'I know my VO2 max',
+      kind: 'toggle',
+      default: false,
+      hint: 'From a lab test or a good wearable estimate.',
+      effects: [],
+    },
+    {
+      id: 'vo2max',
+      group: 'advanced',
+      label: 'VO2 max',
+      kind: 'slider',
+      unit: 'ml/kg/min',
+      min: 20, max: 60, step: 1, default: 35,
+      gatedBy: 'vo2maxOn',
+      hint: 'When enabled, this REPLACES the cardio estimate — measured fitness predicts mortality better than reported activity.',
+      effects: [
+        {
+          output: 'mortality', type: 'perUnit', per: 3.5, ref: 28, capAt: 56,
+          hr: 0.87, hrLow: 0.84, hrHigh: 0.90,
+          evidence: 'high', source: 'kodama2009',
+          note: 'Meta-analysis (33 studies): RR 0.87 (0.84–0.90) per 1-MET (3.5 ml/kg/min) higher fitness, anchored at 28 (low-average) and capped at 56. Corroborated by Mandsager 2018: elite vs low fitness HR 0.20.',
+        },
+      ],
+    },
+    {
+      id: 'bodyFatOn',
+      group: 'advanced',
+      label: 'I know my body fat %',
+      kind: 'toggle',
+      default: false,
+      hint: 'From DEXA, impedance scale, or calipers.',
+      effects: [],
+    },
+    {
+      id: 'bodyFat',
+      group: 'advanced',
+      label: 'Body fat',
+      kind: 'slider',
+      unit: '%',
+      min: 5, max: 55, step: 1, default: 22,
+      gatedBy: 'bodyFatOn',
+      hint: 'When enabled, this REPLACES the BMI estimate.',
+      effects: [
+        {
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'jayedi2022',
+          steps: [
+            { max: 18, hr: 1.15, hrLow: 1.05, hrHigh: 1.30 },
+            { max: 28, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 38, hr: 1.11, hrLow: 1.02, hrHigh: 1.20 },
+            { max: Infinity, hr: 1.23, hrLow: 1.04, hrHigh: 1.44 },
+          ],
+          note: 'Dose-response meta-analysis (35 cohorts, 923k people): J-shaped, lowest risk near 25%; HR ~1.11 per +10% BF above that. Sex-specific ideal ranges differ; our steps are unisex approximations — verify against the paper.',
+        },
+      ],
+    },
   ],
 
   // Derived input: BMI computed from heightCm/weightKg, then this effect applies.
@@ -499,6 +759,7 @@ const HEALTH_MODEL = {
     label: 'BMI (derived)',
     evidence: 'high',
     source: 'diangelantonio2016',
+    supersededBy: 'bodyFatOn', // measured body fat % is the better adiposity signal
     steps: [
       { max: 18.5, hr: 1.51, hrLow: 1.43, hrHigh: 1.59 },
       { max: 20.0, hr: 1.13, hrLow: 1.09, hrHigh: 1.17 },
@@ -511,6 +772,102 @@ const HEALTH_MODEL = {
     ],
     note: 'Individual-participant meta-analysis of 239 studies (never-smokers): all-cause mortality minimal at BMI 20–25. BMI ignores muscle mass and fat distribution — a crude proxy.',
   },
+
+  /*
+   * Findings: sourced facts that don't fit on a slider (disease-specific
+   * outcomes, honest nulls, caveats). Shown only when `when(values)` is true,
+   * so the list reacts to the current inputs. dir: good | bad | neutral.
+   */
+  findings: [
+    {
+      when: (v) => v.smoking === 'current', dir: 'bad', input: 'Smoking', source: 'jha2013',
+      text: 'markedly increased risk of lung cancer, COPD and vascular disease — most of the excess mortality in smokers comes from these causes',
+    },
+    {
+      when: (v) => v.smoking === 'former', dir: 'good', input: 'Smoking', source: 'jha2013',
+      text: 'quitting before ~40 avoids about 90% of the excess mortality of continued smoking',
+    },
+    {
+      when: (v) => v.cardio >= 150, dir: 'good', input: 'Cardio', source: 'arem2015',
+      text: 'similar dose–response for cardiovascular and cancer mortality, not just all-cause',
+    },
+    {
+      when: (v) => v.vo2maxOn && v.vo2max >= 42, dir: 'good', input: 'Fitness', source: 'mandsager2018',
+      text: 'elite-fitness patients had ~80% lower adjusted mortality than low-fitness ones — fitness is one of the strongest modifiable mortality markers, with no observed upper limit of benefit',
+    },
+    {
+      when: (v) => v.alcohol > 14, dir: 'bad', input: 'Alcohol', source: 'wood2018',
+      text: 'higher risk of stroke (HR ≈ 1.14 per 100 g/week), heart failure and fatal hypertensive disease',
+    },
+    {
+      when: (v) => v.alcohol > 0 && v.alcohol <= 14, dir: 'neutral', input: 'Alcohol', source: 'wood2018',
+      text: 'light-to-moderate intake was associated with slightly lower myocardial infarction risk (HR 0.94 per 100 g/week) — but no net all-cause benefit above ~7 drinks/week',
+    },
+    {
+      when: (v) => v.coffee >= 3, dir: 'good', input: 'Coffee', source: 'poole2017',
+      text: 'associated with lower cardiovascular mortality (RR 0.81 at 3–4 cups/day)',
+    },
+    {
+      when: (v) => v.coffee >= 5 && v.sex === 'female', dir: 'bad', input: 'Coffee', source: 'poole2017',
+      text: 'high intake was associated with increased fracture risk in women (not men)',
+    },
+    {
+      when: (v) => v.sauna >= 4, dir: 'good', input: 'Sauna', source: 'laukkanen2015',
+      text: '4–7 sessions/week was associated with ~63% lower sudden cardiac death risk in Finnish men',
+    },
+    {
+      when: (v) => v.strength >= 1, dir: 'good', input: 'Strength', source: 'momma2022',
+      text: 'associated with lower type-2 diabetes risk (L-shaped, strongest up to ~60 min/week)',
+    },
+    {
+      when: (v) => v.fruitVeg >= 5, dir: 'good', input: 'Fruit & veg', source: 'wang2014',
+      text: 'lower cardiovascular mortality (HR ≈ 0.96 per serving/day); no clear cancer-mortality effect',
+    },
+    {
+      when: (v) => v.social <= 1, dir: 'bad', input: 'Social', source: 'holtlunstad2010',
+      text: 'weak social ties carry a mortality risk comparable to well-established behavioural risk factors',
+    },
+    {
+      when: (v) => v.magnesium >= 400, dir: 'good', input: 'Magnesium', source: 'fang2016',
+      text: 'higher dietary magnesium associated with lower heart-failure (RR 0.78 per 100 mg/day) and type-2 diabetes risk (RR 0.81)',
+    },
+    {
+      when: (v) => v.cannabis === 'regular', dir: 'bad', input: 'Cannabis', source: 'moore2007',
+      text: 'regular use is associated with roughly doubled odds of psychotic outcomes (dose-dependent); evidence for depression/anxiety is weaker',
+    },
+    {
+      when: (v) => v.cannabis !== 'never', dir: 'neutral', input: 'Cannabis', source: 'sidney1997',
+      text: 'no clear all-cause mortality increase in long-term cohorts — but "no mortality signal" is not the same as safe',
+    },
+    {
+      when: (v) => v.vitaminD === 'supplement', dir: 'neutral', input: 'Vitamin D', source: 'manson2019',
+      text: 'VITAL RCT (26k people): 2000 IU/day did not reduce cancer, cardiovascular events or mortality in generally healthy adults',
+    },
+    {
+      when: (v) => v.snus === 'yes', dir: 'bad', input: 'Snus', source: 'byhamre2021',
+      text: 'pooled Swedish cohorts: ~28% higher all-cause and ~27% higher cardiovascular mortality — safer than smoking, not safe',
+    },
+    {
+      when: (v) => v.occupationalPA >= 6 && v.sex === 'male', dir: 'bad', input: 'Occupational PA', source: 'coenen2018',
+      text: 'the "physical activity paradox": heavy occupational activity tracked ~18% higher mortality in men — work strain and leisure exercise are not interchangeable',
+    },
+    {
+      when: (v) => v.cognitiveTraining >= 1, dir: 'good', input: 'Brain training', source: 'edwards2017',
+      text: 'speed-of-processing training cut 10-year dementia risk ~29% in the ACTIVE trial — but gains are mostly domain-specific (you get better at the task itself)',
+    },
+    {
+      when: (v) => v.ironDeficiency, dir: 'neutral', input: 'Iron', source: 'houston2018',
+      text: 'correcting non-anaemic iron deficiency reduced fatigue in RCTs (SMD −0.38) without improving measured physical capacity',
+    },
+    {
+      when: (v) => v.stress >= 8, dir: 'bad', input: 'Stress', source: 'russ2012',
+      text: 'distress this severe tracks mortality even after adjusting for somatic illness, behaviour and socioeconomic factors',
+    },
+    {
+      when: (v) => v.creatine && v.fruitVeg <= 2, dir: 'neutral', input: 'Creatine', source: 'avgerinos2018',
+      text: 'the cognitive effect is clearest in vegetarians and older/stressed individuals — meat eaters already get dietary creatine',
+    },
+  ],
 
   // ---------------------------------------------------------------- Sources
   // Single source of truth for the on-page reference list. Every effect above
@@ -659,6 +1016,110 @@ const HEALTH_MODEL = {
       journal: 'National Vital Statistics Reports. VERIFY exact figures against the published report.',
       url: 'https://www.cdc.gov/nchs/fastats/life-expectancy.htm',
       pmid: null,
+    },
+    kodama2009: {
+      authors: 'Kodama S, Saito K, Tanaka S, et al.',
+      year: 2009,
+      title: 'Cardiorespiratory fitness as a quantitative predictor of all-cause mortality and cardiovascular events in healthy men and women: a meta-analysis',
+      journal: 'JAMA, 301(19):2024–2035',
+      url: 'https://doi.org/10.1001/jama.2009.681',
+      pmid: '19454641',
+    },
+    mandsager2018: {
+      authors: 'Mandsager K, Harb S, Cremer P, Phelan D, Nissen SE, Jaber W',
+      year: 2018,
+      title: 'Association of cardiorespiratory fitness with long-term mortality among adults undergoing exercise treadmill testing',
+      journal: 'JAMA Network Open, 1(6):e183605',
+      url: 'https://doi.org/10.1001/jamanetworkopen.2018.3605',
+      pmid: '30646252',
+    },
+    jayedi2022: {
+      authors: 'Jayedi A, Khan TA, Aune D, Emadi A, Shab-Bidar S',
+      year: 2022,
+      title: 'Body fat and risk of all-cause mortality: a systematic review and dose-response meta-analysis of prospective cohort studies',
+      journal: 'International Journal of Obesity, 46(9):1573–1581',
+      url: 'https://doi.org/10.1038/s41366-022-01165-5',
+      pmid: '35717418',
+    },
+    byhamre2021: {
+      authors: 'Byhamre ML, Araghi M, Alfredsson L, et al.',
+      year: 2021,
+      title: 'Swedish snus use is associated with mortality: a pooled analysis of eight prospective studies',
+      journal: 'International Journal of Epidemiology, 49(6):2041–2050',
+      url: 'https://doi.org/10.1093/ije/dyaa197',
+      pmid: '33347584',
+    },
+    sidney1997: {
+      authors: 'Sidney S, Beck JE, Tekawa IS, Quesenberry CP, Friedman GD',
+      year: 1997,
+      title: 'Marijuana use and mortality',
+      journal: 'American Journal of Public Health, 87(4):585–590',
+      url: 'https://doi.org/10.2105/AJPH.87.4.585',
+      pmid: '9146436',
+    },
+    fang2016: {
+      authors: 'Fang X, Wang K, Han D, et al.',
+      year: 2016,
+      title: 'Dietary magnesium intake and the risk of cardiovascular disease, type 2 diabetes, and all-cause mortality: a dose-response meta-analysis of prospective cohort studies',
+      journal: 'BMC Medicine, 14(1):210',
+      url: 'https://doi.org/10.1186/s12916-016-0742-z',
+      pmid: '27927203',
+    },
+    houston2018: {
+      authors: 'Houston BL, Hurrie D, Graham J, et al.',
+      year: 2018,
+      title: 'Efficacy of iron supplementation on fatigue and physical capacity in non-anaemic iron-deficient adults: a systematic review of randomised controlled trials',
+      journal: 'BMJ Open, 8(4):e019240',
+      url: 'https://doi.org/10.1136/bmjopen-2017-019240',
+      pmid: '29626044',
+    },
+    coenen2018: {
+      authors: 'Coenen P, Huysmans MA, Holtermann A, et al.',
+      year: 2018,
+      title: 'Do highly physically active workers die early? A systematic review with meta-analysis of data from 193,696 participants',
+      journal: 'British Journal of Sports Medicine, 52(20):1320–1326',
+      url: 'https://doi.org/10.1136/bjsports-2017-098540',
+      pmid: '29760168',
+    },
+    moore2007: {
+      authors: 'Moore TH, Zammit S, Lingford-Hughes A, et al.',
+      year: 2007,
+      title: 'Cannabis use and risk of psychotic or affective mental health outcomes: a systematic review',
+      journal: 'The Lancet, 370(9584):319–328',
+      url: 'https://doi.org/10.1016/S0140-6736(07)61162-3',
+      pmid: '17662880',
+    },
+    schottker2014: {
+      authors: 'Schöttker B, Jorde R, Peasey A, et al.',
+      year: 2014,
+      title: 'Vitamin D and mortality: meta-analysis of individual participant data from a large consortium of cohort studies from Europe and the United States',
+      journal: 'BMJ, 348:g3656',
+      url: 'https://doi.org/10.1136/bmj.g3656',
+      pmid: '24938302',
+    },
+    manson2019: {
+      authors: 'Manson JE, Cook NR, Lee IM, et al. (VITAL Research Group)',
+      year: 2019,
+      title: 'Vitamin D supplements and prevention of cancer and cardiovascular disease',
+      journal: 'New England Journal of Medicine, 380(1):33–44',
+      url: 'https://doi.org/10.1056/NEJMoa1809944',
+      pmid: '30415629',
+    },
+    edwards2017: {
+      authors: 'Edwards JD, Xu H, Clark DO, Guey LT, Ross LA, Unverzagt FW',
+      year: 2017,
+      title: 'Speed of processing training results in lower risk of dementia',
+      journal: 'Alzheimer’s & Dementia: Translational Research & Clinical Interventions, 3(4):603–611',
+      url: 'https://doi.org/10.1016/j.trci.2017.09.002',
+      pmid: '29201994',
+    },
+    goyal2014: {
+      authors: 'Goyal M, Singh S, Sibinga EM, et al.',
+      year: 2014,
+      title: 'Meditation programs for psychological stress and well-being: a systematic review and meta-analysis',
+      journal: 'JAMA Internal Medicine, 174(3):357–368',
+      url: 'https://doi.org/10.1001/jamainternmed.2013.13018',
+      pmid: '24395196',
     },
   },
 };

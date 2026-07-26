@@ -30,14 +30,25 @@
       <li>HR → years of life expectancy uses a <strong>Gompertz approximation</strong> (adult mortality risk doubles ~every 7 years). Cross-checked against two published results: our exercise HRs reproduce Moore 2012's measured +4.5 y, and the smoking HR reproduces Jha 2013's "&gt;10 years lost".</li>
       <li>The baseline is <strong>US life expectancy at birth (2023, NCHS)</strong> by sex. That average already includes people with healthy and unhealthy lifestyles, so personal deltas are approximations, not bookkeeping.</li>
       <li>"Plausible ranges" multiply the studies' published 95% confidence bounds, again assuming independence. They capture statistical uncertainty of the <em>inputs</em>, not the much larger uncertainty about <em>you</em>.</li>
+      <li><strong>The weaker the evidence, the wider the range.</strong> A published CI only captures a study's sampling error — not confounding, not extrapolation, not our approximations. So each effect's CI is widened around its central estimate before combining: ×1 (high evidence), ×1.5 (moderate), ×2.25 (low). Low-evidence ranges will often cross 1.0 — that's the point: <em>we genuinely don't know</em>, and the UI should say so.</li>
+      <li><strong>The central estimate is clamped</strong> (to 0.45–4.0×) but the uncertainty bounds are not — the range exists to show how unsure we are.</li>
+      <li><strong>Defaults are the reference profile.</strong> Every input starts at its no-effect level, so "Reset all inputs" gives exactly 1.0× and "about average" bands, and every change you make shows its own effect.</li>
+      <li><strong>Measured values beat reported habits.</strong> If you enable a VO2 max value, it <em>replaces</em> the cardio-mortality estimate (fitness predicts mortality better than self-reported activity, and using both would double-count). A measured body-fat % likewise replaces the BMI estimate.</li>
     </ul>
 
     <h3>Cognition &amp; happiness</h3>
     <p>There is no honest way to put a number on these. Effects are small, mostly
     correlational, and often domain-specific (e.g. creatine helps <em>short-term memory
     and reasoning</em>, mainly in vegetarians and older adults). So we show qualitative
-    bands with a deliberately fuzzy marker, weighted by evidence strength — nothing
-    here should be read as "your brain score".</p>
+    bands with a deliberately fuzzy marker — and the marker gets <em>fuzzier</em> for
+    every low-evidence input currently contributing. Nothing here should be read as
+    "your brain score".</p>
+
+    <h3>The findings card</h3>
+    <p>Below the four metrics, a reactive list shows sourced facts that don't fit on a
+    slider — disease-specific outcomes (lung cancer, heart failure, fractures), honest
+    nulls (vitamin D supplementation's empty RCT result), and caveats. Items appear only
+    when they apply to the current inputs, each with its citation.</p>
 
     <h3>What the evidence badges mean</h3>
     <ul>

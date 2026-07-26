@@ -22,16 +22,10 @@ function approx(a, b, tol, msg) {
   ok(Math.abs(a - b) <= tol, `${msg} (got ${a.toFixed(4)}, want ~${b.toFixed(4)} ±${tol})`);
 }
 
-// Neutral profile: every input at its no-effect reference level.
+// Neutral profile: the model's own defaults ARE the reference profile —
+// every input at its no-effect level (so "reset" gives HR 1.0, band points 0).
 function neutralValues() {
-  return {
-    sex: 'unspecified',
-    heightCm: 176, // BMI ~22.6 -> HR 1.0 band
-    weightKg: 70,
-    cardio: 0, strength: 0, fiber: 0, fruitVeg: 0, alcohol: 0,
-    smoking: 'never', coffee: 0, sleep: 7.5, stress: 1, social: 7,
-    sauna: 0, creatine: false,
-  };
+  return engine.defaults(model);
 }
 
 console.log('\n[1] Data integrity');
@@ -144,7 +138,75 @@ console.log('\n[7] BMI derivation');
   approx(obese.mortality.hr, 1.94, 1e-9, 'BMI 38 -> HR 1.94 (diangelantonio2016)');
 }
 
-console.log('\n[8] Citation numbering (index.html <-> sources.html)');
+console.log('\n[8] Defaults = reference profile (the "reset" contract)');
+{
+  const r = engine.evaluate(model, engine.defaults(model));
+  approx(r.mortality.hr, 1.0, 1e-9, 'defaults -> HR exactly 1.0x reference');
+  approx(r.scores.cognition.points, 0, 1e-9, 'defaults -> cognition points 0');
+  approx(r.scores.happiness.points, 0, 1e-9, 'defaults -> happiness points 0');
+  ok(r.scores.cognition.label === 'about average', 'defaults -> "about average" bands');
+}
+
+console.log('\n[9] Uncertainty widening (less certain evidence = wider range)');
+{
+  const r = engine.evaluate(model, { ...neutralValues(), sauna: 5 }); // low evidence
+  const m = r.mortality;
+  ok(m.hrLow < 0.45, 'low-evidence lower bound widened beyond published CI (got ' + m.hrLow.toFixed(3) + ' < 0.45)');
+  ok(m.hrHigh > 0.81, 'low-evidence upper bound widened beyond published CI (got ' + m.hrHigh.toFixed(3) + ' > 0.81)');
+  approx(m.hr, 0.60, 1e-9, 'central estimate unchanged by widening');
+
+  const r2 = engine.evaluate(model, { ...neutralValues(), cardio: 300 }); // high evidence
+  approx(r2.mortality.hrLow, 0.62, 1e-9, 'high evidence keeps published CI (0.62)');
+}
+
+console.log('\n[10] Advanced inputs: gating + supersession');
+{
+  const off = engine.evaluate(model, { ...neutralValues(), vo2maxOn: false, vo2max: 50 });
+  approx(off.mortality.hr, 1.0, 1e-9, 'VO2max ignored while its toggle is off');
+
+  const on = engine.evaluate(model, { ...neutralValues(), vo2maxOn: true, vo2max: 42, cardio: 300 });
+  approx(on.mortality.hr, Math.pow(0.87, 4), 1e-9, 'VO2max 42 -> 0.87^4 (kodama2009), cardio superseded');
+  ok(!on.contributions.mortality.some((c) => c.inputId === 'cardio'), 'cardio contribution removed when VO2max enabled');
+
+  const bf = engine.evaluate(model, { ...neutralValues(), bodyFatOn: true, bodyFat: 35, heightCm: 170, weightKg: 110 });
+  approx(bf.mortality.hr, 1.11, 1e-9, 'body fat 35% -> HR 1.11 (jayedi2022), BMI superseded');
+  ok(!bf.contributions.mortality.some((c) => c.inputId === 'bmi'), 'BMI contribution removed when body fat % enabled');
+}
+
+console.log('\n[11] New inputs');
+{
+  const r1 = engine.evaluate(model, { ...neutralValues(), magnesium: 450 });
+  approx(r1.mortality.hr, Math.pow(0.9, 2), 1e-9, 'magnesium 450 mg/d -> 0.90^2 (fang2016, anchored at 250)');
+
+  const r2 = engine.evaluate(model, { ...neutralValues(), magnesium: 600 });
+  approx(r2.mortality.hr, Math.pow(0.9, 2), 1e-9, 'magnesium capped at 450 mg');
+
+  const r3 = engine.evaluate(model, { ...neutralValues(), occupationalPA: 8 });
+  approx(r3.mortality.hr, 1.18, 1e-9, 'heavy occupational PA -> HR 1.18 (coenen2018)');
+
+  const r4 = engine.evaluate(model, { ...neutralValues(), snus: 'yes' });
+  approx(r4.mortality.hr, 1.28, 1e-9, 'snus -> HR 1.28 (byhamre2021)');
+
+  const r5 = engine.evaluate(model, { ...neutralValues(), vitaminD: 'deficient' });
+  approx(r5.mortality.hr, 1.57, 1e-9, 'vitamin D deficiency -> HR 1.57 (schottker2014)');
+
+  const r6 = engine.evaluate(model, { ...neutralValues(), vitaminD: 'supplement' });
+  approx(r6.mortality.hr, 0.99, 1e-9, 'vitamin D supplement -> HR 0.99 (manson2019, honest null)');
+}
+
+console.log('\n[12] Findings react to inputs');
+{
+  const r = engine.evaluate(model, { ...neutralValues(), smoking: 'current' });
+  ok(r.findings.some((f) => f.source === 'jha2013' && /lung cancer/.test(f.text)), 'smoker sees lung-cancer finding');
+
+  const r0 = engine.evaluate(model, neutralValues());
+  ok(r0.findings.length === 0, 'reference profile -> no findings');
+
+  const r2 = engine.evaluate(model, { ...neutralValues(), vitaminD: 'supplement' });
+  ok(r2.findings.some((f) => f.source === 'manson2019' && f.dir === 'neutral'), 'supplementing vitamin D shows the honest-null finding');
+}
+
+console.log('\n[13] Citation numbering (index.html <-> sources.html)');
 {
   const refs = engine.sourceIndex(model);
   const cited = new Set();

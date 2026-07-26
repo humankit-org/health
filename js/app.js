@@ -20,6 +20,7 @@
     { id: 'diet', title: 'Diet & substances' },
     { id: 'mind', title: 'Recovery & mind' },
     { id: 'extras', title: 'Extras' },
+    { id: 'advanced', title: 'Advanced — if you\'ve measured these' },
   ];
 
   const EVIDENCE_TITLE = {
@@ -53,6 +54,8 @@
 
   function renderInput(input) {
     const card = el(`<div class="input" id="card-${input.id}"></div>`);
+    if (input.gatedBy) card.classList.add('gated');
+    card.dataset.gate = input.gatedBy || '';
     let control = '';
     if (input.kind === 'slider') {
       control = `
@@ -115,6 +118,7 @@
       <div class="output-card" id="out-cognition">
         <h3>Cognitive function <span class="ev" data-ev="low">low</span></h3>
         <div class="band-meter" id="meter-cognition" role="img">
+          <div class="band-ref" title="Average"></div>
           <div class="band-marker" id="marker-cognition"></div>
         </div>
         <div class="band-label" id="band-cognition">–</div>
@@ -124,11 +128,17 @@
       <div class="output-card" id="out-happiness">
         <h3>Happiness / wellbeing <span class="ev" data-ev="low">low</span></h3>
         <div class="band-meter" id="meter-happiness" role="img">
+          <div class="band-ref" title="Average"></div>
           <div class="band-marker" id="marker-happiness"></div>
         </div>
         <div class="band-label" id="band-happiness">–</div>
         <p class="output-blurb"></p>
         <details><summary>What drives this?</summary><ul class="contrib" id="contrib-happiness"></ul></details>
+      </div>
+      <div class="output-card findings-card" id="out-findings">
+        <h3>More findings from the same sources</h3>
+        <p class="findings-blurb">Disease-specific effects and honest nulls that don't fit on a slider — shown when they apply to your current inputs.</p>
+        <ul class="findings" id="findings-list"></ul>
       </div>`;
     for (const output of model.outputs) {
       const card = host.querySelector('#out-' + output.id);
@@ -169,6 +179,34 @@
     updateContrib('mortality', result.contributions.mortality, 'hr');
     updateContrib('cognition', result.contributions.cognition, 'points');
     updateContrib('happiness', result.contributions.happiness, 'points');
+    updateFindings(result.findings);
+    updateGates();
+  }
+
+  // Dim advanced inputs whose enabling toggle is off.
+  function updateGates() {
+    document.querySelectorAll('.input.gated').forEach((card) => {
+      const gate = card.dataset.gate;
+      const open = !!state[gate];
+      card.classList.toggle('gate-closed', !open);
+      const slider = card.querySelector('input[type="range"]');
+      if (slider) slider.disabled = !open;
+    });
+  }
+
+  function updateFindings(findings) {
+    const host = document.getElementById('findings-list');
+    if (!findings.length) {
+      host.innerHTML = '<li class="findings-empty">Nothing yet — findings appear here as your inputs match sourced effects.</li>';
+      return;
+    }
+    const ICON = { good: '↓', bad: '↑', neutral: '↔' };
+    host.innerHTML = findings.map((f) => `
+      <li class="finding ${f.dir}">
+        <span class="finding-icon" aria-hidden="true">${ICON[f.dir] || '±'}</span>
+        <span class="finding-text">${f.text}</span>
+        <span class="finding-meta">${f.input} ${refLink(f.source)}</span>
+      </li>`).join('');
   }
 
   function updateInputReadouts(result) {
@@ -180,7 +218,9 @@
     const bmi = document.getElementById('bmi-readout');
     if (bmi && result.bmi) {
       const contrib = result.contributions.mortality.find((c) => c.inputId === 'bmi');
-      bmi.innerHTML = `→ BMI ${result.bmi.toFixed(1)} (mortality ${fmtPctFromHr(contrib.hr)} ${refLink(contrib.source)})`;
+      bmi.innerHTML = contrib
+        ? `→ BMI ${result.bmi.toFixed(1)} (mortality ${fmtPctFromHr(contrib.hr)} ${refLink(contrib.source)})`
+        : `→ BMI ${result.bmi.toFixed(1)} (not used — measured body fat % supplied instead)`;
     }
   }
 
@@ -234,10 +274,11 @@
   }
 
   function updateBand(id, score) {
-    // Map points (-3..+3) to marker position. Marker width shows +-0.5 fuzz.
+    // Map points (-3..+3) to marker position. Marker width = engine-computed
+    // fuzz: wider when contributing evidence is shakier.
     const p = Math.min(3, Math.max(-3, score.points));
     const pct = ((p + 3) / 6) * 100;
-    const fuzz = (0.5 / 6) * 100;
+    const fuzz = ((score.fuzz || 0.5) / 6) * 100;
     const marker = document.getElementById('marker-' + id);
     marker.style.left = `calc(${pct}% - ${fuzz}%)`;
     marker.style.width = fuzz * 2 + '%';

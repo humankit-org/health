@@ -44,7 +44,10 @@
         return pick(step);
       }
       case 'perUnit': {
-        const doses = Math.min(Math.max(value, 0), effect.capAt) / effect.per;
+        const lo = effect.minDose !== undefined ? effect.minDose : 0;
+        const hi = effect.capAt !== undefined ? effect.capAt : Infinity;
+        const ref = effect.ref !== undefined ? effect.ref : 0;
+        const doses = (Math.min(Math.max(value, lo), hi) - ref) / effect.per;
         return {
           hr: Math.pow(effect.hr, doses),
           hrLow: Math.pow(effect.hrLow, doses),
@@ -91,6 +94,16 @@
     return Math.min(hi, Math.max(lo, x));
   }
 
+  /*
+   * Widen one CI bound around the central estimate (log space) by factor w.
+   * The less certain the evidence, the wider the range we show — a published
+   * 95% CI only captures sampling error, not confounding or our approximations.
+   */
+  function widenBound(center, bound, w) {
+    if (center <= 0 || bound <= 0) return bound;
+    return Math.exp(Math.log(center) + (Math.log(bound) - Math.log(center)) * w);
+  }
+
   /**
    * Evaluate the whole model.
    * @param {object} model  HEALTH_MODEL
@@ -98,13 +111,20 @@
    */
   function evaluate(model, values) {
     const contributions = { mortality: [], cognition: [], happiness: [] };
+    const widen = model.constants.uncertaintyWiden || { high: 1, moderate: 1, low: 1 };
     let hr = 1, hrLow = 1, hrHigh = 1;
     const points = { cognition: 0, happiness: 0 };
 
+    const isOn = (key) => !!values[key];
+    const superseded = (flag) => flag && isOn(flag);
+
     for (const input of model.inputs) {
-      const value = values[input.id];
+      if (input.gatedBy && !isOn(input.gatedBy)) continue; // advanced inputs only count when enabled
+      const value = values[input.id] !== undefined ? values[input.id] : input.default;
       for (const effect of input.effects) {
+        if (superseded(effect.supersededBy)) continue; // e.g. measured VO2max replaces reported cardio
         const r = evalEffect(effect, value);
+        const w = widen[effect.evidence] !== undefined ? widen[effect.evidence] : 1;
         const record = {
           inputId: input.id,
           label: input.label,
@@ -116,8 +136,8 @@
         };
         if (effect.output === 'mortality') {
           hr *= r.hr;
-          hrLow *= r.hrLow;
-          hrHigh *= r.hrHigh;
+          hrLow *= widenBound(r.hr, r.hrLow, w);
+          hrHigh *= widenBound(r.hr, r.hrHigh, w);
           contributions.mortality.push(record);
         } else {
           points[effect.output] += r.points || 0;
@@ -126,13 +146,14 @@
       }
     }
 
-    // Derived BMI effect.
+    // Derived BMI effect (replaced by measured body fat % when enabled).
     const bmi = computeBmi(values);
-    if (bmi !== null && model.bmi) {
+    if (bmi !== null && model.bmi && !superseded(model.bmi.supersededBy)) {
       const step = lookupSteps(model.bmi.steps, bmi);
+      const w = widen[model.bmi.evidence] !== undefined ? widen[model.bmi.evidence] : 1;
       hr *= step.hr;
-      hrLow *= step.hrLow;
-      hrHigh *= step.hrHigh;
+      hrLow *= widenBound(step.hr, step.hrLow, w);
+      hrHigh *= widenBound(step.hr, step.hrHigh, w);
       contributions.mortality.push({
         inputId: 'bmi',
         label: 'BMI ' + bmi.toFixed(1),
@@ -144,13 +165,11 @@
       });
     }
 
-    // Combine + clamp (lifestyle effects overlap; don't overclaim).
+    // Combine + clamp the CENTRAL estimate (lifestyle effects overlap; don't
+    // overclaim). The uncertainty bounds are deliberately NOT clamped — they
+    // exist to show how unsure we are, floor or no floor.
     const clamped = hr < model.constants.hrFloor || hr > model.constants.hrCeiling;
-    const clampedLow = hrLow < model.constants.hrFloor;
-    const clampedHigh = hrHigh > model.constants.hrCeiling;
     hr = clamp(hr, model.constants.hrFloor, model.constants.hrCeiling);
-    hrLow = clamp(hrLow, model.constants.hrFloor, model.constants.hrCeiling);
-    hrHigh = clamp(hrHigh, model.constants.hrFloor, model.constants.hrCeiling);
 
     const cap = model.constants;
     const years = clamp(hrToYears(model, hr), -cap.yearsCapLoss, cap.yearsCapGain);
@@ -161,10 +180,20 @@
     const sex = model.baseline.lifeExpectancy[values.sex] !== undefined ? values.sex : 'unspecified';
     const baselineLe = model.baseline.lifeExpectancy[sex];
 
+    // Marker fuzz for the mind outputs: grows with every active low-evidence
+    // contributor — the shakier the inputs, the blurrier the marker.
+    const fuzz = (outputId) => {
+      const c = model.constants;
+      const lows = contributions[outputId].filter(
+        (x) => x.evidence === 'low' && Math.abs(x.points || 0) > 0.001
+      ).length;
+      return Math.min(c.bandFuzzMax, c.bandFuzzBase + lows * c.bandFuzzPerLowEvidence);
+    };
+
     return {
       values,
       bmi,
-      mortality: { hr, hrLow, hrHigh, clamped, clampedLow, clampedHigh, years, yearsLow, yearsHigh },
+      mortality: { hr, hrLow, hrHigh, clamped, years, yearsLow, yearsHigh },
       lifeExpectancy: {
         baseline: baselineLe,
         estimate: baselineLe + years,
@@ -173,11 +202,23 @@
         delta: years,
       },
       scores: {
-        cognition: { points: points.cognition, ...bandFor(model, points.cognition) },
-        happiness: { points: points.happiness, ...bandFor(model, points.happiness) },
+        cognition: { points: points.cognition, fuzz: fuzz('cognition'), ...bandFor(model, points.cognition) },
+        happiness: { points: points.happiness, fuzz: fuzz('happiness'), ...bandFor(model, points.happiness) },
       },
       contributions,
+      findings: evaluateFindings(model, values),
     };
+  }
+
+  // Sourced findings that apply to the current inputs (disease-specific
+  // outcomes, honest nulls, caveats). Each entry: { dir, input, text, source }.
+  function evaluateFindings(model, values) {
+    if (!model.findings) return [];
+    return model.findings
+      .filter((f) => {
+        try { return f.when(values); } catch { return false; }
+      })
+      .map((f) => ({ dir: f.dir, input: f.input, text: f.text, source: f.source }));
   }
 
   // Default values for every input (used to initialise the UI).
@@ -201,5 +242,5 @@
     return map;
   }
 
-  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, defaults, sourceIndex };
+  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, evaluateFindings, defaults, sourceIndex };
 });

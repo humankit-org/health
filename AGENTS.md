@@ -27,11 +27,12 @@ keep it honest.
 
 ## Current status
 
-Working v0.1: plain HTML/CSS/JS, zero build step, zero runtime dependencies.
+Working v0.2: plain HTML/CSS/JS, zero build step, zero runtime dependencies.
 
 ```
 index.html          main page: nav, short disclaimer, calculator (inputs/outputs)
 sources.html        method, limitations, full disclaimer, reference list
+PLAN.md             roadmap + candidate-factor backlog (sources needed)
 css/style.css       all styling
 js/factors.js       THE MODEL — every number + its citation (see below)
 js/engine.js        pure math: values -> estimates (no DOM; also runs in node)
@@ -77,6 +78,20 @@ integrity: sorted steps, bracketing CIs, existing sources).
   personal deltas shift it. Known approximation, stated on the page.
 - **Mind outputs** accumulate unitless "points" per input → mapped to bands.
   Near everything here is correlational; badges and copy say so.
+- **Defaults ARE the reference profile** (v0.2): reset ⇒ exactly 1.0× HR and
+  0-point "about average" bands, so every input shows its own effect.
+- **Uncertainty scales with (un)certainty** (v0.2): each effect's CI is
+  widened in log space by `uncertaintyWiden` (high ×1 / moderate ×1.5 / low
+  ×2.25) before combining; the central estimate is clamped to [0.45, 4.0] but
+  the bounds deliberately are not. Mind-output marker fuzz grows per active
+  low-evidence contributor.
+- **Advanced gated inputs** (v0.2): `vo2maxOn`/`bodyFatOn` toggles unlock
+  measured VO2 max (per-MET HR 0.87, Kodama 2009) and body-fat % (J-shaped,
+  Jayedi 2022). When enabled they **replace** — never stack with — the cardio
+  and BMI estimates (`supersededBy` in the data; engine enforces it).
+- **Findings card** (v0.2): `findings` in factors.js holds sourced facts that
+  don't fit sliders (disease-specific outcomes, honest nulls like the VITAL
+  vitamin-D RCT, caveats); each shows only when its `when(values)` matches.
 - **Every verified number was checked against the primary source** (PubMed
   abstracts) on 2026-07-24. Items still needing a second look are marked in
   their `note`: sauna all-cause HRs (verify vs paper Table 2), NCHS baseline
