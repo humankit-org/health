@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Method &amp; Sources — HumanKit Health</title>
+  <meta name="description" content="How the HumanKit Health estimates work, their limitations, and every published source behind the numbers.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="topbar">
+      <h1>HumanKit <span class="accent">Health</span></h1>
+      <nav class="page-nav" aria-label="Pages">
+        <a href="index.html">Calculator</a>
+        <a href="sources.html" aria-current="page">Method &amp; Sources</a>
+      </nav>
+    </div>
+    <p class="tagline">How the estimates work, why you shouldn't fully trust them, and every source behind the numbers.</p>
+  </header>
+
+  <section class="page-section" id="methodology">
+    <h2>How the estimates work (and why you shouldn't fully trust them)</h2>
+
+    <h3>The mortality model</h3>
+    <ul>
+      <li>Each input maps to a <strong>hazard ratio (HR)</strong> from a published study — e.g. meeting exercise guidelines: HR 0.69, a 31% lower mortality hazard. Every HR on the calculator page links back to its source in the list below.</li>
+      <li>HRs combine <strong>multiplicatively, assuming independence</strong>. Real lifestyle effects overlap (exercisers also eat better, sleep better…), so this overstates combined benefits. We therefore <strong>cap the total</strong> at a 55% hazard reduction (and a 4× increase) — the "capped" note appears when that bites.</li>
+      <li>HR → years of life expectancy uses a <strong>Gompertz approximation</strong> (adult mortality risk doubles ~every 7 years). Cross-checked against two published results: our exercise HRs reproduce Moore 2012's measured +4.5 y, and the smoking HR reproduces Jha 2013's "&gt;10 years lost".</li>
+      <li>The baseline is <strong>US life expectancy at birth (2023, NCHS)</strong> by sex. That average already includes people with healthy and unhealthy lifestyles, so personal deltas are approximations, not bookkeeping.</li>
+      <li>"Plausible ranges" multiply the studies' published 95% confidence bounds, again assuming independence. They capture statistical uncertainty of the <em>inputs</em>, not the much larger uncertainty about <em>you</em>.</li>
+    </ul>
+
+    <h3>Cognition &amp; happiness</h3>
+    <p>There is no honest way to put a number on these. Effects are small, mostly
+    correlational, and often domain-specific (e.g. creatine helps <em>short-term memory
+    and reasoning</em>, mainly in vegetarians and older adults). So we show qualitative
+    bands with a deliberately fuzzy marker, weighted by evidence strength — nothing
+    here should be read as "your brain score".</p>
+
+    <h3>What the evidence badges mean</h3>
+    <ul>
+      <li><span class="ev" data-ev="high">high</span> Large, consistent meta-analyses or pooled cohorts with dose–response. Still almost entirely <em>observational</em> — association, not proven causation.</li>
+      <li><span class="ev" data-ev="moderate">moderate</span> Meta-analytic but heterogeneous, small trials, or numbers converted/approximated from the published form (flagged in the source note).</li>
+      <li><span class="ev" data-ev="low">low</span> Single cohorts, cross-sectional snapshots, or indirect citations. Directionally interesting, nothing more.</li>
+    </ul>
+
+    <h3>Known limitations</h3>
+    <ul>
+      <li>Self-reported inputs in the underlying studies; residual confounding everywhere (wealth, education, genetics).</li>
+      <li>US-centric baseline; no age, medical history, or genetics inputs.</li>
+      <li>Some effects are J/U-shaped; we model the published inflection points only roughly.</li>
+      <li>A few contributions reuse a mortality-focused citation for a mind outcome — those are explicitly marked "indirect citation — replace with a dedicated source" in the data file.</li>
+    </ul>
+
+    <h3>Privacy, by design</h3>
+    <p>This is a static site. Your inputs live only in the calculator tab's memory and
+    vanish when you close it. No cookies, no localStorage, no analytics, no backend —
+    and there never will be a database for health inputs on this site.</p>
+  </section>
+
+  <section class="page-section" id="references">
+    <h2>Sources</h2>
+    <p>Every number in the model cites one of these. The same list is embedded next to
+    the numbers in <code>js/factors.js</code>, so auditing a figure means reading one file.
+    Citations on the calculator page link directly to the matching entry here.</p>
+    <ol id="ref-list"></ol>
+  </section>
+
+  <footer>
+    <p><strong>Disclaimer:</strong> educational estimates from population-level research.
+    Not medical advice, not diagnosis, not a prediction of any individual outcome.
+    Consult a qualified clinician for personal health decisions.</p>
+    <p>HumanKit Health · open source (MIT) · model v<span id="model-version"></span></p>
+  </footer>
+
+  <noscript>The reference list needs JavaScript to render.</noscript>
+  <script src="js/factors.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/sources.js"></script>
+</body>
+</html>

@@ -187,5 +187,19 @@
     return values;
   }
 
-  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, defaults };
+  // Number sources in order of first use: input effects (in model order),
+  // then the derived BMI effect, then the baseline life table. Both pages
+  // compute citation numbers from this so they always match.
+  function sourceIndex(model) {
+    const order = [];
+    const push = (s) => { if (s && !order.includes(s)) order.push(s); };
+    for (const input of model.inputs) for (const e of input.effects) push(e.source);
+    push(model.bmi.source);
+    push(model.baseline.source);
+    const map = {};
+    order.forEach((key, i) => (map[key] = i + 1));
+    return map;
+  }
+
+  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, defaults, sourceIndex };
 });

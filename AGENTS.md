@@ -30,11 +30,13 @@ keep it honest.
 Working v0.1: plain HTML/CSS/JS, zero build step, zero runtime dependencies.
 
 ```
-index.html          page shell: disclaimer, methodology, references, footer
+index.html          main page: nav, short disclaimer, calculator (inputs/outputs)
+sources.html        method, limitations, full disclaimer, reference list
 css/style.css       all styling
 js/factors.js       THE MODEL — every number + its citation (see below)
 js/engine.js        pure math: values -> estimates (no DOM; also runs in node)
-js/app.js           DOM rendering/wiring only; no numbers in this file
+js/app.js           main-page DOM rendering/wiring only; no numbers in this file
+js/sources.js       renders the reference list on sources.html
 tests/engine.test.js  dependency-free smoke tests: `node tests/engine.test.js`
 ```
 
@@ -47,11 +49,13 @@ the repo root and it's deployed.
 from.** Never put a coefficient in `engine.js` or `app.js`. Each effect has:
 `source` (key into the `sources` map with DOI/PMID), `note` (what the study
 actually found + any approximation we made), `evidence` (high|moderate|low),
-and CI bounds where published. The on-page reference list and the per-estimate
-citations are generated from this file, so sources can never drift away from
-the numbers. To change a number: edit it + its note/source in the same commit,
-then run the tests (they audit data integrity: sorted steps, bracketing CIs,
-existing sources).
+and CI bounds where published. The reference list on sources.html and the
+per-estimate citations on index.html are generated from this file, so sources
+can never drift away from the numbers. Citation numbers come from
+`engine.sourceIndex(model)` — both pages use it, and every `[n]` on the main
+page deep-links to `sources.html#ref-n`. To change a number: edit it + its
+note/source in the same commit, then run the tests (they audit data
+integrity: sorted steps, bracketing CIs, existing sources).
 
 ## Design decisions (v0.1, all reversible)
 

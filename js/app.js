@@ -12,6 +12,7 @@
   const model = globalThis.HEALTH_MODEL;
   const engine = globalThis.HEALTH_ENGINE;
   const state = engine.defaults(model);
+  const refs = engine.sourceIndex(model); // shared citation numbering (sources.html uses the same)
 
   const GROUPS = [
     { id: 'you', title: 'About you' },
@@ -151,31 +152,9 @@
     return '±0%';
   }
 
-  function refIndex() {
-    // Number sources in order of first use: inputs, bmi, baseline.
-    if (refIndex.cache) return refIndex.cache;
-    const order = [];
-    const push = (s) => { if (s && !order.includes(s)) order.push(s); };
-    for (const input of model.inputs) for (const e of input.effects) push(e.source);
-    push(model.bmi.source);
-    push(model.baseline.source);
-    const map = {};
-    order.forEach((key, i) => (map[key] = i + 1));
-    refIndex.cache = map;
-    return map;
-  }
-
-  function renderReferences() {
-    const map = refIndex();
-    const items = Object.entries(map)
-      .sort((a, b) => a[1] - b[1])
-      .map(([key, n]) => {
-        const s = model.sources[key];
-        const pmid = s.pmid ? ` · <a href="https://pubmed.ncbi.nlm.nih.gov/${s.pmid}/">PubMed</a>` : '';
-        return `<li value="${n}">${s.authors} (${s.year}). <em>${s.title}</em>. ${s.journal}.
-          <a href="${s.url}">DOI</a>${pmid}</li>`;
-      });
-    document.getElementById('ref-list').innerHTML = items.join('');
+  function refLink(sourceKey) {
+    const n = refs[sourceKey];
+    return `<a class="chip-ref" href="sources.html#ref-${n}">[${n}]</a>`;
   }
 
   // ------------------------------------------------------------- updating
@@ -201,7 +180,7 @@
     const bmi = document.getElementById('bmi-readout');
     if (bmi && result.bmi) {
       const contrib = result.contributions.mortality.find((c) => c.inputId === 'bmi');
-      bmi.textContent = `→ BMI ${result.bmi.toFixed(1)} (mortality ${fmtPctFromHr(contrib.hr)} [${refIndex()[contrib.source]}])`;
+      bmi.innerHTML = `→ BMI ${result.bmi.toFixed(1)} (mortality ${fmtPctFromHr(contrib.hr)} ${refLink(contrib.source)})`;
     }
   }
 
@@ -215,11 +194,11 @@
       const chips = [];
       for (const c of mine) {
         if (c.hr !== undefined && Math.abs(c.hr - 1) > 0.005) {
-          chips.push(`<span class="chip ${c.hr < 1 ? 'good' : 'bad'}" title="${c.note}">mortality ${fmtPctFromHr(c.hr)} [${refIndex()[c.source]}]</span>`);
+          chips.push(`<span class="chip ${c.hr < 1 ? 'good' : 'bad'}" title="${c.note}">mortality ${fmtPctFromHr(c.hr)} ${refLink(c.source)}</span>`);
         }
         if (c.points !== undefined && Math.abs(c.points) > 0.001) {
           const out = result.contributions.cognition.includes(c) ? 'cognition' : 'happiness';
-          chips.push(`<span class="chip ${c.points > 0 ? 'good' : 'bad'}" title="${c.note}">${out} ${fmtSigned(c.points)} [${refIndex()[c.source]}]</span>`);
+          chips.push(`<span class="chip ${c.points > 0 ? 'good' : 'bad'}" title="${c.note}">${out} ${fmtSigned(c.points)} ${refLink(c.source)}</span>`);
         }
       }
       host.innerHTML = chips.join('');
@@ -283,7 +262,7 @@
       return `<li>
         <span class="contrib-effect ${field === 'hr' ? (c.hr < 1 ? 'good' : 'bad') : (c.points > 0 ? 'good' : 'bad')}">${effect}</span>
         <span class="contrib-label">${c.label}</span>
-        <a class="contrib-ref" href="#ref-list" title="${c.note}">[${refIndex()[c.source]}]</a>
+        <a class="contrib-ref" href="sources.html#ref-${refs[c.source]}" title="${c.note}">[${refs[c.source]}]</a>
         <span class="ev small" data-ev="${c.evidence}" title="${EVIDENCE_TITLE[c.evidence]}">${c.evidence}</span>
       </li>`;
     }).join('');
@@ -320,7 +299,9 @@
 
   renderInputs();
   renderOutputs();
-  renderReferences();
   wireEvents();
   update(engine.evaluate(model, state));
+
+  const versionEl = document.getElementById('model-version');
+  if (versionEl) versionEl.textContent = model.meta.version;
 })();
