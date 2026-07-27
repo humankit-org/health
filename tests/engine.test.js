@@ -332,7 +332,49 @@ console.log('\n[14] Functional-independence findings');
   ok(grains.findings.some((x) => x.source === 'aune2016grain'), 'high fiber -> whole-grains-not-double-counted finding');
 }
 
-console.log('\n[15] Citation numbering (index.html <-> sources.html)');
+console.log('\n[15] CVD output');
+{
+  const def = engine.evaluate(model, engine.defaults(model));
+  approx(def.cvd.hrAvg, 1.0, 1e-9, 'defaults -> cvd 1.0x the average person');
+
+  const base = engine.evaluateRaw(model, neutralValues());
+  const pm = engine.evaluateRaw(model, { ...neutralValues(), processedMeat: 8 });
+  approx(pm.hrCvd / base.hrCvd, Math.pow(1.13, (8 - 1.5) / 7), 1e-9, 'processed meat 8/wk -> cvd HR 1.13^((8-1.5)/7) (pan2012)');
+
+  const sm = engine.evaluateRaw(model, { ...neutralValues(), smoking: 'current' });
+  approx(sm.hrCvd / base.hrCvd, 2.5, 1e-9, 'current smoker -> cvd HR 2.5 (jha2013)');
+
+  const ssb = engine.evaluateRaw(model, { ...neutralValues(), ssb: 14 });
+  approx(ssb.hrCvd / base.hrCvd, 1.31, 1e-9, 'SSB 14/wk -> cvd HR 1.31 (malik2019)');
+
+  const nuts = engine.evaluateRaw(model, { ...neutralValues(), nuts: 30 });
+  approx(nuts.hrCvd / base.hrCvd, Math.pow(0.79, 30 / 28), 1e-9, 'nuts 30 g/d -> cvd 0.79^(30/28) (aune2016nuts)');
+
+  const sauna = engine.evaluateRaw(model, { ...neutralValues(), sauna: 5 });
+  approx(sauna.hrCvd / base.hrCvd, 0.48, 1e-9, 'sauna 5/wk -> cvd HR 0.48 (laukkanen2015)');
+
+  const vo2 = engine.evaluateRaw(model, { ...neutralValues(), vo2maxOn: true, vo2max: 42 });
+  approx(vo2.hrCvd / base.hrCvd, Math.pow(0.85, 4), 1e-9, 'vo2max 42 -> cvd 0.85^4 (kodama2009)');
+
+  const rhr = engine.evaluateRaw(model, { ...neutralValues(), rhrOn: true, rhr: 90 });
+  approx(rhr.hrCvd / base.hrCvd, Math.pow(1.15, 2), 1e-9, 'RHR 90 -> cvd 1.15^2 (aune2017rhr)');
+
+  const sleepReg = engine.evaluateRaw(model, { ...neutralValues(), sleepRegularity: 9 });
+  approx(sleepReg.hrCvd / base.hrCvd, 0.78, 1e-9, 'regular sleep schedule -> cvd 0.78 (windred2024)');
+
+  ok(def.cvd.noData.length > 3, 'coverage note lists no-data inputs');
+  ok(def.cvd.noData.includes('Cannabis'), 'cannabis listed as no-cvd-data');
+  ok(def.cvd.noData.includes('Meditation'), 'meditation listed as no-cvd-data');
+  ok(def.cvd.noData.includes('Untreated iron deficiency'), 'iron deficiency listed as no-cvd-data');
+
+  // BMI CVD contribution
+  const obese = engine.evaluate(model, { ...neutralValues(), heightCm: 170, weightKg: 110 });
+  const bmiCvd = obese.contributions.cvd.find((c) => c.inputId === 'bmi');
+  ok(!!bmiCvd, 'obese BMI has a CVD contribution');
+  approx(bmiCvd.hr, 2.10, 1e-9, 'BMI 38 -> CVD HR 2.10 (diangelantonio2016)');
+}
+
+console.log('\n[16] Citation numbering (index.html <-> sources.html)');
 {
   const refs = engine.sourceIndex(model);
   const cited = new Set();

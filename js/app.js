@@ -130,6 +130,20 @@
         <p class="coverage-note" id="cancer-coverage"></p>
         <details><summary>What drives this?</summary><ul class="contrib" id="contrib-cancer"></ul></details>
       </div>
+      <div class="output-card" id="out-cvd">
+        <h3>Cardiovascular mortality risk <span class="ev" data-ev="moderate">moderate</span></h3>
+        <div class="hr-big"><output id="cvd-estimate">–</output><span class="hr-unit">× average</span></div>
+        <div class="hr-sub" id="cvd-sub"></div>
+        <div class="gauge" id="cvd-gauge" role="img" aria-label="Cardiovascular mortality hazard gauge">
+          <div class="gauge-band" id="cvd-band"></div>
+          <div class="gauge-marker" id="cvd-marker"></div>
+          <div class="gauge-ref" title="Average person = 1.0"></div>
+        </div>
+        <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
+        <p class="output-blurb"></p>
+        <p class="coverage-note" id="cvd-coverage"></p>
+        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-cvd"></ul></details>
+      </div>
       <div class="output-card" id="out-cognition">
         <h3>Cognitive function <span class="ev" data-ev="low">low</span></h3>
         <div class="band-meter" id="meter-cognition" role="img">
@@ -190,10 +204,12 @@
     updateLifeExpectancy(result);
     updateMortality(result);
     updateCancer(result);
+    updateCvd(result);
     updateBand('cognition', result.scores.cognition);
     updateBand('happiness', result.scores.happiness);
     updateContrib('mortality', result.contributions.mortality, 'hr');
     updateContrib('cancer', result.contributions.cancer, 'hr');
+    updateContrib('cvd', result.contributions.cvd, 'hr');
     updateContrib('cognition', result.contributions.cognition, 'points');
     updateContrib('happiness', result.contributions.happiness, 'points');
     updateFindings(result.findings);
@@ -246,12 +262,12 @@
       const host = document.getElementById('chips-' + input.id);
       if (!host) continue;
       const mine = result.contributions.mortality
-        .concat(result.contributions.cancer, result.contributions.cognition, result.contributions.happiness)
+        .concat(result.contributions.cancer, result.contributions.cvd, result.contributions.cognition, result.contributions.happiness)
         .filter((c) => c.inputId === input.id);
       const chips = [];
       for (const c of mine) {
         if (c.hrDelta !== undefined && Math.abs(c.hrDelta - 1) > 0.005) {
-          const which = result.contributions.cancer.includes(c) ? 'cancer' : 'mortality';
+          const which = result.contributions.cancer.includes(c) ? 'cancer' : result.contributions.cvd.includes(c) ? 'cvd' : 'mortality';
           chips.push(`<span class="chip ${c.hrDelta < 1 ? 'good' : 'bad'}" title="${c.note}">${which} ${fmtPctFromHr(c.hrDelta)} ${refLink(c.source)}</span>`);
         }
         if (c.pointsDelta !== undefined && Math.abs(c.pointsDelta) > 0.001) {
@@ -305,8 +321,29 @@
       c.hrAvg, c.hrAvgLow, c.hrAvgHigh,
       `${fmtPctFromHr(c.hrAvg)} vs. the average person · plausible range ${c.hrAvgLow.toFixed(2)}–${c.hrAvgHigh.toFixed(2)}`
     );
-    document.getElementById('cancer-coverage').textContent =
-      'No cancer-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
+    const cancerCoverage = document.getElementById('cancer-coverage');
+    if (c.noData.length) {
+      cancerCoverage.textContent = 'No cancer-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
+      cancerCoverage.style.display = '';
+    } else {
+      cancerCoverage.style.display = 'none';
+    }
+  }
+
+  function updateCvd(result) {
+    const c = result.cvd;
+    updateHrCard(
+      { estimate: 'cvd-estimate', sub: 'cvd-sub', gauge: 'cvd-gauge', marker: 'cvd-marker', band: 'cvd-band' },
+      c.hrAvg, c.hrAvgLow, c.hrAvgHigh,
+      `${fmtPctFromHr(c.hrAvg)} vs. the average person · plausible range ${c.hrAvgLow.toFixed(2)}–${c.hrAvgHigh.toFixed(2)}`
+    );
+    const cvdCoverage = document.getElementById('cvd-coverage');
+    if (c.noData.length) {
+      cvdCoverage.textContent = 'No CVD-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
+      cvdCoverage.style.display = '';
+    } else {
+      cvdCoverage.style.display = 'none';
+    }
   }
 
   function updateBand(id, score) {

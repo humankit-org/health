@@ -111,12 +111,14 @@
    * effect as "vs the average person".
    */
   function evaluateRaw(model, values) {
-    const contributions = { mortality: [], cancer: [], cognition: [], happiness: [] };
+    const contributions = { mortality: [], cancer: [], cvd: [], cognition: [], happiness: [] };
     const widen = model.constants.uncertaintyWiden || { high: 1, moderate: 1, low: 1 };
     let hr = 1;
     let hrCancer = 1;
+    let hrCvd = 1;
     let sumSigma2 = 0;       // mortality, combined in quadrature (log space)
     let sumSigma2Cancer = 0; // cancer, same
+    let sumSigma2Cvd = 0;    // cvd, same
     const points = { cognition: 0, happiness: 0 };
 
     const isOn = (key) => !!values[key];
@@ -159,6 +161,10 @@
           hrCancer *= r.hr;
           sumSigma2Cancer += sigma(r.hr, r.hrLow, r.hrHigh, w);
           contributions.cancer.push(record);
+        } else if (effect.output === 'cvd') {
+          hrCvd *= r.hr;
+          sumSigma2Cvd += sigma(r.hr, r.hrLow, r.hrHigh, w);
+          contributions.cvd.push(record);
         } else {
           points[effect.output] += r.points || 0;
           contributions[effect.output].push(record);
@@ -185,6 +191,25 @@
         hr: step.hr, hrLow: step.hrLow, hrHigh: step.hrHigh,
         hrDelta: step.hr / stepDefault.hr, // vs average
       });
+
+      // BMI CVD effect.
+      if (model.bmi.cvd) {
+        const cvdStep = lookupSteps(model.bmi.cvd.steps, bmi);
+        const cvdStepDefault = lookupSteps(model.bmi.cvd.steps, bmiDefault);
+        const cvdW = widen[model.bmi.cvd.evidence] !== undefined ? widen[model.bmi.cvd.evidence] : 1;
+        hrCvd *= cvdStep.hr;
+        sumSigma2Cvd += sigma(cvdStep.hr, cvdStep.hrLow, cvdStep.hrHigh, cvdW);
+        contributions.cvd.push({
+          inputId: 'bmi',
+          label: 'BMI ' + bmi.toFixed(1),
+          value: bmi,
+          evidence: model.bmi.cvd.evidence,
+          source: model.bmi.cvd.source,
+          note: model.bmi.cvd.note,
+          hr: cvdStep.hr, hrLow: cvdStep.hrLow, hrHigh: cvdStep.hrHigh,
+          hrDelta: cvdStep.hr / cvdStepDefault.hr,
+        });
+      }
     }
 
     const totalSigma = Math.sqrt(sumSigma2);
@@ -195,9 +220,14 @@
     const hrCancerLow = hrCancer * Math.exp(-1.96 * totalSigmaCancer);
     const hrCancerHigh = hrCancer * Math.exp(1.96 * totalSigmaCancer);
 
+    const totalSigmaCvd = Math.sqrt(sumSigma2Cvd);
+    const hrCvdLow = hrCvd * Math.exp(-1.96 * totalSigmaCvd);
+    const hrCvdHigh = hrCvd * Math.exp(1.96 * totalSigmaCvd);
+
     return {
       hr, hrLow, hrHigh,
       hrCancer, hrCancerLow, hrCancerHigh,
+      hrCvd, hrCvdLow, hrCvdHigh,
       points, contributions, bmi, values,
       findings: evaluateFindings(model, values),
     };
@@ -241,6 +271,14 @@
     const hrAvgCancerLow = hrAvgCancer * Math.exp(-1.96 * sigmaCancer);
     const hrAvgCancerHigh = hrAvgCancer * Math.exp(1.96 * sigmaCancer);
 
+    // CVD output: same normalization/clamp, no years translation.
+    const cvdAvgRaw = raw.hrCvd / avg.hrCvd;
+    const clampedCvd = cvdAvgRaw < cap.hrFloor || cvdAvgRaw > cap.hrCeiling;
+    const hrAvgCvd = clamp(cvdAvgRaw, cap.hrFloor, cap.hrCeiling);
+    const sigmaCvd = (Math.log(raw.hrCvdHigh) - Math.log(raw.hrCvdLow)) / (2 * 1.96);
+    const hrAvgCvdLow = hrAvgCvd * Math.exp(-1.96 * sigmaCvd);
+    const hrAvgCvdHigh = hrAvgCvd * Math.exp(1.96 * sigmaCvd);
+
     // Which inputs have NO cancer-specific effect? Shown on the card so users
     // see exactly what this output does and doesn't cover.
     const withCancer = new Set();
@@ -249,6 +287,15 @@
     }
     const cancerNoData = model.inputs
       .filter((i) => i.group !== 'you' && i.effects.length > 0 && !withCancer.has(i.id))
+      .map((i) => i.label);
+
+    // Which inputs have NO CVD-specific effect?
+    const withCvd = new Set();
+    for (const input of model.inputs) {
+      for (const e of input.effects) if (e.output === 'cvd') withCvd.add(input.id);
+    }
+    const cvdNoData = model.inputs
+      .filter((i) => i.group !== 'you' && i.effects.length > 0 && !withCvd.has(i.id))
       .map((i) => i.label);
 
     const years = clamp(hrToYears(model, hrAvg), -cap.yearsCapLoss, cap.yearsCapGain);
@@ -294,6 +341,13 @@
         hrAvgLow: hrAvgCancerLow, hrAvgHigh: hrAvgCancerHigh,
         clamped: clampedCancer,
         noData: cancerNoData,
+      },
+      cvd: {
+        hr: raw.hrCvd,
+        hrAvg: hrAvgCvd, hrAvgRaw: cvdAvgRaw,
+        hrAvgLow: hrAvgCvdLow, hrAvgHigh: hrAvgCvdHigh,
+        clamped: clampedCvd,
+        noData: cvdNoData,
       },
       scores: {
         cognition: {

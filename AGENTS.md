@@ -104,6 +104,12 @@ integrity: sorted steps, bracketing CIs, existing sources).
   Overlap with all-cause mortality is stated on the card. Functional outcomes
   (osteoporosis, falls, injury nulls) are findings, not an output — sourced
   from Howe 2011, Sherrington 2019, Rong 2016, Leong 2015.
+- **CVD output** (v0.5/v0.6): a 6th HR card following the cancer pattern
+  exactly. CVD-specific effect sizes extracted from the same primary sources
+  (~24 inputs with CVD data from Arem 2015, Momma 2022, Biswas 2015, Wood 2018,
+  Jha 2013, et al.). BMI CVD data stored in `model.bmi.cvd` (separate steps
+  array from the all-cause BMI data). Same quadrature/widening/clamp/noData
+  path. Supersession works (VO2max replaces cardio, body fat replaces BMI).
 - **Overlap rule** (v0.5): when two candidate factors share the same causal
   pathway, keep the one with the cleaner dose-response and credit the other
   in a finding — never multiply both. Applied to whole grains (cut, overlaps

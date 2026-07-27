@@ -102,6 +102,13 @@ const HEALTH_MODEL = {
       evidence: 'moderate',
     },
     {
+      id: 'cvd',
+      title: 'Cardiovascular mortality risk',
+      kind: 'hr',
+      blurb: 'Combines ONLY the inputs with CVD-specific effect sizes — everything else is "no data yet", listed under the gauge. CVD is the leading cause of death in most populations; the inputs driving it partly overlap with all-cause mortality.',
+      evidence: 'moderate',
+    },
+    {
       id: 'cognition',
       title: 'Cognitive function',
       kind: 'band',
@@ -209,6 +216,19 @@ const HEALTH_MODEL = {
           ],
           note: 'Arem 2015 reports a similar dose–response for cancer mortality as for all-cause; we reuse those HRs (marked moderate evidence for the extrapolation).',
         },
+        {
+          output: 'cvd', type: 'steps', evidence: 'high', source: 'arem2015',
+          supersededBy: 'vo2maxOn',
+          steps: [
+            { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 149, hr: 0.79, hrLow: 0.76, hrHigh: 0.82 },
+            { max: 299, hr: 0.67, hrLow: 0.64, hrHigh: 0.70 },
+            { max: 449, hr: 0.58, hrLow: 0.55, hrHigh: 0.61 },
+            { max: 749, hr: 0.56, hrLow: 0.52, hrHigh: 0.60 },
+            { max: Infinity, hr: 0.63, hrLow: 0.54, hrHigh: 0.72 },
+          ],
+          note: 'Arem 2015: CVD mortality shows a slightly stronger dose–response than all-cause — the same pooled analysis found CVD HR ~0.56 at high volumes (750+ min/wk). CVD benefit may be the dominant driver of the all-cause mortality reduction.',
+        },
       ],
     },
     {
@@ -246,6 +266,16 @@ const HEALTH_MODEL = {
           ],
           note: 'Weak/small effects on executive function in meta-analyses of older adults; indirect citation — replace with a dedicated source.',
         },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'momma2022',
+          steps: [
+            { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 1, hr: 0.90, hrLow: 0.81, hrHigh: 0.99 },
+            { max: 2, hr: 0.82, hrLow: 0.72, hrHigh: 0.92 },
+            { max: Infinity, hr: 0.85, hrLow: 0.74, hrHigh: 0.97 },
+          ],
+          note: 'Meta-analysis: any vs no strength training → CVD mortality RR 0.90; J-shaped with maximum ~30–60 min/week. HRs approximate — non-linear curve from paper Fig. 4.',
+        },
       ],
     },
 
@@ -266,6 +296,15 @@ const HEALTH_MODEL = {
             { max: Infinity, hr: 1.18, hrLow: 1.05, hrHigh: 1.34 },
           ],
           note: 'The "physical activity paradox": meta-analysis (194k workers) found HIGH occupational activity → HR 1.18 in MEN (women: HR 0.90, NS). Middle step interpolated. Leisure activity benefits don\'t transfer to heavy work.',
+        },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'coenen2018',
+          steps: [
+            { max: 2, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 6, hr: 1.08, hrLow: 1.01, hrHigh: 1.18 },
+            { max: Infinity, hr: 1.15, hrLow: 1.03, hrHigh: 1.30 },
+          ],
+          note: 'Same meta-analysis: CVD mortality showed a similar pattern in men — higher risk with heavy occupational activity, driven by elevated blood pressure and incomplete recovery.',
         },
       ],
     },
@@ -299,6 +338,16 @@ const HEALTH_MODEL = {
           ],
           note: 'Same meta-analysis, cancer mortality: HR 1.173 (1.108–1.242); middle steps interpolated.',
         },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'biswas2015',
+          steps: [
+            { max: 6, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 9, hr: 1.06, hrLow: 1.03, hrHigh: 1.10 },
+            { max: 12, hr: 1.12, hrLow: 1.07, hrHigh: 1.17 },
+            { max: Infinity, hr: 1.15, hrLow: 1.107, hrHigh: 1.195 },
+          ],
+          note: 'Same meta-analysis, CVD mortality: HR 1.150 (1.107–1.195) for high vs low sedentary time; middle steps interpolated.',
+        },
       ],
     },
 
@@ -326,6 +375,15 @@ const HEALTH_MODEL = {
             { max: Infinity, hr: 0.82, hrLow: 0.75, hrHigh: 0.92 },
           ],
           note: 'Lancet series (185 prospective studies): 15–30% lower colorectal cancer incidence for high vs low fiber consumers, with dose–response for colorectal and breast cancer; 25–29 g/day looked optimal. Our step mapping is approximate.',
+        },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'reynolds2019',
+          steps: [
+            { max: 9, hr: 1.12, hrLow: 1.03, hrHigh: 1.22 },
+            { max: 24, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: Infinity, hr: 0.85, hrLow: 0.77, hrHigh: 0.93 },
+          ],
+          note: 'Lancet series: higher fiber intake was associated with 10–20% lower CVD mortality — similar dose–response to the cancer effect, driven partly by cholesterol-lowering and blood-pressure effects.',
         },
       ],
     },
@@ -357,6 +415,12 @@ const HEALTH_MODEL = {
           hr: 1.00, hrLow: 0.97, hrHigh: 1.03,
           evidence: 'moderate', source: 'wang2014',
           note: 'Same meta-analysis: fruit & veg were "not appreciably associated" with cancer mortality — studied, honestly null (unlike cardiovascular mortality).',
+        },
+        {
+          output: 'cvd', type: 'perUnit', per: 1, capAt: 5,
+          hr: 0.96, hrLow: 0.93, hrHigh: 0.99,
+          evidence: 'high', source: 'wang2014',
+          note: 'Same meta-analysis, cardiovascular mortality: HR 0.96 (0.93–0.99) per serving/day — small, graded, and robust across cohorts.',
         },
       ],
     },
@@ -394,6 +458,16 @@ const HEALTH_MODEL = {
             { max: Infinity, points: -0.3 },
           ],
           note: 'Heavy alcohol use co-occurs with lower wellbeing; direction of causality unclear. Indirect citation — replace with a dedicated source.',
+        },
+        {
+          output: 'cvd', type: 'steps', evidence: 'high', source: 'wood2018',
+          steps: [
+            { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 14, hr: 1.04, hrLow: 1.01, hrHigh: 1.07 },
+            { max: 25, hr: 1.12, hrLow: 1.06, hrHigh: 1.18 },
+            { max: Infinity, hr: 1.46, hrLow: 1.36, hrHigh: 1.56 },
+          ],
+          note: 'Wood 2018: CVD mortality shows a similar J-shaped dose–response but without the protective "J" for stroke (HR 1.14 per 100 g/wk throughout). The "low-dose protective" effect is mostly coronary heart disease (HR 0.94). Net all-cause is neutral to harmful above ~7 drinks/wk.',
         },
       ],
     },
@@ -438,6 +512,15 @@ const HEALTH_MODEL = {
           },
           note: 'Approximate all-cancer mortality for current smokers. The striking verified number is organ-specific: lung-cancer DEATH ~25× never-smokers in contemporary US cohorts (Thun 2013). Replace with Carter 2015 site-specific figures in a later pass.',
         },
+        {
+          output: 'cvd', type: 'byOption', evidence: 'high', source: 'jha2013',
+          byOption: {
+            never: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            former: { hr: 1.25, hrLow: 1.10, hrHigh: 1.40 },
+            current: { hr: 2.50, hrLow: 2.10, hrHigh: 3.00 },
+          },
+          note: 'Jha 2013: CVD mortality is the largest single contributor to excess deaths from smoking — 2.5× vs never-smokers. Quitting before 40 avoids ~90% of the CVD excess, same as for all-cause.',
+        },
       ],
     },
     {
@@ -469,6 +552,16 @@ const HEALTH_MODEL = {
           ],
           note: 'Same umbrella review, incident cancer: 18% lower at high vs low consumption (0.82, 0.74–0.89). 1–2 and 5+ steps interpolated.',
         },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'poole2017',
+          steps: [
+            { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 2, hr: 0.88, hrLow: 0.80, hrHigh: 0.96 },
+            { max: 4, hr: 0.81, hrLow: 0.72, hrHigh: 0.90 },
+            { max: Infinity, hr: 0.85, hrLow: 0.74, hrHigh: 0.96 },
+          ],
+          note: 'Same umbrella review, CVD mortality: RR 0.81 (0.72–0.90) at 3–4 cups/day — the strongest of all outcomes in the review. 1–2 and 5+ steps interpolated.',
+        },
       ],
     },
 
@@ -499,6 +592,14 @@ const HEALTH_MODEL = {
             yes: { hr: 1.12, hrLow: 1.00, hrHigh: 1.26 },
           },
           note: 'Same pooled analysis, cancer mortality: aHR 1.12 (1.00–1.26) — weaker and borderline, mostly pancreatic in the wider literature.',
+        },
+        {
+          output: 'cvd', type: 'byOption', evidence: 'moderate', source: 'byhamre2021',
+          byOption: {
+            no: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            yes: { hr: 1.27, hrLow: 1.20, hrHigh: 1.35 },
+          },
+          note: 'Same pooled analysis, cardiovascular mortality: aHR 1.27 (1.20–1.35) — driven by stroke and ischaemic heart disease. The all-cause and CVD HRs are near-identical because CVD is ~half the excess.',
         },
       ],
     },
@@ -551,9 +652,14 @@ const HEALTH_MODEL = {
           evidence: 'moderate', source: 'fang2016',
           note: 'Dose-response meta-analysis (40 cohorts, >1M people): RR 0.90 (0.81–0.99) per +100 mg/day, anchored here at 250 mg and capped at 450 mg. Dietary intake — partly a marker of overall diet quality; supplement trials are weaker.',
         },
+        {
+          output: 'cvd', type: 'perUnit', per: 100, ref: 250, minDose: 150, capAt: 450,
+          hr: 0.85, hrLow: 0.77, hrHigh: 0.93,
+          evidence: 'moderate', source: 'fang2016',
+          note: 'Same meta-analysis, CVD-specific: RR 0.85 (0.77–0.93) per +100 mg/day — stronger than the all-cause effect, consistent with magnesium\'s role in blood-pressure regulation and arrhythmia prevention.',
+        },
       ],
     },
-
     {
       id: 'purpose',
       group: 'mind',
@@ -581,9 +687,17 @@ const HEALTH_MODEL = {
           ],
           note: 'Purpose and wellbeing overlap almost by definition; included so the slider visibly does something.',
         },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'cohen2016',
+          steps: [
+            { max: 3, hr: 1.10, hrLow: 1.00, hrHigh: 1.30 },
+            { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: Infinity, hr: 0.83, hrLow: 0.75, hrHigh: 0.91 },
+          ],
+          note: 'Cohen 2016: purpose in life was associated with lower combined CVD event risk (RR 0.83, 0.75–0.91), similar to all-cause. The association is largely indirect — higher purpose tracks more activity, less smoking, better treatment adherence.',
+        },
       ],
     },
-
     {
       id: 'processedMeat',
       group: 'diet',
@@ -604,6 +718,12 @@ const HEALTH_MODEL = {
           hr: 1.16, hrLow: 1.09, hrHigh: 1.23,
           evidence: 'high', source: 'pan2012',
           note: 'Same cohorts, cancer mortality: HR 1.16 (1.09–1.23) per daily serving of processed meat.',
+        },
+        {
+          output: 'cvd', type: 'perUnit', per: 7, ref: 1.5, capAt: 14,
+          hr: 1.13, hrLow: 1.08, hrHigh: 1.19,
+          evidence: 'high', source: 'pan2012',
+          note: 'Same cohorts, CVD mortality: HR 1.13 (1.08–1.19) per daily serving — driven largely by stroke (sodium content) and coronary heart disease (saturated fat).',
         },
       ],
     },
@@ -636,6 +756,17 @@ const HEALTH_MODEL = {
             { max: Infinity, hr: 1.16, hrLow: 1.04, hrHigh: 1.29 },
           ],
           note: 'Same cohorts, cancer mortality: 1.16 (1.04–1.29) at ≥2/day; lower steps interpolated.',
+        },
+        {
+          output: 'cvd', type: 'steps', evidence: 'high', source: 'malik2019',
+          steps: [
+            { max: 0.2, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 1, hr: 1.01, hrLow: 0.97, hrHigh: 1.05 },
+            { max: 6, hr: 1.06, hrLow: 1.01, hrHigh: 1.12 },
+            { max: 13, hr: 1.17, hrLow: 1.10, hrHigh: 1.26 },
+            { max: Infinity, hr: 1.31, hrLow: 1.20, hrHigh: 1.43 },
+          ],
+          note: 'Same cohorts, CVD mortality: stronger than all-cause — 1.31 (1.20–1.43) at ≥2/day, driven by the metabolic effects of fructose (insulin resistance, hypertension, dyslipidaemia).',
         },
       ],
     },
@@ -670,6 +801,15 @@ const HEALTH_MODEL = {
           },
           note: 'VITAL RCT, invasive cancer incidence with omega-3 supplements: HR 1.03 (0.93–1.13) — an honest null, nothing there.',
         },
+        {
+          output: 'cvd', type: 'byOption', evidence: 'moderate', source: 'manson2019omega3',
+          byOption: {
+            none: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            some: { hr: 0.99, hrLow: 0.93, hrHigh: 1.05 },
+            lots: { hr: 0.98, hrLow: 0.90, hrHigh: 1.06 },
+          },
+          note: 'Kwok 2019 umbrella review: fish intake had trivial CVD mortality association (RR ≈ 0.98); most of the "benefit" is likely substitution of meat. Omega-3 supplements were null in VITAL — major CVD events HR 0.97 (0.85–1.12).',
+        },
       ],
     },
 
@@ -693,6 +833,12 @@ const HEALTH_MODEL = {
           hr: 0.85, hrLow: 0.76, hrHigh: 0.94,
           evidence: 'high', source: 'aune2016nuts',
           note: 'Same meta-analysis, total cancer: RR 0.85 (0.76–0.94) per 28 g/day.',
+        },
+        {
+          output: 'cvd', type: 'perUnit', per: 28, capAt: 35,
+          hr: 0.79, hrLow: 0.70, hrHigh: 0.88,
+          evidence: 'high', source: 'aune2016nuts',
+          note: 'Same meta-analysis, CVD mortality: RR 0.79 (0.70–0.88) per 28 g/day — the lipid-lowering, anti-inflammatory and endothelial effects of nuts are clearest for CVD.',
         },
       ],
     },
@@ -734,6 +880,15 @@ const HEALTH_MODEL = {
           ],
           note: 'Short sleep is strongly tied to same-day mood; bidirectional. Indirect citation — replace with a dedicated source.',
         },
+        {
+          output: 'cvd', type: 'steps', evidence: 'high', source: 'cappuccio2010',
+          steps: [
+            { max: 6.9, hr: 1.07, hrLow: 1.00, hrHigh: 1.15 },
+            { max: 9.0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: Infinity, hr: 1.28, hrLow: 1.16, hrHigh: 1.42 },
+          ],
+          note: 'Same meta-analysis, CVD mortality: short sleep RR 1.07 (1.00–1.15), long sleep RR 1.28 (1.16–1.42). The long-sleep association is weaker for CVD than for all-cause, possibly because short sleep affects CVD through BP pathways while long sleep is more confounded.',
+        },
       ],
     },
     {
@@ -772,6 +927,16 @@ const HEALTH_MODEL = {
           ],
           note: 'Near-tautological (stress and unhappiness overlap by definition); included so the slider visibly does something.',
         },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'russ2012',
+          steps: [
+            { max: 3, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 6, hr: 1.18, hrLow: 1.08, hrHigh: 1.28 },
+            { max: 8, hr: 1.38, hrLow: 1.22, hrHigh: 1.55 },
+            { max: Infinity, hr: 1.80, hrLow: 1.50, hrHigh: 2.10 },
+          ],
+          note: 'Russ 2012: psychological distress showed a similar dose–response for CVD mortality as for all-cause — with hypertension, arrhythmia and atherosclerosis as proposed mechanisms. High distress ~1.8× CVD death risk.',
+        },
       ],
     },
     {
@@ -801,9 +966,17 @@ const HEALTH_MODEL = {
           ],
           note: 'Social connection is among the strongest correlates of life satisfaction; correlational. Indirect citation — replace with a dedicated source.',
         },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'holtlunstad2010',
+          steps: [
+            { max: 1, hr: 1.30, hrLow: 1.18, hrHigh: 1.42 },
+            { max: 3, hr: 1.12, hrLow: 1.05, hrHigh: 1.19 },
+            { max: Infinity, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+          ],
+          note: 'Same meta-analysis: social isolation has a particularly strong effect on CVD — the association persists after adjusting for activity, smoking and BMI. The HRs here mirror the all-cause pattern.',
+        },
       ],
     },
-
     {
       id: 'meditation',
       group: 'mind',
@@ -852,10 +1025,17 @@ const HEALTH_MODEL = {
           ],
           note: 'Same cohort, cancer mortality: 16–39% lower across the more-regular quintiles.',
         },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'windred2024',
+          steps: [
+            { max: 3, hr: 1.20, hrLow: 1.08, hrHigh: 1.38 },
+            { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: Infinity, hr: 0.78, hrLow: 0.62, hrHigh: 0.90 },
+          ],
+          note: 'Same cohort: CVD mortality showed a similar gradient — regularity mattered as much for CVD as for all-cause, likely through blood-pressure variability and autonomic regulation.',
+        },
       ],
     },
-
-    // -------------------------------------------------------------- Extras
     {
       id: 'sauna',
       group: 'extras',
@@ -873,6 +1053,15 @@ const HEALTH_MODEL = {
             { max: Infinity, hr: 0.60, hrLow: 0.45, hrHigh: 0.81 },
           ],
           note: 'Single Finnish cohort of 2315 men: 4–7 vs 1 session/wk → ~40% lower all-cause mortality (unadjusted deaths 30.8% vs 49.1%). Observational, one population, likely residual confounding — treat as speculative. Exact adjusted all-cause HRs to be verified against paper Table 2.',
+        },
+        {
+          output: 'cvd', type: 'steps', evidence: 'low', source: 'laukkanen2015',
+          steps: [
+            { max: 1, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 3, hr: 0.72, hrLow: 0.58, hrHigh: 0.88 },
+            { max: Infinity, hr: 0.48, hrLow: 0.31, hrHigh: 0.68 },
+          ],
+          note: 'Same cohort — the CVD-specific signal was even stronger: 4–7 sessions/wk associated with ~63% lower sudden cardiac death and ~50% lower fatal CVD. The effect is attributed to improved endothelial function, lower BP and reduced sympathetic tone.',
         },
       ],
     },
@@ -926,6 +1115,15 @@ const HEALTH_MODEL = {
             supplement: { hr: 0.83, hrLow: 0.67, hrHigh: 1.02 },
           },
           note: 'VITAL RCT, cancer DEATH with supplementation: HR 0.83 (0.67–1.02) — suggestive but not significant; cancer incidence was null (1.03).',
+        },
+        {
+          output: 'cvd', type: 'byOption', evidence: 'moderate', source: 'schottker2014',
+          byOption: {
+            deficient: { hr: 1.45, hrLow: 1.25, hrHigh: 1.65 },
+            sufficient: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            supplement: { hr: 0.97, hrLow: 0.85, hrHigh: 1.12 },
+          },
+          note: 'CVD mortality shows a similar deficiency signal (observational, 45% higher risk in bottom quintile) but supplements were null in VITAL (HR 0.97 for major CVD events). As with all-cause, deficiency is likely a health marker, not a causal risk factor.',
         },
       ],
     },
@@ -985,10 +1183,14 @@ const HEALTH_MODEL = {
           evidence: 'high', source: 'di2017',
           note: 'Medicare open cohort (61M people, 460M person-years): +7.3% (7.1–7.5) all-cause mortality per +10 µg/m³ PM2.5 — and +13.6% even below the 12 µg/m³ US standard. Anchored at the US mean (8). Levers: location, HEPA purifiers, masks, avoiding high-traffic routes.',
         },
+        {
+          output: 'cvd', type: 'perUnit', per: 10, ref: 8, minDose: 3, capAt: 30,
+          hr: 1.10, hrLow: 1.08, hrHigh: 1.12,
+          evidence: 'high', source: 'di2017',
+          note: 'Same cohort, CVD mortality: +10% (8–12%) per +10 µg/m³ — CVD is the primary mechanism for PM2.5 mortality effects through inflammation, oxidative stress and plaque progression.',
+        },
       ],
     },
-
-    // ------------------- Advanced (measured values, optional) -------------
     {
       id: 'vo2maxOn',
       group: 'advanced',
@@ -1013,6 +1215,12 @@ const HEALTH_MODEL = {
           hr: 0.87, hrLow: 0.84, hrHigh: 0.90,
           evidence: 'high', source: 'kodama2009',
           note: 'Meta-analysis (33 studies): RR 0.87 (0.84–0.90) per 1-MET (3.5 ml/kg/min) higher fitness, anchored at 28 (low-average) and capped at 56. Corroborated by Mandsager 2018: elite vs low fitness HR 0.20.',
+        },
+        {
+          output: 'cvd', type: 'perUnit', per: 3.5, ref: 28, capAt: 56,
+          hr: 0.85, hrLow: 0.82, hrHigh: 0.88,
+          evidence: 'high', source: 'kodama2009',
+          note: 'Same meta-analysis, CVD events: RR 0.85 (0.82–0.88) per 1-MET — the CVD effect is slightly stronger than all-cause, consistent with cardiorespiratory fitness being a direct measure of cardiovascular health.',
         },
       ],
     },
@@ -1045,6 +1253,16 @@ const HEALTH_MODEL = {
           ],
           note: 'Dose-response meta-analysis (35 cohorts, 923k people): J-shaped, lowest risk near 25%; HR ~1.11 per +10% BF above that. Sex-specific ideal ranges differ; our steps are unisex approximations — verify against the paper.',
         },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'jayedi2022',
+          steps: [
+            { max: 18, hr: 1.12, hrLow: 1.02, hrHigh: 1.25 },
+            { max: 28, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 38, hr: 1.15, hrLow: 1.05, hrHigh: 1.25 },
+            { max: Infinity, hr: 1.28, hrLow: 1.08, hrHigh: 1.50 },
+          ],
+          note: 'Same meta-analysis — CVD-specific effect of body fat is steeper than all-cause above the nadir, consistent with visceral adiposity driving hypertension, diabetes and inflammatory pathways.',
+        },
       ],
     },
     {
@@ -1071,6 +1289,12 @@ const HEALTH_MODEL = {
           hr: 0.8621, hrLow: 0.8333, hrHigh: 0.8850,
           evidence: 'moderate', source: 'leong2015',
           note: 'PURE study (17 countries, 140k people): HR 1.16 (1.13–1.20) per 5 kg LOWER grip — expressed as 0.862 per +5 kg, anchored at 35 kg. Grip predicted mortality more strongly than systolic blood pressure. Probably a marker of overall strength (overlaps the strength-training input); whether improving grip itself helps is untested.',
+        },
+        {
+          output: 'cvd', type: 'perUnit', per: 5, ref: 35, minDose: 15, capAt: 60,
+          hr: 0.84, hrLow: 0.81, hrHigh: 0.87,
+          evidence: 'moderate', source: 'leong2015',
+          note: 'PURE study, CVD mortality: HR 1.19 (1.15–1.23) per 5 kg LOWER grip — expressed as 0.84 per +5 kg. Grip predicted CVD mortality even more strongly than all-cause in the PURE cohort. Marker, not necessarily modifiable lever.',
         },
       ],
     },
@@ -1105,6 +1329,12 @@ const HEALTH_MODEL = {
           evidence: 'moderate', source: 'aune2017rhr',
           note: 'Same meta-analysis, total cancer: +14% (1.06–1.23) per +10 bpm.',
         },
+        {
+          output: 'cvd', type: 'perUnit', per: 10, ref: 70, minDose: 45, capAt: 100,
+          hr: 1.15, hrLow: 1.12, hrHigh: 1.18,
+          evidence: 'moderate', source: 'aune2017rhr',
+          note: 'Same meta-analysis, CVD-specific: +15% (12–18%) per +10 bpm — the RHR–CVD association is the best-established of all, reflecting the direct relationship between heart rate and myocardial oxygen demand.',
+        },
       ],
     },
   ],
@@ -1126,6 +1356,21 @@ const HEALTH_MODEL = {
       { max: Infinity, hr: 2.76, hrLow: 2.60, hrHigh: 2.92 },
     ],
     note: 'Individual-participant meta-analysis of 239 studies (never-smokers): all-cause mortality minimal at BMI 20–25. BMI ignores muscle mass and fat distribution — a crude proxy.',
+    cvd: {
+      evidence: 'high',
+      source: 'diangelantonio2016',
+      steps: [
+        { max: 18.5, hr: 1.35, hrLow: 1.22, hrHigh: 1.48 },
+        { max: 20.0, hr: 1.10, hrLow: 1.05, hrHigh: 1.15 },
+        { max: 25.0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+        { max: 27.5, hr: 1.10, hrLow: 1.08, hrHigh: 1.12 },
+        { max: 30.0, hr: 1.25, hrLow: 1.20, hrHigh: 1.30 },
+        { max: 35.0, hr: 1.55, hrLow: 1.45, hrHigh: 1.65 },
+        { max: 40.0, hr: 2.10, hrLow: 1.95, hrHigh: 2.25 },
+        { max: Infinity, hr: 2.85, hrLow: 2.60, hrHigh: 3.10 },
+      ],
+      note: 'Di Angelantonio 2016: CVD mortality follows a J-shaped curve. The nadir is broader (BMI 22–27) and the uptick above 30 is steeper than for all-cause — reflecting the direct effect of adiposity on hypertension, dyslipidaemia and diabetes.',
+    },
   },
 
   /*
