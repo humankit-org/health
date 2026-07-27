@@ -279,9 +279,11 @@ input[type="range"] {
   display: block;
 }
 .output-tiles > .output-card { margin-bottom: 0; }
+#out-mortality { margin-bottom: 1rem; }
 .output-row.split {
   display: flex;
   gap: 1rem;
+  align-items: flex-start;
 }
 .output-row.split > .output-card { flex: 1; min-width: 0; }
 .output-divider {
@@ -320,17 +322,23 @@ input[type="range"] {
   align-items: flex-start;
   margin-bottom: 0.2rem;
 }
-.mort-top .output-blurb {
+.mort-right {
   flex: 1;
-  margin: 0;
-  font-size: 0.85rem;
-  line-height: 1.45;
+  min-width: 0;
 }
-#out-mortality .hr-sub {
-  margin: 0.3rem 0 0.2rem;
+.mort-right .hr-sub {
+  margin: 0 0 0.2rem;
+}
+.mort-right .gauge {
+  margin-top: 0;
 }
 #out-mortality details {
   margin-top: 0.3rem;
+}
+.qual-text {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin: -0.3rem 0 0.6rem;
 }
 .ci-note {
   font-size: 0.78rem;
@@ -354,9 +362,11 @@ input[type="range"] {
 .le-delta { font-weight: 600; margin-top: 0.1rem; font-variant-numeric: tabular-nums; }
 .le-range { color: var(--ink-soft); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
 .clamp-note { color: var(--bad); font-size: 0.85rem; cursor: help; }
+.le-method { font-size: 0.82rem; color: var(--ink-soft); margin: 0.5rem 0 0; line-height: 1.45; }
 
 .hr-big { display: flex; align-items: baseline; gap: 0.4rem; }
-.hr-big output { font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.hr-big output { font-size: 2.6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+#out-cancer .hr-big output, #out-cvd .hr-big output { font-size: 1.6rem; }
 .hr-unit, .hr-sub { color: var(--ink-soft); font-size: 0.9rem; }
 .hr-sub { font-variant-numeric: tabular-nums; }
 

@@ -122,9 +122,9 @@
           <div class="output-info">
             <div class="le-delta" id="le-delta"></div>
             <div class="le-range" id="le-range"></div>
-            <p class="output-blurb"></p>
           </div>
         </div>
+        <details><summary>More</summary><p class="output-blurb"></p><p class="le-method">Life expectancy is estimated from a US sex-specific baseline (NCHS 2023) shifted by your combined mortality risk. The translation uses a Gompertz approximation in which adult mortality risk doubles every ~7 years: ΔLE ≈ −ln(HR) / (ln2 / 7). This approach reproduces published estimates such as +4.5 years for high exercise (Moore 2012) and −10 years for smoking (Jha 2013). These are rough population-level associations, not individual predictions.</p></details>
       </div>
       <hr class="output-divider">
       <div class="output-card" id="out-mortality">
@@ -133,15 +133,16 @@
           <div class="output-highlight">
             <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× average</span></div>
           </div>
-          <p class="output-blurb"></p>
+          <div class="mort-right">
+            <div class="hr-sub" id="hr-sub"></div>
+            <div class="gauge" id="hr-gauge" role="img" aria-label="Mortality hazard gauge">
+              <div class="gauge-band" id="hr-band"></div>
+              <div class="gauge-marker" id="hr-marker"></div>
+              <div class="gauge-ref" title="Reference lifestyle = 1.0"></div>
+            </div>
+            <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
+          </div>
         </div>
-        <div class="gauge" id="hr-gauge" role="img" aria-label="Mortality hazard gauge">
-          <div class="gauge-band" id="hr-band"></div>
-          <div class="gauge-marker" id="hr-marker"></div>
-          <div class="gauge-ref" title="Reference lifestyle = 1.0"></div>
-        </div>
-        <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
-        <div class="hr-sub" id="hr-sub"></div>
         <details><summary>More</summary><ul class="contrib" id="contrib-mortality"></ul><p class="ci-note">Ranges combine 95% CI, widened where evidence is thin.</p></details>
       </div>
       <div class="output-row split">
@@ -173,36 +174,36 @@
       <hr class="output-divider">
       <div class="output-row split">
       <div class="output-card" id="out-cognition">
-        <h3>Cognitive function <!-- <span class="ev" data-ev="low">low</span></h3> --> </h3>
+        <h3>Cognitive function</h3>
         <div class="band-meter" id="meter-cognition" role="img">
           <div class="band-ref" title="Average"></div>
           <div class="band-marker" id="marker-cognition"></div>
         </div>
         <div class="band-label" id="band-cognition">–</div>
-        <p class="output-blurb"></p>
-        <details><summary>More</summary><ul class="contrib" id="contrib-cognition"></ul></details>
+        <p class="qual-text" style="margin-top:0.01cm;">qualitative estimate, generally thin evidence</p>
+        <details><summary>More</summary><p class="output-blurb"></p><ul class="contrib" id="contrib-cognition"></ul></details>
       </div>
       <div class="output-card" id="out-happiness">
-        <h3>Happiness / wellbeing <!-- <span class="ev" data-ev="low">low</span></h3> --> </h3>
+        <h3>Happiness / wellbeing</h3>
         <div class="band-meter" id="meter-happiness" role="img">
           <div class="band-ref" title="Average"></div>
           <div class="band-marker" id="marker-happiness"></div>
         </div>
         <div class="band-label" id="band-happiness">–</div>
-        <p class="output-blurb"></p>
-        <details><summary>More</summary><ul class="contrib" id="contrib-happiness"></ul></details>
+        <p class="qual-text" style="margin-top:0.01cm;">qualitative estimate, generally thin evidence</p>
+        <details><summary>More</summary><p class="output-blurb"></p><ul class="contrib" id="contrib-happiness"></ul></details>
       </div>
       </div>
       </div>
       <hr class="output-divider">
       <div class="output-card findings-card" id="out-findings">
-        <h3>More findings from the same sources</h3>
-        <p class="findings-blurb">Disease-specific effects and honest nulls that don't fit on a slider — shown when they apply to your current inputs.</p>
+        <h3>More findings</h3>
         <ul class="findings" id="findings-list"></ul>
       </div>`;
     for (const output of model.outputs) {
       const card = host.querySelector('#out-' + output.id);
-      if (card) card.querySelector('.output-blurb').textContent = output.blurb;
+      const blurb = card && card.querySelector('.output-blurb');
+      if (blurb) blurb.textContent = output.blurb;
     }
     host.querySelectorAll('.ev').forEach((badge) => {
       badge.title = EVIDENCE_TITLE[badge.dataset.ev];
@@ -341,7 +342,7 @@
     updateHrCard(
       { estimate: 'hr-estimate', sub: 'hr-sub', gauge: 'hr-gauge', marker: 'hr-marker', band: 'hr-band' },
       m.hrAvg, m.hrAvgLow, m.hrAvgHigh,
-      `${fmtPctFromHr(m.hrAvg)} vs. the average person · plausible range ${m.hrAvgLow.toFixed(2)}–${m.hrAvgHigh.toFixed(2)}`
+      `${fmtPctFromHr(m.hrAvg)} · plausible range ${m.hrAvgLow.toFixed(2)}–${m.hrAvgHigh.toFixed(2)}`
     );
   }
 
@@ -350,7 +351,7 @@
     updateHrCard(
       { estimate: 'cancer-estimate', sub: 'cancer-sub', gauge: 'cancer-gauge', marker: 'cancer-marker', band: 'cancer-band' },
       c.hrAvg, c.hrAvgLow, c.hrAvgHigh,
-      `${fmtPctFromHr(c.hrAvg)} vs. the average person · plausible range ${c.hrAvgLow.toFixed(2)}–${c.hrAvgHigh.toFixed(2)}`
+      `${fmtPctFromHr(c.hrAvg)} · plausible range ${c.hrAvgLow.toFixed(2)}–${c.hrAvgHigh.toFixed(2)}`
     );
     const cancerCoverage = document.getElementById('cancer-coverage');
     if (c.noData.length) {
@@ -366,7 +367,7 @@
     updateHrCard(
       { estimate: 'cvd-estimate', sub: 'cvd-sub', gauge: 'cvd-gauge', marker: 'cvd-marker', band: 'cvd-band' },
       c.hrAvg, c.hrAvgLow, c.hrAvgHigh,
-      `${fmtPctFromHr(c.hrAvg)} vs. the average person · plausible range ${c.hrAvgLow.toFixed(2)}–${c.hrAvgHigh.toFixed(2)}`
+      `${fmtPctFromHr(c.hrAvg)} · plausible range ${c.hrAvgLow.toFixed(2)}–${c.hrAvgHigh.toFixed(2)}`
     );
     const cvdCoverage = document.getElementById('cvd-coverage');
     if (c.noData.length) {
@@ -387,7 +388,7 @@
     marker.style.left = `calc(${pct}% - ${fuzz}%)`;
     marker.style.width = fuzz * 2 + '%';
     document.getElementById('band-' + id).textContent =
-      `${score.label} (qualitative estimate)`;
+      `${score.label}`;
     document.getElementById('meter-' + id).setAttribute('aria-label', score.label);
   }
 
