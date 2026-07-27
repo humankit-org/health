@@ -59,8 +59,16 @@
         if (!entry) throw new Error('byOption effect missing option "' + value + '"');
         return pick(entry);
       }
-      case 'toggle':
-        return value ? { points: effect.points } : { points: 0 };
+      case 'toggle': {
+        const r = {};
+        if (effect.hr !== undefined) {
+          r.hr = value ? effect.hr : 1;
+          r.hrLow = value ? effect.hrLow : 1;
+          r.hrHigh = value ? effect.hrHigh : 1;
+        }
+        if (effect.points !== undefined) r.points = value ? effect.points : 0;
+        return r;
+      }
       default:
         throw new Error('unknown effect type: ' + effect.type);
     }

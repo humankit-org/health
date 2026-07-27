@@ -222,7 +222,7 @@ console.log('\n[11] New inputs');
   approx(r8.mortality.hr, 1.21, 1e-9, 'SSB 14/wk -> HR 1.21 (malik2019)');
 
   const r9 = engine.evaluate(model, { ...neutralValues(), fish: 'lots' });
-  approx(r9.mortality.hr, 0.98, 1e-9, 'fish 3+/wk -> HR 0.98 (kwok2019)');
+  approx(r9.mortality.hr, 0.95, 1e-9, 'fish 3+/wk -> HR 0.95 (kwok2019, li2020)');
 
   const r10 = engine.evaluate(model, { ...neutralValues(), sitting: 13 });
   approx(r10.mortality.hr, 1.24, 1e-9, 'sitting 13 h/d -> HR 1.24 (biswas2015)');

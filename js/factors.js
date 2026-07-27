@@ -84,7 +84,7 @@ const HEALTH_MODEL = {
       id: 'lifeExpectancy',
       title: 'Estimated life expectancy',
       kind: 'years',
-      blurb: 'Population-average baseline for your sex, shifted by your combined mortality risk. A statistical sketch, not a prediction.',
+      blurb: 'Baseline for your sex, shifted by your mortality risk.',
       evidence: 'moderate',
     },
     {
@@ -98,14 +98,14 @@ const HEALTH_MODEL = {
       id: 'cancer',
       title: 'Cancer mortality risk',
       kind: 'hr',
-      blurb: 'Combines ONLY the inputs with cancer-specific data — everything else is "no data yet", listed under the gauge. Overlaps with all-cause mortality (cancer is roughly a fifth of it).',
+      blurb: 'Overlaps with all-cause mortality (cancer is roughly a fifth of it).',
       evidence: 'moderate',
     },
     {
       id: 'cvd',
       title: 'Cardiovascular mortality risk',
       kind: 'hr',
-      blurb: 'Combines ONLY the inputs with CVD-specific effect sizes — everything else is "no data yet", listed under the gauge. CVD is the leading cause of death in most populations; the inputs driving it partly overlap with all-cause mortality.',
+      blurb: 'CVD is the leading cause of death in most populations. The inputs driving it partly overlap with all-cause mortality.',
       evidence: 'moderate',
     },
     {
@@ -282,6 +282,7 @@ const HEALTH_MODEL = {
     {
       id: 'occupationalPA',
       group: 'movement',
+      extra: true,
       label: 'Physical activity at work',
       kind: 'slider',
       unit: 'hours/day',
@@ -312,6 +313,7 @@ const HEALTH_MODEL = {
     {
       id: 'sitting',
       group: 'movement',
+      extra: true,
       label: 'Sitting time',
       kind: 'slider',
       unit: 'hours/day',
@@ -355,6 +357,7 @@ const HEALTH_MODEL = {
     {
       id: 'fiber',
       group: 'diet',
+      extra: true,
       label: 'Dietary fiber',
       kind: 'slider',
       unit: 'g/day',
@@ -526,6 +529,7 @@ const HEALTH_MODEL = {
     {
       id: 'coffee',
       group: 'diet',
+      extra: true,
       label: 'Coffee',
       kind: 'slider',
       unit: 'cups/day',
@@ -568,6 +572,7 @@ const HEALTH_MODEL = {
     {
       id: 'snus',
       group: 'diet',
+      extra: true,
       label: 'Snus / smokeless tobacco',
       kind: 'segmented',
       default: 'no',
@@ -606,6 +611,7 @@ const HEALTH_MODEL = {
     {
       id: 'cannabis',
       group: 'diet',
+      extra: true,
       label: 'Cannabis',
       kind: 'segmented',
       default: 'never',
@@ -640,6 +646,7 @@ const HEALTH_MODEL = {
     {
       id: 'magnesium',
       group: 'diet',
+      extra: true,
       label: 'Dietary magnesium',
       kind: 'slider',
       unit: 'mg/day',
@@ -663,6 +670,7 @@ const HEALTH_MODEL = {
     {
       id: 'purpose',
       group: 'mind',
+      extra: true,
       label: 'Sense of purpose',
       kind: 'slider',
       unit: '/ 10',
@@ -701,6 +709,7 @@ const HEALTH_MODEL = {
     {
       id: 'processedMeat',
       group: 'diet',
+      extra: true,
       label: 'Processed meat',
       kind: 'slider',
       unit: 'servings/week',
@@ -730,6 +739,7 @@ const HEALTH_MODEL = {
     {
       id: 'ssb',
       group: 'diet',
+      extra: true,
       label: 'Sugary drinks',
       kind: 'slider',
       unit: 'servings/week',
@@ -773,6 +783,7 @@ const HEALTH_MODEL = {
     {
       id: 'fish',
       group: 'diet',
+      extra: true,
       label: 'Fish',
       kind: 'segmented',
       default: 'some',
@@ -781,34 +792,34 @@ const HEALTH_MODEL = {
         { value: 'some', label: '1–2 / week' },
         { value: 'lots', label: '3+ / week' },
       ],
-      hint: 'Honest summary: small benefit, possibly because fish replaces meat.',
+      hint: 'Modest mortality benefit (~3–5% lower), slightly stronger for CVD (~4–6% lower). Observational — part of the benefit may be substitution (fish replacing red meat).',
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'moderate', source: 'kwok2019',
           byOption: {
             none: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            some: { hr: 0.99, hrLow: 0.98, hrHigh: 1.01 },
-            lots: { hr: 0.98, hrLow: 0.97, hrHigh: 1.00 },
+            some: { hr: 0.97, hrLow: 0.93, hrHigh: 1.01 },
+            lots: { hr: 0.95, hrLow: 0.91, hrHigh: 1.00 },
           },
-          note: 'Umbrella review of meta-analyses: fish associated with only a small mortality benefit (RR ≈ 0.98, 0.97–1.00). It may be substitution rather than the fish itself — and omega-3 SUPPLEMENTS were null in the VITAL RCT (see findings).',
+          note: 'Dose-response meta-analyses find RR ≈ 0.97 (0.93–1.00) per serving/week; 3+/week corresponds to ~0.95 (0.91–1.00). Observational — residual confounding and substitution (fish replacing meat) likely drive part of the association, but the dose-response gradient is consistent across cohorts.',
         },
         {
-          output: 'cancer', type: 'byOption', evidence: 'moderate', source: 'manson2019omega3',
+          output: 'cancer', type: 'byOption', evidence: 'low', source: 'kwok2019',
           byOption: {
             none: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            some: { hr: 1.02, hrLow: 0.94, hrHigh: 1.11 },
-            lots: { hr: 1.03, hrLow: 0.93, hrHigh: 1.13 },
+            some: { hr: 1.00, hrLow: 0.94, hrHigh: 1.06 },
+            lots: { hr: 1.00, hrLow: 0.93, hrHigh: 1.08 },
           },
-          note: 'VITAL RCT, invasive cancer incidence with omega-3 supplements: HR 1.03 (0.93–1.13) — an honest null, nothing there.',
+          note: 'Limited and inconsistent evidence for fish intake and cancer incidence in general populations. Unlike red/processed meat, no convincing association exists between fish and cancer — possibly because the fatty acids in fish are neutral or beneficial, and the primary confounding is with healthier overall diet.',
         },
         {
-          output: 'cvd', type: 'byOption', evidence: 'moderate', source: 'manson2019omega3',
+          output: 'cvd', type: 'byOption', evidence: 'moderate', source: 'kwok2019',
           byOption: {
             none: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            some: { hr: 0.99, hrLow: 0.93, hrHigh: 1.05 },
-            lots: { hr: 0.98, hrLow: 0.90, hrHigh: 1.06 },
+            some: { hr: 0.96, hrLow: 0.92, hrHigh: 1.00 },
+            lots: { hr: 0.94, hrLow: 0.90, hrHigh: 0.99 },
           },
-          note: 'Kwok 2019 umbrella review: fish intake had trivial CVD mortality association (RR ≈ 0.98); most of the "benefit" is likely substitution of meat. Omega-3 supplements were null in VITAL — major CVD events HR 0.97 (0.85–1.12).',
+          note: 'Dose-response: fish associated with ~4–6% lower CVD mortality per 1–2 servings/week (RR 0.96, 0.94–0.98 per serving in Li 2020 umbrella). The CVD association is stronger and more consistent than for all-cause mortality, consistent with plausible mechanisms (omega-3, substituting red meat).',
         },
       ],
     },
@@ -816,6 +827,7 @@ const HEALTH_MODEL = {
     {
       id: 'nuts',
       group: 'diet',
+      extra: true,
       label: 'Nuts',
       kind: 'slider',
       unit: 'g/day',
@@ -942,6 +954,7 @@ const HEALTH_MODEL = {
     {
       id: 'social',
       group: 'mind',
+      extra: true,
       label: 'Time with friends & family',
       kind: 'slider',
       unit: 'days/week',
@@ -980,6 +993,7 @@ const HEALTH_MODEL = {
     {
       id: 'meditation',
       group: 'mind',
+      extra: true,
       label: 'Meditation',
       kind: 'slider',
       unit: 'min/week',
@@ -1001,6 +1015,7 @@ const HEALTH_MODEL = {
     {
       id: 'sleepRegularity',
       group: 'mind',
+      extra: true,
       label: 'Sleep regularity',
       kind: 'slider',
       unit: '/ 10',
@@ -1039,6 +1054,7 @@ const HEALTH_MODEL = {
     {
       id: 'sauna',
       group: 'extras',
+      extra: true,
       label: 'Sauna',
       kind: 'slider',
       unit: 'sessions/week',
@@ -1068,6 +1084,7 @@ const HEALTH_MODEL = {
     {
       id: 'creatine',
       group: 'extras',
+      extra: true,
       label: 'Creatine (~5 g/day)',
       kind: 'toggle',
       default: false,
@@ -1081,8 +1098,45 @@ const HEALTH_MODEL = {
       ],
     },
     {
+      id: 'omega3',
+      group: 'extras',
+      extra: true,
+      label: 'Fish oil / omega-3 supplements',
+      kind: 'toggle',
+      default: false,
+      hint: 'A lot of people take these hoping for the benefits of eating fish. The best trial says they don\'t work.',
+      effects: [
+        {
+          output: 'mortality', type: 'toggle', evidence: 'high', source: 'manson2019omega3',
+          hr: 1.02, hrLow: 0.90, hrHigh: 1.15,
+          note: 'VITAL RCT (n=26k, 5.3 y): all-cause mortality HR 1.02 (0.90–1.15) — 978 deaths, slightly MORE deaths in the omega-3 group. Not statistically significant and effectively null.',
+        },
+        {
+          output: 'cvd', type: 'toggle', evidence: 'high', source: 'manson2019omega3',
+          hr: 0.92, hrLow: 0.80, hrHigh: 1.06,
+          note: 'VITAL RCT: major cardiovascular events HR 0.92 (0.80–1.06) — null (CI includes 1.0). A secondary signal for MI (HR 0.72, 0.59–0.90) did not survive correction for multiplicity. Meta-analyses of all RCTs confirm no significant benefit for primary prevention.',
+        },
+        {
+          output: 'cancer', type: 'toggle', evidence: 'high', source: 'manson2019omega3',
+          hr: 1.03, hrLow: 0.93, hrHigh: 1.13,
+          note: 'VITAL RCT: invasive cancer incidence HR 1.03 (0.93–1.13) — null. Cancer mortality HR 0.97 — also null. The observational suggestion that omega-3 prevents cancer does not hold up in a trial.',
+        },
+        {
+          output: 'cognition', type: 'toggle', points: 0,
+          evidence: 'moderate', source: 'manson2019omega3',
+          note: 'No credible RCT evidence that omega-3 supplements improve cognition in healthy adults. VITAL did not test cognition directly, but smaller RCTs show null or trivial effects in the general population.',
+        },
+        {
+          output: 'happiness', type: 'toggle', points: 0,
+          evidence: 'moderate', source: 'manson2019omega3',
+          note: 'No evidence that omega-3 supplements measurably affect mood or wellbeing in generally healthy adults. The fish → happiness pathway runs through eating fish, not taking pills.',
+        },
+      ],
+    },
+    {
       id: 'vitaminD',
       group: 'extras',
+      extra: true,
       label: 'Vitamin D status',
       kind: 'segmented',
       default: 'sufficient',
@@ -1130,6 +1184,7 @@ const HEALTH_MODEL = {
     {
       id: 'ironDeficiency',
       group: 'extras',
+      extra: true,
       label: 'Untreated iron deficiency',
       kind: 'toggle',
       default: false,
@@ -1150,6 +1205,7 @@ const HEALTH_MODEL = {
     {
       id: 'cognitiveTraining',
       group: 'extras',
+      extra: true,
       label: 'Brain training (puzzles, sudoku)',
       kind: 'slider',
       unit: 'sessions/week',
@@ -1171,6 +1227,7 @@ const HEALTH_MODEL = {
     {
       id: 'pm25',
       group: 'environment',
+      extra: true,
       label: 'Air pollution (PM2.5 where you live)',
       kind: 'slider',
       unit: 'µg/m³',
@@ -1194,6 +1251,7 @@ const HEALTH_MODEL = {
     {
       id: 'vo2maxOn',
       group: 'advanced',
+      extra: true,
       label: 'I know my VO2 max',
       kind: 'toggle',
       default: false,
@@ -1203,6 +1261,7 @@ const HEALTH_MODEL = {
     {
       id: 'vo2max',
       group: 'advanced',
+      extra: true,
       label: 'VO2 max',
       kind: 'slider',
       unit: 'ml/kg/min',
@@ -1227,6 +1286,7 @@ const HEALTH_MODEL = {
     {
       id: 'bodyFatOn',
       group: 'advanced',
+      extra: true,
       label: 'I know my body fat %',
       kind: 'toggle',
       default: false,
@@ -1236,6 +1296,7 @@ const HEALTH_MODEL = {
     {
       id: 'bodyFat',
       group: 'advanced',
+      extra: true,
       label: 'Body fat',
       kind: 'slider',
       unit: '%',
@@ -1268,6 +1329,7 @@ const HEALTH_MODEL = {
     {
       id: 'gripOn',
       group: 'advanced',
+      extra: true,
       label: 'I know my grip strength',
       kind: 'toggle',
       default: false,
@@ -1277,6 +1339,7 @@ const HEALTH_MODEL = {
     {
       id: 'grip',
       group: 'advanced',
+      extra: true,
       label: 'Grip strength',
       kind: 'slider',
       unit: 'kg',
@@ -1301,6 +1364,7 @@ const HEALTH_MODEL = {
     {
       id: 'rhrOn',
       group: 'advanced',
+      extra: true,
       label: 'I know my resting heart rate',
       kind: 'toggle',
       default: false,
@@ -1310,6 +1374,7 @@ const HEALTH_MODEL = {
     {
       id: 'rhr',
       group: 'advanced',
+      extra: true,
       label: 'Resting heart rate',
       kind: 'slider',
       unit: 'bpm',
@@ -1510,6 +1575,10 @@ const HEALTH_MODEL = {
     {
       when: (v) => v.fish !== 'none', dir: 'neutral', input: 'Fish', source: 'manson2019omega3',
       text: 'omega-3 SUPPLEMENTS did not reduce major cardiovascular events, cancer or mortality in the VITAL RCT (a −28% heart-attack signal was secondary) — eating fish and taking pills are not the same experiment',
+    },
+    {
+      when: (v) => v.omega3 === true, dir: 'neutral', input: 'Omega-3 supplements', source: 'manson2019omega3',
+      text: 'The VITAL RCT (26k people, 5.3 years) found that omega-3 supplements had no effect on mortality (HR 1.02, 0.90–1.15), cardiovascular events (HR 0.92, 0.80–1.06), or cancer (HR 1.03, 0.93–1.13) in generally healthy adults — all CIs include 1.0. The small benefits seen with eating fish do not replicate in a pill; the fish benefit appears to be about replacing meat, not about omega-3.',
     },
     {
       when: (v) => v.fish === 'lots' && v.processedMeat >= 3, dir: 'good', input: 'Fish', source: 'pan2012',

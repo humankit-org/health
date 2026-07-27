@@ -41,7 +41,7 @@
   function renderInputs() {
     const host = document.getElementById('inputs');
     for (const group of GROUPS) {
-      const inputs = model.inputs.filter((i) => i.group === group.id);
+      const inputs = model.inputs.filter((i) => i.group === group.id && !i.extra);
       if (!inputs.length) continue;
       const section = el(`<section class="group"><h2>${group.title}</h2></section>`);
       for (const input of inputs) section.appendChild(renderInput(input));
@@ -50,6 +50,22 @@
         section.appendChild(bmi);
       }
       host.appendChild(section);
+    }
+
+    for (const group of GROUPS) {
+      if (group.id === 'advanced') continue;
+      let inputs;
+      if (group.id === 'movement') {
+        inputs = model.inputs.filter((i) => (i.group === 'movement' || i.group === 'advanced') && i.extra);
+      } else {
+        inputs = model.inputs.filter((i) => i.group === group.id && i.extra);
+      }
+      if (!inputs.length) continue;
+      const details = el(`<details class="extra-toggle"><summary>${group.title}</summary></details>`);
+      const section = el(`<section class="group"></section>`);
+      for (const input of inputs) section.appendChild(renderInput(input));
+      details.appendChild(section);
+      host.appendChild(details);
     }
   }
 
@@ -99,24 +115,36 @@
       <div class="output-tiles">
       <div class="output-card" id="out-lifeExpectancy">
         <h3>Estimated life expectancy</h3>
-        <div class="le-big"><output id="le-estimate">–</output><span class="le-unit">years</span></div>
-        <div class="le-delta" id="le-delta"></div>
-        <div class="le-range" id="le-range"></div>
-        <p class="output-blurb"></p>
+        <div class="output-main">
+          <div class="output-highlight">
+            <div class="le-big"><output id="le-estimate">–</output><span class="le-unit">years</span></div>
+          </div>
+          <div class="output-info">
+            <div class="le-delta" id="le-delta"></div>
+            <div class="le-range" id="le-range"></div>
+            <p class="output-blurb"></p>
+          </div>
+        </div>
       </div>
+      <hr class="output-divider">
       <div class="output-card" id="out-mortality">
         <h3>All-cause mortality risk <span class="ev" data-ev="high">high</span></h3>
-        <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× average</span></div>
-        <div class="hr-sub" id="hr-sub"></div>
+        <div class="mort-top">
+          <div class="output-highlight">
+            <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× average</span></div>
+          </div>
+          <p class="output-blurb"></p>
+        </div>
         <div class="gauge" id="hr-gauge" role="img" aria-label="Mortality hazard gauge">
           <div class="gauge-band" id="hr-band"></div>
           <div class="gauge-marker" id="hr-marker"></div>
           <div class="gauge-ref" title="Reference lifestyle = 1.0"></div>
         </div>
         <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
-        <p class="output-blurb"></p>
+        <div class="hr-sub" id="hr-sub"></div>
         <details><summary>What drives this?</summary><ul class="contrib" id="contrib-mortality"></ul></details>
       </div>
+      <div class="output-row split">
       <div class="output-card" id="out-cancer">
         <h3>Cancer mortality risk <span class="ev" data-ev="moderate">moderate</span></h3>
         <div class="hr-big"><output id="cancer-estimate">–</output><span class="hr-unit">× average</span></div>
@@ -127,9 +155,7 @@
           <div class="gauge-ref" title="Average person = 1.0"></div>
         </div>
         <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
-        <p class="output-blurb"></p>
-        <p class="coverage-note" id="cancer-coverage"></p>
-        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-cancer"></ul></details>
+        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-cancer"></ul><p class="output-blurb"></p><p class="coverage-note" id="cancer-coverage"></p></details>
       </div>
       <div class="output-card" id="out-cvd">
         <h3>Cardiovascular mortality risk <span class="ev" data-ev="moderate">moderate</span></h3>
@@ -141,10 +167,11 @@
           <div class="gauge-ref" title="Average person = 1.0"></div>
         </div>
         <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
-        <p class="output-blurb"></p>
-        <p class="coverage-note" id="cvd-coverage"></p>
-        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-cvd"></ul></details>
+        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-cvd"></ul><p class="output-blurb"></p><p class="coverage-note" id="cvd-coverage"></p></details>
       </div>
+      </div>
+      <hr class="output-divider">
+      <div class="output-row split">
       <div class="output-card" id="out-cognition">
         <h3>Cognitive function <span class="ev" data-ev="low">low</span></h3>
         <div class="band-meter" id="meter-cognition" role="img">
@@ -166,6 +193,8 @@
         <details><summary>What drives this?</summary><ul class="contrib" id="contrib-happiness"></ul></details>
       </div>
       </div>
+      </div>
+      <hr class="output-divider">
       <div class="output-card findings-card" id="out-findings">
         <h3>More findings from the same sources</h3>
         <p class="findings-blurb">Disease-specific effects and honest nulls that don't fit on a slider — shown when they apply to your current inputs.</p>
@@ -325,7 +354,7 @@
     );
     const cancerCoverage = document.getElementById('cancer-coverage');
     if (c.noData.length) {
-      cancerCoverage.textContent = 'No cancer-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
+      //cancerCoverage.textContent = 'No cancer-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
       cancerCoverage.style.display = '';
     } else {
       cancerCoverage.style.display = 'none';
@@ -341,7 +370,7 @@
     );
     const cvdCoverage = document.getElementById('cvd-coverage');
     if (c.noData.length) {
-      cvdCoverage.textContent = 'No CVD-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
+      //cvdCoverage.textContent = 'No CVD-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
       cvdCoverage.style.display = '';
     } else {
       cvdCoverage.style.display = 'none';
