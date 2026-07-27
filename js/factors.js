@@ -137,7 +137,7 @@ const HEALTH_MODEL = {
         { value: 'male', label: 'Male' },
         { value: 'unspecified', label: 'Unspecified' },
       ],
-      hint: 'Only used to pick the baseline life table.',
+      hint: 'Used to get baseline life expectancy.',
       effects: [], // drives baseline.lifeExpectancy, not an effect
     },
     {
@@ -238,7 +238,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'sessions/week',
       min: 0, max: 5, step: 1, default: 1,
-      hint: 'Lifting, bodyweight training… assume ~30 min per session.',
+      hint: 'Assume ~30 min per session.',
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: 'momma2022',
@@ -318,7 +318,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'hours/day',
       min: 4, max: 14, step: 0.5, default: 9,
-      hint: 'Desk + commute + couch. US average ≈ 8–10 h/day.',
+      hint: 'Desk, commute and couch. US average ≈ 8–10 h/day.',
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: 'biswas2015',
@@ -397,7 +397,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'servings/day',
       min: 0, max: 10, step: 0.5, default: 3,
-      hint: 'One serving ≈ 80 g — a fist-sized portion.',
+      hint: 'One serving ≈ 80 g: a fist-sized portion.',
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 1, capAt: 5,
@@ -485,7 +485,7 @@ const HEALTH_MODEL = {
         { value: 'former', label: 'Former' },
         { value: 'current', label: 'Current' },
       ],
-      hint: 'Cigarettes. The single biggest lever in this model.',
+    //hint: 'Cigarettes.',
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'high', source: 'jha2013',
@@ -534,7 +534,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'cups/day',
       min: 0, max: 6, step: 1, default: 2,
-      hint: 'Regular or decaf — the umbrella review covers both.',
+      hint: 'Decaf also counts.',
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: 'poole2017',
@@ -580,7 +580,7 @@ const HEALTH_MODEL = {
         { value: 'no', label: 'No' },
         { value: 'yes', label: 'Yes' },
       ],
-      hint: 'Swedish-style snus has the best data. Less harmful than smoking — not harmless.',
+     // hint: 'Swedish-style snus has the best data. Less harmful than smoking — not harmless.',
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'moderate', source: 'byhamre2021',
@@ -620,7 +620,7 @@ const HEALTH_MODEL = {
         { value: 'occasional', label: 'Occasional' },
         { value: 'regular', label: 'Regular' },
       ],
-      hint: 'Smoked or otherwise. Honest summary: mortality data weak, mental-health data concerning.',
+      //hint: 'Smoked or otherwise. Honest summary: mortality data weak, mental-health data concerning.',
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'low', source: 'sidney1997',
@@ -744,7 +744,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'servings/week',
       min: 0, max: 21, step: 1, default: 3,
-      hint: 'Soda, sweetened juices, energy drinks. One serving = 355 ml / 12 oz.',
+      hint: 'Soda, sweetened juices, energy drinks. One serving = 355 ml',
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'high', source: 'malik2019',
@@ -792,7 +792,7 @@ const HEALTH_MODEL = {
         { value: 'some', label: '1–2 / week' },
         { value: 'lots', label: '3+ / week' },
       ],
-      hint: 'Modest mortality benefit (~3–5% lower), slightly stronger for CVD (~4–6% lower). Observational — part of the benefit may be substitution (fish replacing red meat).',
+      //hint: 'Modest mortality benefit (~3–5% lower), slightly stronger for CVD (~4–6% lower). Observational — part of the benefit may be substitution (fish replacing red meat).',
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'moderate', source: 'kwok2019',
@@ -959,7 +959,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'days/week',
       min: 0, max: 7, step: 1, default: 3,
-      hint: 'Days with meaningful in-person social contact.',
+      hint: 'Days with social contact.',
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: 'holtlunstad2010',
@@ -998,7 +998,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'min/week',
       min: 0, max: 300, step: 15, default: 0,
-      hint: 'Mindfulness-style practice.',
+      //hint: 'Mindfulness-style practice.',
       effects: [
         {
           output: 'happiness', type: 'steps', evidence: 'moderate', source: 'goyal2014',
@@ -1059,7 +1059,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'sessions/week',
       min: 0, max: 7, step: 1, default: 0,
-      hint: 'Finnish-style sauna.',
+      //hint: 'Finnish-style sauna.',
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'low', source: 'laukkanen2015',
@@ -1104,7 +1104,7 @@ const HEALTH_MODEL = {
       label: 'Fish oil / omega-3 supplements',
       kind: 'toggle',
       default: false,
-      hint: 'A lot of people take these hoping for the benefits of eating fish. The best trial says they don\'t work.',
+      //hint: 'A lot of people take these hoping for the benefits of eating fish. The best trial says they don\'t work.',
       effects: [
         {
           output: 'mortality', type: 'toggle', evidence: 'high', source: 'manson2019omega3',
@@ -1145,7 +1145,7 @@ const HEALTH_MODEL = {
         { value: 'sufficient', label: 'Sufficient' },
         { value: 'supplement', label: 'I supplement' },
       ],
-      hint: 'Best guess of your 25(OH)D level if you haven\'t measured it.',
+//      hint: 'Best guess of your 25(OH)D level if you haven\'t measured it.',
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'moderate', source: 'schottker2014',
@@ -1188,7 +1188,7 @@ const HEALTH_MODEL = {
       label: 'Untreated iron deficiency',
       kind: 'toggle',
       default: false,
-      hint: 'Low ferritin without anaemia — common in menstruating women, vegetarians, endurance athletes. Ask for a ferritin test.',
+      hint: 'Common in menstruating women, vegetarians, endurance athletes.',
       effects: [
         {
           output: 'happiness', type: 'toggle', points: -0.4,
@@ -1232,7 +1232,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'µg/m³',
       min: 2, max: 30, step: 1, default: 8,
-      hint: 'Look it up by zip code/city. US mean ≈ 8, EPA standard 12, WHO guideline 5. Mostly an exposure, not a habit.',
+      hint: 'Look it up by zip code/city. US mean ≈ 8, EPA standard 12, WHO guideline 5.',
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 10, ref: 8, minDose: 3, capAt: 30,
@@ -1267,7 +1267,7 @@ const HEALTH_MODEL = {
       unit: 'ml/kg/min',
       min: 20, max: 60, step: 1, default: 35,
       gatedBy: 'vo2maxOn',
-      hint: 'When enabled, this REPLACES the cardio estimate — measured fitness predicts mortality better than reported activity.',
+      //hint: 'When enabled, this REPLACES the cardio estimate — measured fitness predicts mortality better than reported activity.',
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 3.5, ref: 28, capAt: 56,
@@ -1302,7 +1302,7 @@ const HEALTH_MODEL = {
       unit: '%',
       min: 5, max: 55, step: 1, default: 22,
       gatedBy: 'bodyFatOn',
-      hint: 'When enabled, this REPLACES the BMI estimate.',
+      //hint: 'When enabled, this REPLACES the BMI estimate.',
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: 'jayedi2022',
@@ -1380,7 +1380,7 @@ const HEALTH_MODEL = {
       unit: 'bpm',
       min: 40, max: 110, step: 1, default: 70,
       gatedBy: 'rhrOn',
-      hint: 'Typical adult average ≈ 60–80 bpm. Overlaps with fitness — see the note.',
+      hint: 'Typical adult average ≈ 60–80 bpm.',
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 10, ref: 70, minDose: 45, capAt: 100,

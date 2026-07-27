@@ -104,7 +104,7 @@
         </div>`;
     }
     card.innerHTML = `${control}
-      <p class="input-hint" id="hint-${input.id}">${input.hint}</p>
+      <p class="input-hint" id="hint-${input.id}">${input.hint || ''}</p>
       <div class="chips" id="chips-${input.id}"></div>`;
     return card;
   }
