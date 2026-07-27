@@ -303,6 +303,14 @@ input[type="range"] {
   font-variant-numeric: tabular-nums;
 }
 
+.coverage-note {
+  margin: 0.6rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  border-top: 1px dashed var(--line);
+  padding-top: 0.5rem;
+}
+
 /* band meter for mind outputs */
 .band-meter {
   position: relative;

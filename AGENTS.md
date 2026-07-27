@@ -78,13 +78,18 @@ integrity: sorted steps, bracketing CIs, existing sources).
   personal deltas shift it. Known approximation, stated on the page.
 - **Mind outputs** accumulate unitless "points" per input → mapped to bands.
   Near everything here is correlational; badges and copy say so.
-- **Defaults ARE the reference profile** (v0.2): reset ⇒ exactly 1.0× HR and
-  0-point "about average" bands, so every input shows its own effect.
-- **Uncertainty scales with (un)certainty** (v0.2): each effect's CI is
+- **Average-person anchoring** (v0.3): defaults = population averages (US,
+  noted per input). `engine.evaluate` normalizes by the average profile
+  (`averageEval` cache): **1.0× = the average person**, reset ⇒ exactly
+  baseline LE, and all chips/contributions show `hrDelta`/`pointsDelta` vs
+  the input's average value. The studies' reference strata ("monk profile")
+  are an internal detail (`evaluateRaw`) — never displayed. (US LE is ~4–6 y
+  BELOW other high-income countries; non-US baselines are a roadmap item.)
+- **Uncertainty scales with (un)certainty** (v0.2/v0.3): each effect's CI is
   widened in log space by `uncertaintyWiden` (high ×1 / moderate ×1.5 / low
-  ×2.25) before combining; the central estimate is clamped to [0.45, 4.0] but
-  the bounds deliberately are not. Mind-output marker fuzz grows per active
-  low-evidence contributor.
+  ×2.25), then combined **in quadrature** (independence assumption) and
+  applied around the clamped central estimate [0.45, 4.0]. Mind-output marker
+  fuzz grows per active low-evidence contributor.
 - **Advanced gated inputs** (v0.2): `vo2maxOn`/`bodyFatOn` toggles unlock
   measured VO2 max (per-MET HR 0.87, Kodama 2009) and body-fat % (J-shaped,
   Jayedi 2022). When enabled they **replace** — never stack with — the cardio
@@ -92,6 +97,13 @@ integrity: sorted steps, bracketing CIs, existing sources).
 - **Findings card** (v0.2): `findings` in factors.js holds sourced facts that
   don't fit sliders (disease-specific outcomes, honest nulls like the VITAL
   vitamin-D RCT, caveats); each shows only when its `when(values)` matches.
+- **Cancer output** (v0.4): a second HR card combining ONLY inputs with
+  cancer-specific effect sizes (`output: 'cancer'` in factors.js); all others
+  are listed on the card as "no data yet" (`result.cancer.noData`). Same
+  normalization/clamp/quadrature path as mortality, no years translation.
+  Overlap with all-cause mortality is stated on the card. Functional outcomes
+  (osteoporosis, falls, injury nulls) are findings, not an output — sourced
+  from Howe 2011, Sherrington 2019, Rong 2016, Leong 2015.
 - **Every verified number was checked against the primary source** (PubMed
   abstracts) on 2026-07-24. Items still needing a second look are marked in
   their `note`: sauna all-cause HRs (verify vs paper Table 2), NCHS baseline

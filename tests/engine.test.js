@@ -22,11 +22,22 @@ function approx(a, b, tol, msg) {
   ok(Math.abs(a - b) <= tol, `${msg} (got ${a.toFixed(4)}, want ~${b.toFixed(4)} ±${tol})`);
 }
 
-// Neutral profile: the model's own defaults ARE the reference profile —
-// every input at its no-effect level (so "reset" gives HR 1.0, band points 0).
-function neutralValues() {
-  return engine.defaults(model);
+// Reference profile: every input at its study-reference (no-effect) level.
+// Used to check raw HRs vs the studies' reference strata. Contrast with the
+// DEFAULTS (= population averages), which is what "reset" restores.
+function referenceValues() {
+  return {
+    ...engine.defaults(model),
+    cardio: 0, strength: 0, sitting: 4,
+    fiber: 0, fruitVeg: 0, processedMeat: 1.5, ssb: 0, fish: 'none',
+    alcohol: 0, coffee: 0, magnesium: 250,
+    sleep: 7.5, stress: 2, social: 5, purpose: 5,
+    occupationalPA: 0,
+    heightCm: 170, weightKg: 68, // BMI ~23.5 -> HR 1.0 band
+  };
 }
+// Backwards-compatible alias used by older test sections.
+function neutralValues() { return referenceValues(); }
 
 console.log('\n[1] Data integrity');
 {
@@ -80,21 +91,30 @@ console.log('\n[2] Single-factor effects');
   approx(r6.mortality.hr, 1.0, 1e-9, 'creatine has no mortality claim');
 }
 
-console.log('\n[3] Neutral profile ~ no change');
+console.log('\n[3] Reference profile = raw HR 1.0');
 {
-  const r = engine.evaluate(model, neutralValues());
-  approx(r.mortality.hr, 1.0, 0.02, 'neutral profile HR ~ 1.0');
-  approx(r.lifeExpectancy.delta, 0, 0.3, 'neutral profile LE delta ~ 0');
-  approx(r.lifeExpectancy.estimate, model.baseline.lifeExpectancy.unspecified, 0.3, 'neutral LE ~ baseline');
+  const r = engine.evaluate(model, referenceValues());
+  approx(r.mortality.hr, 1.0, 0.02, 'reference profile raw HR ~ 1.0');
+  // The per-study reference strata are NOT a coherent "worst lifestyle":
+  // they mix no-exercise/no-fiber with lean/calm/connected. So we don't
+  // assert a direction vs the average person — just document the gap.
+  ok(Math.abs(r.mortality.hrAvg - 1) > 0.01, 'reference profile differs from average person (hrAvg ' + r.mortality.hrAvg.toFixed(2) + ')');
+  const avg = engine.averageEval(model);
+  ok(avg.hr > 0.5 && avg.hr < 2.0, 'average profile raw HR is sane (' + avg.hr.toFixed(3) + ')');
 }
 
 console.log('\n[4] Calibration cross-checks (Gompertz vs published year-estimates)');
 {
-  const smoker = engine.evaluate(model, { ...neutralValues(), smoking: 'current' });
+  // Single factor changed from the AVERAGE profile: the average cancels, so
+  // the vs-average ratio equals the factor's own HR.
+  const smoker = engine.evaluate(model, { ...engine.defaults(model), smoking: 'current' });
+  approx(smoker.mortality.hrAvg, 2.9, 1e-9, 'smoker ratio vs average = 2.9 (avg cancels)');
   approx(smoker.lifeExpectancy.delta, -10.8, 1.5, 'current smoker ~ -11 years (jha2013: >10 y lost)');
 
-  const heavyExercise = engine.evaluate(model, { ...neutralValues(), cardio: 500 });
-  approx(heavyExercise.lifeExpectancy.delta, 5.0, 1.0, 'heavy cardio ~ +5 years (moore2012: +4.5 y)');
+  // Moore 2012 compared 0 vs 450+ min/wk: model must reproduce +4.5-5 y for that swing
+  const d0 = engine.evaluate(model, { ...engine.defaults(model), cardio: 0 });
+  const d500 = engine.evaluate(model, { ...engine.defaults(model), cardio: 500 });
+  approx(d500.lifeExpectancy.delta - d0.lifeExpectancy.delta, 5.0, 1.0, '0 -> 500 min/wk cardio ~ +5 years (moore2012: +4.5 y)');
 
   // hrToYears / yearsToHr round-trip
   approx(engine.hrToYears(model, engine.yearsToHr(model, -4.5)), -4.5, 1e-9, 'years<->hr round-trip');
@@ -103,16 +123,16 @@ console.log('\n[4] Calibration cross-checks (Gompertz vs published year-estimate
 console.log('\n[5] Combination + clamping');
 {
   const allHealthy = engine.evaluate(model, {
-    ...neutralValues(),
+    ...referenceValues(),
     cardio: 500, strength: 3, fiber: 40, fruitVeg: 8,
     coffee: 4, sauna: 5, social: 7, stress: 2, sleep: 8,
     heightCm: 176, weightKg: 68,
   });
-  ok(allHealthy.mortality.clamped, 'all-healthy profile hits the humility floor (HR ' + allHealthy.mortality.hr + ')');
-  approx(allHealthy.mortality.hr, model.constants.hrFloor, 1e-9, 'HR clamped at floor');
+  ok(allHealthy.mortality.clamped, 'all-healthy profile hits the humility floor (hrAvg ' + allHealthy.mortality.hrAvg + ')');
+  approx(allHealthy.mortality.hrAvg, model.constants.hrFloor, 1e-9, 'hrAvg clamped at floor');
   ok(allHealthy.lifeExpectancy.delta <= model.constants.yearsCapGain + 1e-9, 'LE gain capped');
 
-  const mixed = engine.evaluate(model, { ...neutralValues(), cardio: 300, strength: 2 });
+  const mixed = engine.evaluate(model, { ...referenceValues(), cardio: 300, strength: 2 });
   approx(mixed.mortality.hr, 0.63 * 0.85, 1e-9, 'cardio x strength multiply');
   ok(mixed.mortality.hrLow < mixed.mortality.hr && mixed.mortality.hr < mixed.mortality.hrHigh,
     'uncertainty range brackets central estimate');
@@ -138,12 +158,14 @@ console.log('\n[7] BMI derivation');
   approx(obese.mortality.hr, 1.94, 1e-9, 'BMI 38 -> HR 1.94 (diangelantonio2016)');
 }
 
-console.log('\n[8] Defaults = reference profile (the "reset" contract)');
+console.log('\n[8] Defaults = population average (the "reset" contract)');
 {
   const r = engine.evaluate(model, engine.defaults(model));
-  approx(r.mortality.hr, 1.0, 1e-9, 'defaults -> HR exactly 1.0x reference');
-  approx(r.scores.cognition.points, 0, 1e-9, 'defaults -> cognition points 0');
-  approx(r.scores.happiness.points, 0, 1e-9, 'defaults -> happiness points 0');
+  approx(r.mortality.hrAvg, 1.0, 1e-9, 'defaults -> exactly 1.0x the average person');
+  approx(r.lifeExpectancy.delta, 0, 1e-9, 'defaults -> LE delta 0 (average person = baseline)');
+  approx(r.lifeExpectancy.estimate, model.baseline.lifeExpectancy.unspecified, 1e-9, 'defaults -> baseline LE');
+  approx(r.scores.cognition.relPoints, 0, 1e-9, 'defaults -> cognition 0 vs average');
+  approx(r.scores.happiness.relPoints, 0, 1e-9, 'defaults -> happiness 0 vs average');
   ok(r.scores.cognition.label === 'about average', 'defaults -> "about average" bands');
 }
 
@@ -156,7 +178,7 @@ console.log('\n[9] Uncertainty widening (less certain evidence = wider range)');
   approx(m.hr, 0.60, 1e-9, 'central estimate unchanged by widening');
 
   const r2 = engine.evaluate(model, { ...neutralValues(), cardio: 300 }); // high evidence
-  approx(r2.mortality.hrLow, 0.62, 1e-9, 'high evidence keeps published CI (0.62)');
+  approx(r2.mortality.hrLow, 0.62, 0.01, 'high evidence keeps ~published CI (0.62, quadrature-symmetrized)');
 }
 
 console.log('\n[10] Advanced inputs: gating + supersession');
@@ -192,6 +214,27 @@ console.log('\n[11] New inputs');
 
   const r6 = engine.evaluate(model, { ...neutralValues(), vitaminD: 'supplement' });
   approx(r6.mortality.hr, 0.99, 1e-9, 'vitamin D supplement -> HR 0.99 (manson2019, honest null)');
+
+  const r7 = engine.evaluate(model, { ...neutralValues(), processedMeat: 8 });
+  approx(r7.mortality.hr, Math.pow(1.2, (8 - 1.5) / 7), 1e-9, 'processed meat 8/wk -> 1.2^((8-1.5)/7) (pan2012)');
+
+  const r8 = engine.evaluate(model, { ...neutralValues(), ssb: 14 });
+  approx(r8.mortality.hr, 1.21, 1e-9, 'SSB 14/wk -> HR 1.21 (malik2019)');
+
+  const r9 = engine.evaluate(model, { ...neutralValues(), fish: 'lots' });
+  approx(r9.mortality.hr, 0.98, 1e-9, 'fish 3+/wk -> HR 0.98 (kwok2019)');
+
+  const r10 = engine.evaluate(model, { ...neutralValues(), sitting: 13 });
+  approx(r10.mortality.hr, 1.24, 1e-9, 'sitting 13 h/d -> HR 1.24 (biswas2015)');
+
+  const r11 = engine.evaluate(model, { ...neutralValues(), purpose: 9 });
+  approx(r11.mortality.hr, 0.83, 1e-9, 'high purpose -> HR 0.83 (cohen2016)');
+
+  const r12 = engine.evaluate(model, { ...neutralValues(), gripOn: true, grip: 25 });
+  approx(r12.mortality.hr, Math.pow(0.8621, -2), 1e-9, 'grip 25 kg (10 below anchor) -> 0.8621^-2 (leong2015)');
+
+  const r13 = engine.evaluate(model, { ...neutralValues(), gripOn: false, grip: 15 });
+  approx(r13.mortality.hr, 1.0, 1e-9, 'grip ignored while its toggle is off');
 }
 
 console.log('\n[12] Findings react to inputs');
@@ -200,13 +243,55 @@ console.log('\n[12] Findings react to inputs');
   ok(r.findings.some((f) => f.source === 'jha2013' && /lung cancer/.test(f.text)), 'smoker sees lung-cancer finding');
 
   const r0 = engine.evaluate(model, neutralValues());
-  ok(r0.findings.length === 0, 'reference profile -> no findings');
+  ok(!r0.findings.some((f) => f.source === 'jha2013'), 'reference profile -> no smoking findings');
+  ok(!r0.findings.some((f) => f.dir === 'bad' && f.source === 'pan2012'), 'reference profile -> no processed-meat findings');
 
   const r2 = engine.evaluate(model, { ...neutralValues(), vitaminD: 'supplement' });
   ok(r2.findings.some((f) => f.source === 'manson2019' && f.dir === 'neutral'), 'supplementing vitamin D shows the honest-null finding');
+
+  const r3 = engine.evaluate(model, { ...neutralValues(), processedMeat: 8 });
+  ok(r3.findings.some((f) => f.source === 'pan2012' && f.dir === 'bad'), 'daily processed meat shows cancer finding');
+
+  const r4 = engine.evaluate(model, engine.defaults(model));
+  ok(r4.findings.some((f) => f.source === 'manson2019omega3'), 'average profile (fish 1-2/wk) shows the omega-3 honest null');
 }
 
-console.log('\n[13] Citation numbering (index.html <-> sources.html)');
+console.log('\n[13] Cancer output');
+{
+  const def = engine.evaluate(model, engine.defaults(model));
+  approx(def.cancer.hrAvg, 1.0, 1e-9, 'defaults -> cancer 1.0x the average person');
+
+  // Ratio vs the reference profile cancels inputs whose cancer reference
+  // stratum differs from their mortality one (e.g. fiber).
+  const base = engine.evaluateRaw(model, neutralValues());
+  const pm = engine.evaluateRaw(model, { ...neutralValues(), processedMeat: 8 });
+  approx(pm.hrCancer / base.hrCancer, Math.pow(1.16, (8 - 1.5) / 7), 1e-9, 'processed meat 8/wk -> cancer HR 1.16^((8-1.5)/7) (pan2012)');
+
+  const sm = engine.evaluateRaw(model, { ...neutralValues(), smoking: 'current' });
+  approx(sm.hrCancer / base.hrCancer, 3.0, 1e-9, 'current smoker -> cancer HR 3.0 (thun2013)');
+
+  const fv = engine.evaluateRaw(model, { ...neutralValues(), fruitVeg: 8 });
+  approx(fv.hrCancer / base.hrCancer, 1.0, 1e-9, 'fruit & veg: honest null on cancer (wang2014)');
+
+  ok(def.cancer.noData.length > 5, 'coverage note lists no-data inputs');
+  ok(def.cancer.noData.includes('VO2 max'), 'VO2 max listed as no-cancer-data');
+  ok(def.cancer.noData.includes('Grip strength'), 'grip listed as no-cancer-data');
+}
+
+console.log('\n[14] Functional-independence findings');
+{
+  const f = engine.evaluate(model, { ...neutralValues(), strength: 0, sex: 'female' });
+  ok(f.findings.some((x) => x.source === 'howe2011'), 'no strength training + female -> osteoporosis finding');
+  ok(f.findings.some((x) => x.source === 'sherrington2019'), 'no strength training -> falls finding');
+
+  const g = engine.evaluate(model, { ...neutralValues(), strength: 2 });
+  ok(!g.findings.some((x) => x.source === 'sherrington2019'), 'strength training on -> no falls finding');
+
+  const grip = engine.evaluate(model, { ...neutralValues(), gripOn: true, grip: 30 });
+  ok(grip.findings.some((x) => x.source === 'leong2015' && x.dir === 'neutral'), 'grip enabled -> honest-null injury finding');
+}
+
+console.log('\n[15] Citation numbering (index.html <-> sources.html)');
 {
   const refs = engine.sourceIndex(model);
   const cited = new Set();

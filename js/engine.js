@@ -105,18 +105,32 @@
   }
 
   /**
-   * Evaluate the whole model.
-   * @param {object} model  HEALTH_MODEL
-   * @param {object} values map of input id -> value (numbers; strings for segmented; bool for toggle)
+   * Raw evaluation: combined HR vs each study's REFERENCE stratum (no clamp,
+   * no anchoring, no years). Also records per-contribution deltas vs the
+   * input's default (population-average) value, so the UI can phrase every
+   * effect as "vs the average person".
    */
-  function evaluate(model, values) {
-    const contributions = { mortality: [], cognition: [], happiness: [] };
+  function evaluateRaw(model, values) {
+    const contributions = { mortality: [], cancer: [], cognition: [], happiness: [] };
     const widen = model.constants.uncertaintyWiden || { high: 1, moderate: 1, low: 1 };
-    let hr = 1, hrLow = 1, hrHigh = 1;
+    let hr = 1;
+    let hrCancer = 1;
+    let sumSigma2 = 0;       // mortality, combined in quadrature (log space)
+    let sumSigma2Cancer = 0; // cancer, same
     const points = { cognition: 0, happiness: 0 };
 
     const isOn = (key) => !!values[key];
     const superseded = (flag) => flag && isOn(flag);
+
+    // Each effect's (widened) CI -> a log-space standard error; independent
+    // errors add in quadrature. Same independence assumption as the central
+    // multiplication, but without absurd "multiply the extremes" ranges.
+    const sigma = (center, lo, hi, w) => {
+      const wLo = widenBound(center, lo, w);
+      const wHi = widenBound(center, hi, w);
+      const s = (Math.log(wHi) - Math.log(wLo)) / (2 * 1.96);
+      return s * s;
+    };
 
     for (const input of model.inputs) {
       if (input.gatedBy && !isOn(input.gatedBy)) continue; // advanced inputs only count when enabled
@@ -124,6 +138,7 @@
       for (const effect of input.effects) {
         if (superseded(effect.supersededBy)) continue; // e.g. measured VO2max replaces reported cardio
         const r = evalEffect(effect, value);
+        const rd = evalEffect(effect, input.default); // effect at the average value
         const w = widen[effect.evidence] !== undefined ? widen[effect.evidence] : 1;
         const record = {
           inputId: input.id,
@@ -134,11 +149,16 @@
           note: effect.note,
           ...r,
         };
+        if (r.hr !== undefined) record.hrDelta = r.hr / rd.hr; // vs average
+        if (r.points !== undefined) record.pointsDelta = r.points - (rd.points || 0);
         if (effect.output === 'mortality') {
           hr *= r.hr;
-          hrLow *= widenBound(r.hr, r.hrLow, w);
-          hrHigh *= widenBound(r.hr, r.hrHigh, w);
+          sumSigma2 += sigma(r.hr, r.hrLow, r.hrHigh, w);
           contributions.mortality.push(record);
+        } else if (effect.output === 'cancer') {
+          hrCancer *= r.hr;
+          sumSigma2Cancer += sigma(r.hr, r.hrLow, r.hrHigh, w);
+          contributions.cancer.push(record);
         } else {
           points[effect.output] += r.points || 0;
           contributions[effect.output].push(record);
@@ -150,10 +170,11 @@
     const bmi = computeBmi(values);
     if (bmi !== null && model.bmi && !superseded(model.bmi.supersededBy)) {
       const step = lookupSteps(model.bmi.steps, bmi);
+      const bmiDefault = computeBmi(defaults(model));
+      const stepDefault = lookupSteps(model.bmi.steps, bmiDefault);
       const w = widen[model.bmi.evidence] !== undefined ? widen[model.bmi.evidence] : 1;
       hr *= step.hr;
-      hrLow *= widenBound(step.hr, step.hrLow, w);
-      hrHigh *= widenBound(step.hr, step.hrHigh, w);
+      sumSigma2 += sigma(step.hr, step.hrLow, step.hrHigh, w);
       contributions.mortality.push({
         inputId: 'bmi',
         label: 'BMI ' + bmi.toFixed(1),
@@ -162,38 +183,104 @@
         source: model.bmi.source,
         note: model.bmi.note,
         hr: step.hr, hrLow: step.hrLow, hrHigh: step.hrHigh,
+        hrDelta: step.hr / stepDefault.hr, // vs average
       });
     }
 
-    // Combine + clamp the CENTRAL estimate (lifestyle effects overlap; don't
-    // overclaim). The uncertainty bounds are deliberately NOT clamped — they
-    // exist to show how unsure we are, floor or no floor.
-    const clamped = hr < model.constants.hrFloor || hr > model.constants.hrCeiling;
-    hr = clamp(hr, model.constants.hrFloor, model.constants.hrCeiling);
+    const totalSigma = Math.sqrt(sumSigma2);
+    const hrLow = hr * Math.exp(-1.96 * totalSigma);
+    const hrHigh = hr * Math.exp(1.96 * totalSigma);
 
+    const totalSigmaCancer = Math.sqrt(sumSigma2Cancer);
+    const hrCancerLow = hrCancer * Math.exp(-1.96 * totalSigmaCancer);
+    const hrCancerHigh = hrCancer * Math.exp(1.96 * totalSigmaCancer);
+
+    return {
+      hr, hrLow, hrHigh,
+      hrCancer, hrCancerLow, hrCancerHigh,
+      points, contributions, bmi, values,
+      findings: evaluateFindings(model, values),
+    };
+  }
+
+  // The population-average profile, evaluated once per model (defaults ARE the
+  // averages). Everything the user sees is anchored against this.
+  const _avgCache = new WeakMap();
+  function averageEval(model) {
+    if (!_avgCache.has(model)) _avgCache.set(model, evaluateRaw(model, defaults(model)));
+    return _avgCache.get(model);
+  }
+
+  /**
+   * Evaluate the whole model, normalized so 1.0x = the average person.
+   * @param {object} model  HEALTH_MODEL
+   * @param {object} values map of input id -> value (numbers; strings for segmented; bool for toggle)
+   */
+  function evaluate(model, values) {
+    const raw = evaluateRaw(model, values);
+    const avg = averageEval(model);
     const cap = model.constants;
-    const years = clamp(hrToYears(model, hr), -cap.yearsCapLoss, cap.yearsCapGain);
-    // Pessimistic bound = upper HR; optimistic bound = lower HR.
-    const yearsLow = clamp(hrToYears(model, hrHigh), -cap.yearsCapLoss, cap.yearsCapGain);
-    const yearsHigh = clamp(hrToYears(model, hrLow), -cap.yearsCapLoss, cap.yearsCapGain);
 
-    const sex = model.baseline.lifeExpectancy[values.sex] !== undefined ? values.sex : 'unspecified';
+    // Normalize: raw HR is vs the studies' reference strata; dividing by the
+    // average profile's HR makes 1.0x = the average person. Clamp the CENTRAL
+    // estimate (lifestyle effects overlap; don't overclaim) — then apply the
+    // combined uncertainty AROUND the clamped value so the range always
+    // brackets what we display.
+    const hrAvgRaw = raw.hr / avg.hr;
+    const clamped = hrAvgRaw < cap.hrFloor || hrAvgRaw > cap.hrCeiling;
+    const hrAvg = clamp(hrAvgRaw, cap.hrFloor, cap.hrCeiling);
+    const sigmaNorm = (Math.log(raw.hrHigh) - Math.log(raw.hrLow)) / (2 * 1.96);
+    const hrAvgLow = hrAvg * Math.exp(-1.96 * sigmaNorm);
+    const hrAvgHigh = hrAvg * Math.exp(1.96 * sigmaNorm);
+
+    // Cancer output: same normalization/clamp, no years translation.
+    const cancerAvgRaw = raw.hrCancer / avg.hrCancer;
+    const clampedCancer = cancerAvgRaw < cap.hrFloor || cancerAvgRaw > cap.hrCeiling;
+    const hrAvgCancer = clamp(cancerAvgRaw, cap.hrFloor, cap.hrCeiling);
+    const sigmaCancer = (Math.log(raw.hrCancerHigh) - Math.log(raw.hrCancerLow)) / (2 * 1.96);
+    const hrAvgCancerLow = hrAvgCancer * Math.exp(-1.96 * sigmaCancer);
+    const hrAvgCancerHigh = hrAvgCancer * Math.exp(1.96 * sigmaCancer);
+
+    // Which inputs have NO cancer-specific effect? Shown on the card so users
+    // see exactly what this output does and doesn't cover.
+    const withCancer = new Set();
+    for (const input of model.inputs) {
+      for (const e of input.effects) if (e.output === 'cancer') withCancer.add(input.id);
+    }
+    const cancerNoData = model.inputs
+      .filter((i) => i.group !== 'you' && i.effects.length > 0 && !withCancer.has(i.id))
+      .map((i) => i.label);
+
+    const years = clamp(hrToYears(model, hrAvg), -cap.yearsCapLoss, cap.yearsCapGain);
+    // Pessimistic bound = upper HR; optimistic bound = lower HR.
+    const yearsLow = clamp(hrToYears(model, hrAvgHigh), -cap.yearsCapLoss, cap.yearsCapGain);
+    const yearsHigh = clamp(hrToYears(model, hrAvgLow), -cap.yearsCapLoss, cap.yearsCapGain);
+
+    const sex = model.baseline.lifeExpectancy[raw.values.sex] !== undefined ? raw.values.sex : 'unspecified';
     const baselineLe = model.baseline.lifeExpectancy[sex];
 
     // Marker fuzz for the mind outputs: grows with every active low-evidence
     // contributor — the shakier the inputs, the blurrier the marker.
     const fuzz = (outputId) => {
       const c = model.constants;
-      const lows = contributions[outputId].filter(
+      const lows = raw.contributions[outputId].filter(
         (x) => x.evidence === 'low' && Math.abs(x.points || 0) > 0.001
       ).length;
       return Math.min(c.bandFuzzMax, c.bandFuzzBase + lows * c.bandFuzzPerLowEvidence);
     };
 
+    const relCognition = raw.points.cognition - avg.points.cognition;
+    const relHappiness = raw.points.happiness - avg.points.happiness;
+
     return {
-      values,
-      bmi,
-      mortality: { hr, hrLow, hrHigh, clamped, years, yearsLow, yearsHigh },
+      values: raw.values,
+      bmi: raw.bmi,
+      mortality: {
+        // vs the studies' reference strata (transparent internals):
+        hr: raw.hr, hrLow: raw.hrLow, hrHigh: raw.hrHigh,
+        // vs the average person (what the UI shows):
+        hrAvg, hrAvgRaw, hrAvgLow, hrAvgHigh, clamped, years, yearsLow, yearsHigh,
+      },
       lifeExpectancy: {
         baseline: baselineLe,
         estimate: baselineLe + years,
@@ -201,12 +288,25 @@
         high: baselineLe + yearsHigh,
         delta: years,
       },
-      scores: {
-        cognition: { points: points.cognition, fuzz: fuzz('cognition'), ...bandFor(model, points.cognition) },
-        happiness: { points: points.happiness, fuzz: fuzz('happiness'), ...bandFor(model, points.happiness) },
+      cancer: {
+        hr: raw.hrCancer,
+        hrAvg: hrAvgCancer, hrAvgRaw: cancerAvgRaw,
+        hrAvgLow: hrAvgCancerLow, hrAvgHigh: hrAvgCancerHigh,
+        clamped: clampedCancer,
+        noData: cancerNoData,
       },
-      contributions,
-      findings: evaluateFindings(model, values),
+      scores: {
+        cognition: {
+          points: raw.points.cognition, relPoints: relCognition,
+          fuzz: fuzz('cognition'), ...bandFor(model, relCognition),
+        },
+        happiness: {
+          points: raw.points.happiness, relPoints: relHappiness,
+          fuzz: fuzz('happiness'), ...bandFor(model, relHappiness),
+        },
+      },
+      contributions: raw.contributions,
+      findings: raw.findings,
     };
   }
 
@@ -242,5 +342,5 @@
     return map;
   }
 
-  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, evaluateFindings, defaults, sourceIndex };
+  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, evaluateRaw, averageEval, evaluateFindings, defaults, sourceIndex };
 });

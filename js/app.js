@@ -104,7 +104,7 @@
       </div>
       <div class="output-card" id="out-mortality">
         <h3>All-cause mortality risk <span class="ev" data-ev="high">high</span></h3>
-        <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× reference</span></div>
+        <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× average</span></div>
         <div class="hr-sub" id="hr-sub"></div>
         <div class="gauge" id="hr-gauge" role="img" aria-label="Mortality hazard gauge">
           <div class="gauge-band" id="hr-band"></div>
@@ -114,6 +114,20 @@
         <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
         <p class="output-blurb"></p>
         <details><summary>What drives this?</summary><ul class="contrib" id="contrib-mortality"></ul></details>
+      </div>
+      <div class="output-card" id="out-cancer">
+        <h3>Cancer mortality risk <span class="ev" data-ev="moderate">moderate</span></h3>
+        <div class="hr-big"><output id="cancer-estimate">–</output><span class="hr-unit">× average</span></div>
+        <div class="hr-sub" id="cancer-sub"></div>
+        <div class="gauge" id="cancer-gauge" role="img" aria-label="Cancer mortality hazard gauge">
+          <div class="gauge-band" id="cancer-band"></div>
+          <div class="gauge-marker" id="cancer-marker"></div>
+          <div class="gauge-ref" title="Average person = 1.0"></div>
+        </div>
+        <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
+        <p class="output-blurb"></p>
+        <p class="coverage-note" id="cancer-coverage"></p>
+        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-cancer"></ul></details>
       </div>
       <div class="output-card" id="out-cognition">
         <h3>Cognitive function <span class="ev" data-ev="low">low</span></h3>
@@ -174,9 +188,11 @@
     updateChips(result);
     updateLifeExpectancy(result);
     updateMortality(result);
+    updateCancer(result);
     updateBand('cognition', result.scores.cognition);
     updateBand('happiness', result.scores.happiness);
     updateContrib('mortality', result.contributions.mortality, 'hr');
+    updateContrib('cancer', result.contributions.cancer, 'hr');
     updateContrib('cognition', result.contributions.cognition, 'points');
     updateContrib('happiness', result.contributions.happiness, 'points');
     updateFindings(result.findings);
@@ -219,7 +235,7 @@
     if (bmi && result.bmi) {
       const contrib = result.contributions.mortality.find((c) => c.inputId === 'bmi');
       bmi.innerHTML = contrib
-        ? `→ BMI ${result.bmi.toFixed(1)} (mortality ${fmtPctFromHr(contrib.hr)} ${refLink(contrib.source)})`
+        ? `→ BMI ${result.bmi.toFixed(1)} (mortality ${fmtPctFromHr(contrib.hrDelta)} ${refLink(contrib.source)})`
         : `→ BMI ${result.bmi.toFixed(1)} (not used — measured body fat % supplied instead)`;
     }
   }
@@ -229,16 +245,17 @@
       const host = document.getElementById('chips-' + input.id);
       if (!host) continue;
       const mine = result.contributions.mortality
-        .concat(result.contributions.cognition, result.contributions.happiness)
+        .concat(result.contributions.cancer, result.contributions.cognition, result.contributions.happiness)
         .filter((c) => c.inputId === input.id);
       const chips = [];
       for (const c of mine) {
-        if (c.hr !== undefined && Math.abs(c.hr - 1) > 0.005) {
-          chips.push(`<span class="chip ${c.hr < 1 ? 'good' : 'bad'}" title="${c.note}">mortality ${fmtPctFromHr(c.hr)} ${refLink(c.source)}</span>`);
+        if (c.hrDelta !== undefined && Math.abs(c.hrDelta - 1) > 0.005) {
+          const which = result.contributions.cancer.includes(c) ? 'cancer' : 'mortality';
+          chips.push(`<span class="chip ${c.hrDelta < 1 ? 'good' : 'bad'}" title="${c.note}">${which} ${fmtPctFromHr(c.hrDelta)} ${refLink(c.source)}</span>`);
         }
-        if (c.points !== undefined && Math.abs(c.points) > 0.001) {
+        if (c.pointsDelta !== undefined && Math.abs(c.pointsDelta) > 0.001) {
           const out = result.contributions.cognition.includes(c) ? 'cognition' : 'happiness';
-          chips.push(`<span class="chip ${c.points > 0 ? 'good' : 'bad'}" title="${c.note}">${out} ${fmtSigned(c.points)} ${refLink(c.source)}</span>`);
+          chips.push(`<span class="chip ${c.pointsDelta > 0 ? 'good' : 'bad'}" title="${c.note}">${out} ${fmtSigned(c.pointsDelta)} ${refLink(c.source)}</span>`);
         }
       }
       host.innerHTML = chips.join('');
@@ -256,27 +273,45 @@
       `plausible range ${le.low.toFixed(1)}–${le.high.toFixed(1)}`;
   }
 
-  function updateMortality(result) {
-    const m = result.mortality;
-    document.getElementById('hr-estimate').textContent = m.hr.toFixed(2);
-    document.getElementById('hr-sub').textContent =
-      `${fmtPctFromHr(m.hr)} vs. reference · plausible range ${m.hrLow.toFixed(2)}–${m.hrHigh.toFixed(2)}`;
-    // Log-scale gauge from 0.3x to 3.0x.
+  // Log-scale gauge updater shared by the mortality and cancer cards.
+  function updateHrCard(ids, hrAvg, hrAvgLow, hrAvgHigh, subText) {
+    document.getElementById(ids.estimate).textContent = hrAvg.toFixed(2);
+    document.getElementById(ids.sub).textContent = subText;
     const lo = Math.log(0.3), hi = Math.log(3.0);
     const pos = (x) => Math.min(100, Math.max(0, ((Math.log(x) - lo) / (hi - lo)) * 100));
-    document.querySelector('#hr-gauge .gauge-ref').style.left = pos(1) + '%';
-    document.getElementById('hr-marker').style.left = pos(m.hr) + '%';
-    const band = document.getElementById('hr-band');
-    band.style.left = pos(m.hrLow) + '%';
-    band.style.width = pos(m.hrHigh) - pos(m.hrLow) + '%';
-    document.getElementById('hr-gauge').setAttribute('aria-label',
-      `Mortality hazard ratio ${m.hr.toFixed(2)}, range ${m.hrLow.toFixed(2)} to ${m.hrHigh.toFixed(2)}`);
+    document.querySelector('#' + ids.gauge + ' .gauge-ref').style.left = pos(1) + '%';
+    document.getElementById(ids.marker).style.left = pos(hrAvg) + '%';
+    const band = document.getElementById(ids.band);
+    band.style.left = pos(hrAvgLow) + '%';
+    band.style.width = pos(hrAvgHigh) - pos(hrAvgLow) + '%';
+    document.getElementById(ids.gauge).setAttribute('aria-label',
+      `Hazard ratio ${hrAvg.toFixed(2)} vs average, range ${hrAvgLow.toFixed(2)} to ${hrAvgHigh.toFixed(2)}`);
+  }
+
+  function updateMortality(result) {
+    const m = result.mortality;
+    updateHrCard(
+      { estimate: 'hr-estimate', sub: 'hr-sub', gauge: 'hr-gauge', marker: 'hr-marker', band: 'hr-band' },
+      m.hrAvg, m.hrAvgLow, m.hrAvgHigh,
+      `${fmtPctFromHr(m.hrAvg)} vs. the average person · plausible range ${m.hrAvgLow.toFixed(2)}–${m.hrAvgHigh.toFixed(2)}`
+    );
+  }
+
+  function updateCancer(result) {
+    const c = result.cancer;
+    updateHrCard(
+      { estimate: 'cancer-estimate', sub: 'cancer-sub', gauge: 'cancer-gauge', marker: 'cancer-marker', band: 'cancer-band' },
+      c.hrAvg, c.hrAvgLow, c.hrAvgHigh,
+      `${fmtPctFromHr(c.hrAvg)} vs. the average person · plausible range ${c.hrAvgLow.toFixed(2)}–${c.hrAvgHigh.toFixed(2)}`
+    );
+    document.getElementById('cancer-coverage').textContent =
+      'No cancer-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
   }
 
   function updateBand(id, score) {
-    // Map points (-3..+3) to marker position. Marker width = engine-computed
-    // fuzz: wider when contributing evidence is shakier.
-    const p = Math.min(3, Math.max(-3, score.points));
+    // Map points vs the average person (-3..+3) to marker position. Marker
+    // width = engine-computed fuzz: wider when contributing evidence is shakier.
+    const p = Math.min(3, Math.max(-3, score.relPoints));
     const pct = ((p + 3) / 6) * 100;
     const fuzz = ((score.fuzz || 0.5) / 6) * 100;
     const marker = document.getElementById('marker-' + id);
@@ -290,18 +325,19 @@
   function updateContrib(outputId, contribs, field) {
     const host = document.getElementById('contrib-' + outputId);
     const nonzero = contribs
-      .filter((c) => field === 'hr' ? Math.abs(c.hr - 1) > 0.005 : Math.abs(c.points) > 0.001)
+      .filter((c) => field === 'hr' ? Math.abs(c.hrDelta - 1) > 0.005 : Math.abs(c.pointsDelta) > 0.001)
       .sort((a, b) => field === 'hr'
-        ? Math.abs(Math.log(b.hr)) - Math.abs(Math.log(a.hr))
-        : Math.abs(b.points) - Math.abs(a.points));
+        ? Math.abs(Math.log(b.hrDelta)) - Math.abs(Math.log(a.hrDelta))
+        : Math.abs(b.pointsDelta) - Math.abs(a.pointsDelta));
     if (!nonzero.length) {
       host.innerHTML = '<li class="contrib-empty">Nothing pushing this yet — move some sliders.</li>';
       return;
     }
     host.innerHTML = nonzero.map((c) => {
-      const effect = field === 'hr' ? `mortality ${fmtPctFromHr(c.hr)}` : fmtSigned(c.points);
+      const effect = field === 'hr' ? `mortality ${fmtPctFromHr(c.hrDelta)}` : fmtSigned(c.pointsDelta);
+      const dir = field === 'hr' ? (c.hrDelta < 1 ? 'good' : 'bad') : (c.pointsDelta > 0 ? 'good' : 'bad');
       return `<li>
-        <span class="contrib-effect ${field === 'hr' ? (c.hr < 1 ? 'good' : 'bad') : (c.points > 0 ? 'good' : 'bad')}">${effect}</span>
+        <span class="contrib-effect ${dir}">${effect}</span>
         <span class="contrib-label">${c.label}</span>
         <a class="contrib-ref" href="sources.html#ref-${refs[c.source]}" title="${c.note}">[${refs[c.source]}]</a>
         <span class="ev small" data-ev="${c.evidence}" title="${EVIDENCE_TITLE[c.evidence]}">${c.evidence}</span>
