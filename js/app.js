@@ -96,6 +96,7 @@
   function renderOutputs() {
     const host = document.getElementById('outputs');
     host.innerHTML = `
+      <div class="output-tiles">
       <div class="output-card" id="out-lifeExpectancy">
         <h3>Estimated life expectancy</h3>
         <div class="le-big"><output id="le-estimate">–</output><span class="le-unit">years</span></div>
@@ -163,6 +164,7 @@
         <div class="band-label" id="band-happiness">–</div>
         <p class="output-blurb"></p>
         <details><summary>What drives this?</summary><ul class="contrib" id="contrib-happiness"></ul></details>
+      </div>
       </div>
       <div class="output-card findings-card" id="out-findings">
         <h3>More findings from the same sources</h3>

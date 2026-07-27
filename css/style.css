@@ -29,15 +29,34 @@ a { color: var(--accent); }
 /* --------------------------------------------------------------- header */
 
 .site-header {
-  max-width: 1080px;
+  width: 100%;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 2rem 1.25rem 1rem;
+  flex-shrink: 0;
 }
 
 .site-header h1 {
-  margin: 0;
-  font-size: 1.9rem;
-  letter-spacing: -0.02em;
+  margin: 0 0 .15rem;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------- layout */
+
+main {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; }
 }
 
 .site-header h1 .accent { color: var(--accent); }
@@ -99,20 +118,6 @@ a { color: var(--accent); }
 }
 
 /* ---------------------------------------------------------------- layout */
-
-main {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 1rem 1.25rem 3rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
-}
-
-@media (max-width: 900px) {
-  main { grid-template-columns: 1fr; }
-}
 
 .group {
   background: var(--card);
@@ -230,18 +235,41 @@ input[type="range"] {
 .chip-ref { color: inherit; text-decoration: none; opacity: 0.75; }
 .chip-ref:hover { opacity: 1; text-decoration: underline; }
 
-/* --------------------------------------------------------------- outputs */
+/* ------------------------------------------------------------- outputs */
 
-#outputs { position: sticky; top: 1rem; }
-@media (max-width: 900px) { #outputs { position: static; } }
+#outputs {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 900px) {
+  #outputs {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+.output-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
 
 .output-card {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 1.1rem 1.2rem;
-  margin-bottom: 1.25rem;
 }
+.output-tiles .output-card { margin-bottom: 0; }
+
+.output-tiles + .findings-card { margin-top: 1rem; }
 
 .output-card h3 {
   margin: 0 0 0.6rem;
@@ -437,7 +465,7 @@ summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--ac
 footer {
   border-top: 1px solid var(--line);
   padding: 1.5rem 1.25rem 3rem;
-  max-width: 1080px;
+  max-width: 1280px;
   margin: 0 auto;
   font-size: 0.8rem;
   color: var(--ink-soft);
