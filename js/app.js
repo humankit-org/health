@@ -128,7 +128,7 @@
       </div>
       <hr class="output-divider">
       <div class="output-card" id="out-mortality">
-        <h3>All-cause mortality risk <span class="ev" data-ev="high">high</span></h3>
+        <h3>All-cause mortality risk <!-- <span class="ev" data-ev="high">high</span></h3> --> </h3>
         <div class="mort-top">
           <div class="output-highlight">
             <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× average</span></div>
@@ -142,11 +142,11 @@
         </div>
         <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
         <div class="hr-sub" id="hr-sub"></div>
-        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-mortality"></ul></details>
+        <details><summary>More</summary><ul class="contrib" id="contrib-mortality"></ul><p class="ci-note">Ranges combine 95% CI, widened where evidence is thin.</p></details>
       </div>
       <div class="output-row split">
       <div class="output-card" id="out-cancer">
-        <h3>Cancer mortality risk <span class="ev" data-ev="moderate">moderate</span></h3>
+        <h3>Cancer mortality risk <!-- <span class="ev" data-ev="moderate">moderate</span></h3> --> </h3>
         <div class="hr-big"><output id="cancer-estimate">–</output><span class="hr-unit">× average</span></div>
         <div class="hr-sub" id="cancer-sub"></div>
         <div class="gauge" id="cancer-gauge" role="img" aria-label="Cancer mortality hazard gauge">
@@ -155,10 +155,10 @@
           <div class="gauge-ref" title="Average person = 1.0"></div>
         </div>
         <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
-        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-cancer"></ul><p class="output-blurb"></p><p class="coverage-note" id="cancer-coverage"></p></details>
+        <details><summary>More</summary><ul class="contrib" id="contrib-cancer"></ul><p class="ci-note">Ranges combine 95% CI, widened where evidence is thin.</p><p class="output-blurb"></p><p class="coverage-note" id="cancer-coverage"></p></details>
       </div>
       <div class="output-card" id="out-cvd">
-        <h3>Cardiovascular mortality risk <span class="ev" data-ev="moderate">moderate</span></h3>
+        <h3>Cardiovascular mortality risk <!-- <span class="ev" data-ev="moderate">moderate</span></h3> --> </h3>
         <div class="hr-big"><output id="cvd-estimate">–</output><span class="hr-unit">× average</span></div>
         <div class="hr-sub" id="cvd-sub"></div>
         <div class="gauge" id="cvd-gauge" role="img" aria-label="Cardiovascular mortality hazard gauge">
@@ -167,30 +167,30 @@
           <div class="gauge-ref" title="Average person = 1.0"></div>
         </div>
         <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
-        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-cvd"></ul><p class="output-blurb"></p><p class="coverage-note" id="cvd-coverage"></p></details>
+        <details><summary>More</summary><ul class="contrib" id="contrib-cvd"></ul><p class="ci-note">Ranges combine 95% CI, widened where evidence is thin.</p><p class="output-blurb"></p><p class="coverage-note" id="cvd-coverage"></p></details>
       </div>
       </div>
       <hr class="output-divider">
       <div class="output-row split">
       <div class="output-card" id="out-cognition">
-        <h3>Cognitive function <span class="ev" data-ev="low">low</span></h3>
+        <h3>Cognitive function <!-- <span class="ev" data-ev="low">low</span></h3> --> </h3>
         <div class="band-meter" id="meter-cognition" role="img">
           <div class="band-ref" title="Average"></div>
           <div class="band-marker" id="marker-cognition"></div>
         </div>
         <div class="band-label" id="band-cognition">–</div>
         <p class="output-blurb"></p>
-        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-cognition"></ul></details>
+        <details><summary>More</summary><ul class="contrib" id="contrib-cognition"></ul></details>
       </div>
       <div class="output-card" id="out-happiness">
-        <h3>Happiness / wellbeing <span class="ev" data-ev="low">low</span></h3>
+        <h3>Happiness / wellbeing <!-- <span class="ev" data-ev="low">low</span></h3> --> </h3>
         <div class="band-meter" id="meter-happiness" role="img">
           <div class="band-ref" title="Average"></div>
           <div class="band-marker" id="marker-happiness"></div>
         </div>
         <div class="band-label" id="band-happiness">–</div>
         <p class="output-blurb"></p>
-        <details><summary>What drives this?</summary><ul class="contrib" id="contrib-happiness"></ul></details>
+        <details><summary>More</summary><ul class="contrib" id="contrib-happiness"></ul></details>
       </div>
       </div>
       </div>

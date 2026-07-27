@@ -332,6 +332,12 @@ input[type="range"] {
 #out-mortality details {
   margin-top: 0.3rem;
 }
+.ci-note {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin: 0.5rem 0 0;
+  font-style: italic;
+}
 .output-tiles + .findings-card { margin-top: 1rem; }
 
 .output-card h3 {
