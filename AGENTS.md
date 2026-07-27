@@ -104,6 +104,12 @@ integrity: sorted steps, bracketing CIs, existing sources).
   Overlap with all-cause mortality is stated on the card. Functional outcomes
   (osteoporosis, falls, injury nulls) are findings, not an output — sourced
   from Howe 2011, Sherrington 2019, Rong 2016, Leong 2015.
+- **Overlap rule** (v0.5): when two candidate factors share the same causal
+  pathway, keep the one with the cleaner dose-response and credit the other
+  in a finding — never multiply both. Applied to whole grains (cut, overlaps
+  fiber). Similar partial overlaps are noted in `note` fields: resting heart
+  rate ↔ cardio/VO2max; grip ↔ strength training; sleep regularity ↔ sleep
+  duration.
 - **Every verified number was checked against the primary source** (PubMed
   abstracts) on 2026-07-24. Items still needing a second look are marked in
   their `note`: sauna all-cause HRs (verify vs paper Table 2), NCHS baseline

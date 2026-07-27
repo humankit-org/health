@@ -20,6 +20,7 @@
     { id: 'diet', title: 'Diet & substances' },
     { id: 'mind', title: 'Recovery & mind' },
     { id: 'extras', title: 'Extras' },
+    { id: 'environment', title: 'Environment' },
     { id: 'advanced', title: 'Advanced — if you\'ve measured these' },
   ];
 

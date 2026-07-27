@@ -29,7 +29,7 @@ function referenceValues() {
   return {
     ...engine.defaults(model),
     cardio: 0, strength: 0, sitting: 4,
-    fiber: 0, fruitVeg: 0, processedMeat: 1.5, ssb: 0, fish: 'none',
+    fiber: 0, fruitVeg: 0, processedMeat: 1.5, ssb: 0, fish: 'none', nuts: 0,
     alcohol: 0, coffee: 0, magnesium: 250,
     sleep: 7.5, stress: 2, social: 5, purpose: 5,
     occupationalPA: 0,
@@ -235,6 +235,35 @@ console.log('\n[11] New inputs');
 
   const r13 = engine.evaluate(model, { ...neutralValues(), gripOn: false, grip: 15 });
   approx(r13.mortality.hr, 1.0, 1e-9, 'grip ignored while its toggle is off');
+
+  const r14 = engine.evaluate(model, { ...neutralValues(), nuts: 30 });
+  approx(r14.mortality.hr, Math.pow(0.78, 30 / 28), 1e-9, 'nuts 30 g/d -> 0.78^(30/28) (aune2016nuts)');
+  const base14 = engine.evaluateRaw(model, neutralValues());
+  approx(engine.evaluateRaw(model, { ...neutralValues(), nuts: 30 }).hrCancer / base14.hrCancer,
+    Math.pow(0.85, 30 / 28), 1e-9, 'nuts 30 g/d -> cancer 0.85^(30/28)');
+
+  const r15 = engine.evaluate(model, { ...neutralValues(), nuts: 50 });
+  approx(r15.mortality.hr, Math.pow(0.78, 35 / 28), 1e-9, 'nuts capped at 35 g');
+
+  const r16 = engine.evaluate(model, { ...neutralValues(), rhrOn: false, rhr: 90 });
+  approx(r16.mortality.hr, 1.0, 1e-9, 'resting HR ignored while its toggle is off');
+
+  const r17 = engine.evaluate(model, { ...neutralValues(), rhrOn: true, rhr: 90 });
+  approx(r17.mortality.hr, Math.pow(1.17, 2), 1e-9, 'RHR 90 (20 above anchor) -> 1.17^2 (aune2017rhr)');
+  approx(engine.evaluateRaw(model, { ...neutralValues(), rhrOn: true, rhr: 90 }).hrCancer / base14.hrCancer,
+    Math.pow(1.14, 2), 1e-9, 'RHR 90 -> cancer 1.14^2');
+
+  const r18 = engine.evaluate(model, { ...neutralValues(), sleepRegularity: 9 });
+  approx(r18.mortality.hr, 0.78, 1e-9, 'regular sleep schedule -> HR 0.78 (windred2024)');
+
+  const r19 = engine.evaluate(model, { ...neutralValues(), sleepRegularity: 2 });
+  approx(r19.mortality.hr, 1.25, 1e-9, 'irregular sleep schedule -> HR 1.25');
+
+  const r20 = engine.evaluate(model, { ...neutralValues(), pm25: 18 });
+  approx(r20.mortality.hr, 1.073, 1e-9, 'PM2.5 18 (10 above anchor) -> 1.073 (di2017)');
+
+  const r21 = engine.evaluate(model, { ...neutralValues(), pm25: 2 });
+  approx(r21.mortality.hr, Math.pow(1.073, -0.5), 1e-9, 'PM2.5 clamped at minDose 3');
 }
 
 console.log('\n[12] Findings react to inputs');
@@ -289,6 +318,18 @@ console.log('\n[14] Functional-independence findings');
 
   const grip = engine.evaluate(model, { ...neutralValues(), gripOn: true, grip: 30 });
   ok(grip.findings.some((x) => x.source === 'leong2015' && x.dir === 'neutral'), 'grip enabled -> honest-null injury finding');
+
+  const nuts = engine.evaluate(model, { ...neutralValues(), nuts: 25 });
+  ok(nuts.findings.some((x) => x.source === 'aune2016nuts' && x.dir === 'good'), 'nuts >= 20 g -> respiratory/diabetes finding');
+
+  const reg = engine.evaluate(model, { ...neutralValues(), sleepRegularity: 2 });
+  ok(reg.findings.some((x) => x.source === 'windred2024' && x.dir === 'bad'), 'irregular sleep -> regularity-over-duration finding');
+
+  const pm = engine.evaluate(model, { ...neutralValues(), pm25: 15 });
+  ok(pm.findings.some((x) => x.source === 'di2017' && x.dir === 'bad'), 'PM2.5 > 12 -> exposure finding');
+
+  const grains = engine.evaluate(model, { ...neutralValues(), fiber: 30 });
+  ok(grains.findings.some((x) => x.source === 'aune2016grain'), 'high fiber -> whole-grains-not-double-counted finding');
 }
 
 console.log('\n[15] Citation numbering (index.html <-> sources.html)');

@@ -673,6 +673,30 @@ const HEALTH_MODEL = {
       ],
     },
 
+    {
+      id: 'nuts',
+      group: 'diet',
+      label: 'Nuts',
+      kind: 'slider',
+      unit: 'g/day',
+      min: 0, max: 50, step: 1, default: 5,
+      hint: 'A small handful ≈ 25–30 g. US average is low (~5 g/day).',
+      effects: [
+        {
+          output: 'mortality', type: 'perUnit', per: 28, capAt: 35,
+          hr: 0.78, hrLow: 0.72, hrHigh: 0.84,
+          evidence: 'high', source: 'aune2016nuts',
+          note: 'Dose-response meta-analysis (20 studies): RR 0.78 (0.72–0.84) per 28 g/day; tree nuts = peanuts. Benefit capped at 35 g/day in this model.',
+        },
+        {
+          output: 'cancer', type: 'perUnit', per: 28, capAt: 35,
+          hr: 0.85, hrLow: 0.76, hrHigh: 0.94,
+          evidence: 'high', source: 'aune2016nuts',
+          note: 'Same meta-analysis, total cancer: RR 0.85 (0.76–0.94) per 28 g/day.',
+        },
+      ],
+    },
+
     // ----------------------------------------------------- Recovery & mind
     {
       id: 'sleep',
@@ -801,6 +825,36 @@ const HEALTH_MODEL = {
       ],
     },
 
+    {
+      id: 'sleepRegularity',
+      group: 'mind',
+      label: 'Sleep regularity',
+      kind: 'slider',
+      unit: '/ 10',
+      min: 1, max: 10, step: 1, default: 6,
+      hint: 'Same sleep/wake times day to day? 1 = all over the place, 10 = like clockwork.',
+      effects: [
+        {
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'windred2024',
+          steps: [
+            { max: 3, hr: 1.25, hrLow: 1.10, hrHigh: 1.45 },
+            { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: Infinity, hr: 0.78, hrLow: 0.60, hrHigh: 0.92 },
+          ],
+          note: 'UK Biobank accelerometer cohort (61k people): the top four Sleep Regularity Index quintiles had 20–48% lower all-cause mortality than the least-regular quintile — and regularity predicted mortality BETTER than duration did. Our 1–10 self-rating mapped onto their quintiles, approximate.',
+        },
+        {
+          output: 'cancer', type: 'steps', evidence: 'moderate', source: 'windred2024',
+          steps: [
+            { max: 3, hr: 1.15, hrLow: 1.05, hrHigh: 1.30 },
+            { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: Infinity, hr: 0.80, hrLow: 0.65, hrHigh: 0.95 },
+          ],
+          note: 'Same cohort, cancer mortality: 16–39% lower across the more-regular quintiles.',
+        },
+      ],
+    },
+
     // -------------------------------------------------------------- Extras
     {
       id: 'sauna',
@@ -915,6 +969,25 @@ const HEALTH_MODEL = {
       ],
     },
 
+    // ------------------------------------------------------------ Environment
+    {
+      id: 'pm25',
+      group: 'environment',
+      label: 'Air pollution (PM2.5 where you live)',
+      kind: 'slider',
+      unit: 'µg/m³',
+      min: 2, max: 30, step: 1, default: 8,
+      hint: 'Look it up by zip code/city. US mean ≈ 8, EPA standard 12, WHO guideline 5. Mostly an exposure, not a habit.',
+      effects: [
+        {
+          output: 'mortality', type: 'perUnit', per: 10, ref: 8, minDose: 3, capAt: 30,
+          hr: 1.073, hrLow: 1.071, hrHigh: 1.075,
+          evidence: 'high', source: 'di2017',
+          note: 'Medicare open cohort (61M people, 460M person-years): +7.3% (7.1–7.5) all-cause mortality per +10 µg/m³ PM2.5 — and +13.6% even below the 12 µg/m³ US standard. Anchored at the US mean (8). Levers: location, HEPA purifiers, masks, avoiding high-traffic routes.',
+        },
+      ],
+    },
+
     // ------------------- Advanced (measured values, optional) -------------
     {
       id: 'vo2maxOn',
@@ -998,6 +1071,39 @@ const HEALTH_MODEL = {
           hr: 0.8621, hrLow: 0.8333, hrHigh: 0.8850,
           evidence: 'moderate', source: 'leong2015',
           note: 'PURE study (17 countries, 140k people): HR 1.16 (1.13–1.20) per 5 kg LOWER grip — expressed as 0.862 per +5 kg, anchored at 35 kg. Grip predicted mortality more strongly than systolic blood pressure. Probably a marker of overall strength (overlaps the strength-training input); whether improving grip itself helps is untested.',
+        },
+      ],
+    },
+    {
+      id: 'rhrOn',
+      group: 'advanced',
+      label: 'I know my resting heart rate',
+      kind: 'toggle',
+      default: false,
+      hint: 'After sitting quietly for 5 minutes. Most wearables report it.',
+      effects: [],
+    },
+    {
+      id: 'rhr',
+      group: 'advanced',
+      label: 'Resting heart rate',
+      kind: 'slider',
+      unit: 'bpm',
+      min: 40, max: 110, step: 1, default: 70,
+      gatedBy: 'rhrOn',
+      hint: 'Typical adult average ≈ 60–80 bpm. Overlaps with fitness — see the note.',
+      effects: [
+        {
+          output: 'mortality', type: 'perUnit', per: 10, ref: 70, minDose: 45, capAt: 100,
+          hr: 1.17, hrLow: 1.14, hrHigh: 1.19,
+          evidence: 'moderate', source: 'aune2017rhr',
+          note: 'Dose-response meta-analysis (87 studies): +17% (1.14–1.19) all-cause mortality per +10 bpm. RHR is partly a proxy for cardiorespiratory fitness — it overlaps the cardio/VO2max inputs, though the association survived activity adjustment in most studies.',
+        },
+        {
+          output: 'cancer', type: 'perUnit', per: 10, ref: 70, minDose: 45, capAt: 100,
+          hr: 1.14, hrLow: 1.06, hrHigh: 1.23,
+          evidence: 'moderate', source: 'aune2017rhr',
+          note: 'Same meta-analysis, total cancer: +14% (1.06–1.23) per +10 bpm.',
         },
       ],
     },
@@ -1175,6 +1281,26 @@ const HEALTH_MODEL = {
     {
       when: (v) => v.gripOn && v.grip <= 25, dir: 'bad', input: 'Grip', source: 'leong2015',
       text: 'in PURE, grip strength predicted all-cause mortality more strongly than systolic blood pressure did',
+    },
+    {
+      when: (v) => v.nuts >= 20, dir: 'good', input: 'Nuts', source: 'aune2016nuts',
+      text: 'a handful a day was also associated with ~50% lower respiratory-disease and ~40% lower diabetes mortality',
+    },
+    {
+      when: (v) => v.fiber >= 25, dir: 'good', input: 'Fiber', source: 'aune2016grain',
+      text: 'whole grains are likely part of your fiber benefit: RR 0.83 (0.77–0.90) per 3 servings/day — we don\'t count them separately to avoid double-counting',
+    },
+    {
+      when: (v) => v.sleepRegularity <= 3, dir: 'bad', input: 'Sleep regularity', source: 'windred2024',
+      text: 'an irregular schedule predicted mortality more strongly than short sleep did in UK Biobank — a fixed wake time is a real lever, even before more hours',
+    },
+    {
+      when: (v) => v.pm25 > 12, dir: 'bad', input: 'Air pollution', source: 'di2017',
+      text: 'above the US annual standard (12 µg/m³); WHO\'s guideline is 5 — HEPA purifiers, masks and route/location choices measurably reduce exposure',
+    },
+    {
+      when: (v) => v.pm25 <= 5, dir: 'good', input: 'Air pollution', source: 'di2017',
+      text: 'at or below the WHO guideline for PM2.5 — but mortality risk keeps falling with every µg/m³, there\'s no clear safe floor',
     },
   ],
 
@@ -1533,6 +1659,46 @@ const HEALTH_MODEL = {
       journal: 'The Lancet, 392(10152):1015–1035',
       url: 'https://doi.org/10.1016/S0140-6736(18)31310-2',
       pmid: '30146330',
+    },
+    aune2016nuts: {
+      authors: 'Aune D, Keum N, Giovannucci E, et al.',
+      year: 2016,
+      title: 'Nut consumption and risk of cardiovascular disease, total cancer, all-cause and cause-specific mortality: a systematic review and dose-response meta-analysis of prospective studies',
+      journal: 'BMC Medicine, 14(1):207',
+      url: 'https://doi.org/10.1186/s12916-016-0730-3',
+      pmid: '27916000',
+    },
+    aune2016grain: {
+      authors: 'Aune D, Keum N, Giovannucci E, et al.',
+      year: 2016,
+      title: 'Whole grain consumption and risk of cardiovascular disease, cancer, and all cause and cause specific mortality: systematic review and dose-response meta-analysis of prospective studies',
+      journal: 'BMJ, 353:i2716',
+      url: 'https://doi.org/10.1136/bmj.i2716',
+      pmid: '27301975',
+    },
+    aune2017rhr: {
+      authors: 'Aune D, Sen A, ó’Hartaigh B, Janszky I, Romundstad PR, Tonstad S, Vatten LJ',
+      year: 2017,
+      title: 'Resting heart rate and the risk of cardiovascular disease, total cancer, and all-cause mortality: a systematic review and dose-response meta-analysis of prospective studies',
+      journal: 'Nutrition, Metabolism and Cardiovascular Diseases, 27(6):504–517',
+      url: 'https://doi.org/10.1016/j.numecd.2017.04.004',
+      pmid: '28552551',
+    },
+    windred2024: {
+      authors: 'Windred DP, Burns AC, Lane JM, Saxena R, Rutter MK, Cain SW, Phillips AJK',
+      year: 2024,
+      title: 'Sleep regularity is a stronger predictor of mortality risk than sleep duration: a prospective cohort study',
+      journal: 'Sleep, 47(1):zsad253',
+      url: 'https://doi.org/10.1093/sleep/zsad253',
+      pmid: '37738616',
+    },
+    di2017: {
+      authors: 'Di Q, Wang Y, Zanobetti A, Wang Y, Koutrakis P, Choirat C, Dominici F, Schwartz JD',
+      year: 2017,
+      title: 'Air pollution and mortality in the Medicare population',
+      journal: 'New England Journal of Medicine, 376(26):2513–2522',
+      url: 'https://doi.org/10.1056/NEJMoa1702747',
+      pmid: '28657878',
     },
   },
 };
