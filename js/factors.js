@@ -998,7 +998,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'hours/day',
       min: 0, max: 12, step: 0.5, default: 5,
-      hint: 'TV, social media, doomscrolling, gaming — not work screens. US average ≈ 4–6 h/day (TV ~3 h + social media ~2–2.5 h; verify vs ATUS/DataReportal).',
+      hint: 'TV, social media, doomscrolling, gaming. Not work screens. US average ≈ 4–6 h/day (TV ~3 h + social media ~2 h).',
       effects: [
         {
           output: 'happiness', type: 'steps', evidence: 'low', source: 'hunt2018',
