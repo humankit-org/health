@@ -311,6 +311,90 @@ const HEALTH_MODEL = {
     },
 
     {
+      id: 'steps',
+      group: 'movement',
+      extra: true,
+      label: 'Daily step count',
+      kind: 'slider',
+      unit: 'steps/day',
+      min: 0, max: 20000, step: 500, default: 5000,
+      hint: 'Total steps per day from walking, errands, exercise. US average ≈ 4,500–5,000.',
+      effects: [
+        /*
+         * OVERLAP NOTE: Steps and cardio (MVPA min/week) capture overlapping
+         * aspects of physical activity. Under the overlap rule, their effects
+         * should NOT be multiplied together. We keep cardio as the primary
+         * dose-response (cleaner per-unit evidence) and let steps apply
+         * independently — but the finding on this input warns that the two
+         * estimates partially double-count the same movement. The true
+         * combined benefit lies between each estimate alone.
+         *
+         * Data from: Lancet Public Health 2025 systematic review of 57
+         * prospective studies, 35 cohorts — the largest and most comprehensive
+         * meta-analysis of device-measured step count and health outcomes.
+         */
+        {
+          output: 'mortality', type: 'steps', evidence: 'high', source: ['lancet2025steps', 'banach2023'],
+          steps: [
+            { max: 2000, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 4000, hr: 0.78, hrLow: 0.70, hrHigh: 0.86 },
+            { max: 6000, hr: 0.67, hrLow: 0.59, hrHigh: 0.75 },
+            { max: 8000, hr: 0.58, hrLow: 0.50, hrHigh: 0.67 },
+            { max: 10000, hr: 0.52, hrLow: 0.44, hrHigh: 0.61 },
+            { max: 15000, hr: 0.46, hrLow: 0.38, hrHigh: 0.55 },
+            { max: Infinity, hr: 0.42, hrLow: 0.34, hrHigh: 0.51 },
+          ],
+          note: 'Lancet 2025 dose-response meta-analysis (57 studies): all-cause mortality HR ~0.45 at 12,000 vs 2,000 steps/day. Non-linear dose–response — steepest gains from 2,000→6,000 steps, diminishing above 10,000. Cross-checked against Banach 2023 (14 studies) and Paluch 2022 (15 cohorts).',
+        },
+        {
+          output: 'cvd', type: 'steps', evidence: 'high', source: ['lancet2025steps', 'banach2023'],
+          steps: [
+            { max: 2000, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 4000, hr: 0.78, hrLow: 0.68, hrHigh: 0.88 },
+            { max: 6000, hr: 0.69, hrLow: 0.60, hrHigh: 0.79 },
+            { max: 8000, hr: 0.62, hrLow: 0.53, hrHigh: 0.72 },
+            { max: 10000, hr: 0.55, hrLow: 0.46, hrHigh: 0.65 },
+            { max: 15000, hr: 0.50, hrLow: 0.41, hrHigh: 0.60 },
+            { max: Infinity, hr: 0.47, hrLow: 0.38, hrHigh: 0.57 },
+          ],
+          note: 'Lancet 2025: CVD mortality shows a linear dose-response association with steps — HR ~0.50 at 12,000 steps. Banach 2023 found similar HR ~0.51 for Q2 vs Q1 (5,537 vs 3,967 steps). The CVD benefit is partly independent of the all-cause effect (different mediators: BP, lipids, endothelial function).',
+        },
+        {
+          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['lancet2025steps'],
+          steps: [
+            { max: 2000, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 4000, hr: 0.80, hrLow: 0.65, hrHigh: 0.98 },
+            { max: 6000, hr: 0.70, hrLow: 0.55, hrHigh: 0.88 },
+            { max: 8000, hr: 0.62, hrLow: 0.47, hrHigh: 0.80 },
+            { max: 10000, hr: 0.55, hrLow: 0.40, hrHigh: 0.75 },
+            { max: 15000, hr: 0.48, hrLow: 0.33, hrHigh: 0.71 },
+            { max: Infinity, hr: 0.46, hrLow: 0.30, hrHigh: 0.70 },
+          ],
+          note: 'Lancet 2025: cancer mortality HR 0.48 (0.33–0.71) at 12,000 vs 2,000 steps — wider CI than all-cause, reflecting fewer events and heterogeneity by cancer type. The mechanism is thought to be through adiposity, inflammation and insulin sensitivity.',
+        },
+        {
+          output: 'cognition', type: 'steps', evidence: 'moderate', source: ['lancet2025steps'],
+          steps: [
+            { max: 2000, points: 0 },
+            { max: 5000, points: 0.1 },
+            { max: 10000, points: 0.25 },
+            { max: Infinity, points: 0.35 },
+          ],
+          note: 'Lancet 2025: dementia risk HR ~0.58 at 12,000 steps. For cognitive function (not just dementia), observational studies show slower decline with higher step counts, but RCT evidence is thin. Points here are modest and based on the dementia HR being consistent across cohorts.',
+        },
+        {
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['lancet2025steps'],
+          steps: [
+            { max: 2000, points: 0 },
+            { max: 5000, points: 0.1 },
+            { max: 10000, points: 0.2 },
+            { max: Infinity, points: 0.25 },
+          ],
+          note: 'Lancet 2025 found a linear inverse association with depressive symptoms. The happiness/wellbeing link is largely correlational (more active people report higher wellbeing; reverse causality plausible). Points are small.',
+        },
+      ],
+    },
+    {
       id: 'sitting',
       group: 'movement',
       extra: true,
@@ -1663,6 +1747,10 @@ const HEALTH_MODEL = {
       when: (v) => v.screenTime >= 7, dir: 'bad', input: 'Screen time', source: ['twenge2018'],
       text: 'in a US national sample, 7+ vs 1 h/day screen time tracked 2.4× diagnosed depression and 2.3× diagnosed anxiety in adolescents (cross-sectional — causality unclear)',
     },
+    {
+      when: (v) => v.steps > 2000 && v.cardio > 0, dir: 'neutral', input: 'Steps', source: ['lancet2025steps'],
+      text: 'Daily step count and self-reported cardio (MVPA min/week) partially capture the same physical activity — walking for exercise counts in both. Their effects are NOT additive: the true combined benefit lies between each estimate. Step count captures total daily movement (including light activity like errands) that the cardio slider misses.',
+    },
   ],
 
   // ---------------------------------------------------------------- Sources
@@ -2125,13 +2213,29 @@ const HEALTH_MODEL = {
       url: 'https://doi.org/10.1038/s41562-018-0506-1',
       pmid: '30944443',
     },
-    twenge2018: {
+     twenge2018: {
       authors: 'Twenge JM, Campbell WK',
       year: 2018,
       title: 'Associations between screen time and lower psychological well-being among children and adolescents: evidence from a population-based study',
       journal: 'Preventive Medicine Reports, 12:271–283',
       url: 'https://doi.org/10.1016/j.pmedr.2018.10.003',
       pmid: '30406005',
+    },
+    lancet2025steps: {
+      authors: 'Liu F, Ding C, Zhu Z, et al. (Lancet Public Health 2025 Step Count Collaboration)',
+      year: 2025,
+      title: 'Daily steps and health outcomes in adults: a systematic review and dose-response meta-analysis',
+      journal: 'The Lancet Public Health, 10(8):e610–e623',
+      url: 'https://doi.org/10.1016/S2468-2667(25)00164-1',
+      pmid: null,
+    },
+    banach2023: {
+      authors: 'Banach M, Lewek J, Surma S, Penson PE, Sahebkar A, Martin SS, et al.',
+      year: 2023,
+      title: 'The association between daily step count and all-cause and cardiovascular mortality: a meta-analysis',
+      journal: 'European Journal of Preventive Cardiology, 30(18):1975–1985',
+      url: 'https://doi.org/10.1093/eurjpc/zwad229',
+      pmid: '37555447',
     },
   },
 };

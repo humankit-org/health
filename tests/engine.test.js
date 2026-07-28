@@ -28,7 +28,7 @@ function approx(a, b, tol, msg) {
 function referenceValues() {
   return {
     ...engine.defaults(model),
-    cardio: 0, strength: 0, sitting: 4,
+    steps: 2000, cardio: 0, strength: 0, sitting: 4,
     fiber: 0, fruitVeg: 0, processedMeat: 1.5, ssb: 0, fish: 'none', nuts: 0,
     alcohol: 0, coffee: 0, magnesium: 250,
     sleep: 7.5, stress: 2, social: 5, purpose: 5,
@@ -267,6 +267,23 @@ console.log('\n[11] New inputs');
 
   const r21 = engine.evaluate(model, { ...neutralValues(), pm25: 2 });
   approx(r21.mortality.hr, Math.pow(1.073, -0.5), 1e-9, 'PM2.5 clamped at minDose 3');
+
+  // Step count tests (neutralValues has steps=2000 = study reference)
+  const stepsRef = engine.evaluate(model, neutralValues());
+  const stepsAtDefault = engine.evaluate(model, { ...neutralValues(), steps: 5000 });
+  const stepsHigh = engine.evaluate(model, { ...neutralValues(), steps: 10000 });
+  approx(stepsHigh.mortality.hr / stepsAtDefault.mortality.hr, 0.52 / 0.67, 1e-9, 'steps 10k -> mortality raw HR 0.52/0.67 vs 5k default (lancet2025steps)');
+  approx(stepsRef.mortality.hr / stepsAtDefault.mortality.hr, 1.00 / 0.67, 1e-9, 'steps 2k -> mortality raw HR 1.0/0.67 vs 5k default');
+
+  const stepsBase = engine.evaluateRaw(model, neutralValues());
+  const stepsHighRaw = engine.evaluateRaw(model, { ...neutralValues(), steps: 15000 });
+  approx(stepsHighRaw.hrCvd / stepsBase.hrCvd, 0.50, 1e-9, 'steps 15k -> CVD HR 0.50 (lancet2025steps)');
+  approx(stepsHighRaw.hrCancer / stepsBase.hrCancer, 0.48, 1e-9, 'steps 15k -> cancer HR 0.48 (lancet2025steps)');
+
+  // Use defaults so all non-step inputs cancel with the average
+  const stepsHappy = engine.evaluate(model, { ...engine.defaults(model), steps: 10000 });
+  ok(stepsHappy.scores.happiness.relPoints > 0, 'steps 10k -> positive happiness delta');
+  ok(stepsHappy.scores.cognition.relPoints > 0, 'steps 10k -> positive cognition delta');
 }
 
 console.log('\n[12] Findings react to inputs');
@@ -286,6 +303,9 @@ console.log('\n[12] Findings react to inputs');
 
   const r4 = engine.evaluate(model, engine.defaults(model));
   ok(r4.findings.some((f) => f.source.includes('manson2019omega3')), 'average profile (fish 1-2/wk) shows the omega-3 honest null');
+
+  const r4b = engine.evaluate(model, engine.defaults(model));
+  ok(r4b.findings.some((f) => f.source.includes('lancet2025steps') && /partially capture/.test(f.text)), 'defaults (steps + cardio >0) shows steps-cardio overlap finding');
 }
 
 console.log('\n[13] Cancer output');
