@@ -33,6 +33,7 @@ function referenceValues() {
     alcohol: 0, coffee: 0, magnesium: 250,
     sleep: 7.5, stress: 2, social: 5, purpose: 5,
     occupationalPA: 0,
+    sunExposure: 0.5, // HR 1.0 step (reference level)
     heightCm: 170, weightKg: 68, // BMI ~23.5 -> HR 1.0 band
   };
 }
@@ -284,6 +285,42 @@ console.log('\n[11] New inputs');
   const stepsHappy = engine.evaluate(model, { ...engine.defaults(model), steps: 10000 });
   ok(stepsHappy.scores.happiness.relPoints > 0, 'steps 10k -> positive happiness delta');
   ok(stepsHappy.scores.cognition.relPoints > 0, 'steps 10k -> positive cognition delta');
+
+  // Sun exposure
+  const sunBase = engine.evaluateRaw(model, neutralValues());
+  const sunLow = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 0 });
+  approx(sunLow.hr / sunBase.hr, 1.15, 1e-9, 'sun 0 h/d -> mortality HR 1.15 (adventist2025)');
+
+  const sunOpt = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 2.5 });
+  approx(sunOpt.hr / sunBase.hr, 0.90, 1e-9, 'sun 2.5 h/d -> mortality HR 0.90 (adventist2025)');
+
+  const sunHigh = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 6 });
+  approx(sunHigh.hr / sunBase.hr, 0.88, 1e-9, 'sun 6 h/d -> mortality HR 0.88 (persistent benefit)');
+
+  // CVD
+  const sunCvdLow = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 0 });
+  approx(sunCvdLow.hrCvd / sunBase.hrCvd, 1.18, 1e-9, 'sun 0 h/d -> CVD HR 1.18');
+
+  const sunCvdOpt = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 2.5 });
+  approx(sunCvdOpt.hrCvd / sunBase.hrCvd, 0.88, 1e-9, 'sun 2.5 h/d -> CVD HR 0.88');
+
+  const sunCvdHigh = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 6 });
+  approx(sunCvdHigh.hrCvd / sunBase.hrCvd, 0.85, 1e-9, 'sun 6 h/d -> CVD HR 0.85 (persistent benefit)');
+
+  // Cancer: benefit persists at high exposure (Stevenson, Sun-BEEM show benefit at all UV levels)
+  const sunCancerHigh = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 6 });
+  approx(sunCancerHigh.hrCancer / sunBase.hrCancer, 0.96, 1e-9, 'sun 6 h/d -> cancer HR 0.96 (persistent benefit)');
+
+  const sunCancerMod = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 2.5 });
+  approx(sunCancerMod.hrCancer / sunBase.hrCancer, 0.96, 1e-9, 'sun 2.5 h/d -> cancer HR 0.96 (modest benefit)');
+
+  // Happiness: default (1.5 h) is in optimal range; too little reduces it; high exposure maintains benefit
+  const sunHappy = engine.evaluate(model, { ...engine.defaults(model), sunExposure: 4 });
+  ok(sunHappy.scores.happiness.relPoints >= 0, 'sun 4 h/d -> happiness at least equals default (benefit persists)');
+
+  const sunSad = engine.evaluate(model, { ...engine.defaults(model), sunExposure: 0 });
+  ok(sunSad.scores.happiness.relPoints < -0.3, 'sun 0 h/d -> happiness well below default');
+
 }
 
 console.log('\n[12] Findings react to inputs');
@@ -306,6 +343,18 @@ console.log('\n[12] Findings react to inputs');
 
   const r4b = engine.evaluate(model, engine.defaults(model));
   ok(r4b.findings.some((f) => f.source.includes('lancet2025steps') && /partially capture/.test(f.text)), 'defaults (steps + cardio >0) shows steps-cardio overlap finding');
+
+  const sunHigh = engine.evaluate(model, { ...referenceValues(), sunExposure: 6 });
+  ok(sunHigh.findings.some((f) => f.source.includes('mahamat2020') && /skin cancer/.test(f.text)), 'sun 6 h/d -> skin-cancer finding');
+
+  const sunLow = engine.evaluate(model, { ...referenceValues(), sunExposure: 0 });
+  ok(sunLow.findings.some((f) => f.source.includes('stevenson2024') && /low sun/.test(f.text)), 'sun 0 h/d -> low-sun finding');
+
+  const sunOpt = engine.evaluate(model, { ...referenceValues(), sunExposure: 3 });
+  ok(sunOpt.findings.some((f) => f.source.includes('adventist2025') && /lower all-cause/.test(f.text)), 'sun 3 h/d -> optimal-sun finding');
+
+  const sunCog = engine.evaluate(model, { ...referenceValues(), sunExposure: 2 });
+  ok(sunCog.findings.some((f) => f.text.includes('boost cognition')), 'sun 2 h/d -> cognition-finding note');
 }
 
 console.log('\n[13] Cancer output');

@@ -1356,6 +1356,62 @@ const HEALTH_MODEL = {
       ],
     },
     {
+      id: 'sunExposure',
+      group: 'environment',
+      extra: true,
+      label: 'Time outdoors in sun',
+      kind: 'slider',
+      unit: 'hours/day',
+      min: 0, max: 10, step: 0.5, default: 1.5,
+      hint: 'Time spent outside between ~9 am and 5 pm — walking, gardening, sitting in the park. This is about both daylight health effects (circadian rhythm, vitamin D) AND UV effects (skin cancer risk). US average ≈ 1–2 h/day.',
+      effects: [
+        {
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['adventist2025', 'stevenson2024'],
+          steps: [
+            { max: 0.25, hr: 1.15, hrLow: 1.06, hrHigh: 1.25 },
+            { max: 1.0,  hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 3.0,  hr: 0.90, hrLow: 0.86, hrHigh: 0.94 },
+            { max: 5.0,  hr: 0.90, hrLow: 0.85, hrHigh: 0.95 },
+            { max: Infinity, hr: 0.88, hrLow: 0.82, hrHigh: 0.94 },
+          ],
+          note: 'Adventist Health Study 2 (83k people, Nazeeh 2025): time outdoors shows a reverse-J association with all-cause mortality — risk drops from 0.5 h (ref) to 2 h (HR 0.90), 3 h (HR 0.88), and 5 h (HR 0.90). Benefit persists without attenuation at high exposure. Lindqvist 2014 Swedish women: avoiders had ~2× mortality vs highest sun group. Stevenson 2024 UK Biobank: higher UV — all-cause mortality lower. Sun-BEEM 2026 UK Biobank: medium UV HR 0.89, high UV HR 0.84 vs low.',
+        },
+        {
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['adventist2025', 'stevenson2024'],
+          steps: [
+            { max: 0.25, hr: 1.18, hrLow: 1.06, hrHigh: 1.32 },
+            { max: 1.0,  hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 3.0,  hr: 0.88, hrLow: 0.83, hrHigh: 0.94 },
+            { max: 5.0,  hr: 0.87, hrLow: 0.79, hrHigh: 0.95 },
+            { max: Infinity, hr: 0.85, hrLow: 0.77, hrHigh: 0.94 },
+          ],
+          note: 'AHS-2 (Nazeeh 2025): CVD mortality HR 0.89 (2 h), 0.87 (3 h), 0.86 (5 h). Stevenson 2024: stronger inverse UV-CVD mortality association than all-cause — driven by nitric-oxide-mediated blood pressure reduction and improved endothelial function. Sun-BEEM 2026: high UV consistently associated with lower CVD mortality.',
+        },
+        {
+          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['stevenson2024', 'adventist2025'],
+          steps: [
+            { max: 0.25, hr: 1.06, hrLow: 0.97, hrHigh: 1.16 },
+            { max: 1.0,  hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 3.0,  hr: 0.96, hrLow: 0.90, hrHigh: 1.02 },
+            { max: 5.0,  hr: 0.96, hrLow: 0.89, hrHigh: 1.03 },
+            { max: Infinity, hr: 0.96, hrLow: 0.88, hrHigh: 1.05 },
+          ],
+          note: 'Stevenson 2024 UK Biobank: UV inversely associated with cancer mortality — higher UV is beneficial at all levels examined. Sun-BEEM 2026: non-skin cancer mortality lower, skin cancer mortality flat at high UV. AHS-2 (Nazeeh 2025) found cancer mortality slightly elevated at 5 h (HR 1.15, 1.02–1.29) in a low-baseline-risk Adventist population, possibly driven by skin cancer incidence. Preponderance of evidence supports modest net benefit or neutrality at all sun exposure levels.',
+        },
+        {
+          output: 'happiness', type: 'steps', evidence: 'moderate', source: ['stevenson2024'],
+          steps: [
+            { max: 0.25, points: -0.3 },
+            { max: 1.0,  points: 0 },
+            { max: 3.0,  points: 0.3 },
+            { max: 5.0,  points: 0.3 },
+            { max: Infinity, points: 0.3 },
+          ],
+          note: 'Sunlight stimulates serotonin synthesis (well-established), beta-endorphin release, and dopamine receptor availability. RCTs of narrow-band UVB show mood improvement within days. Benefit plateaus at moderate exposure and does not decline at high levels. Indirect citation — replace with a dedicated source.',
+        },
+      ],
+    },
+    {
       id: 'vo2maxOn',
       group: 'advanced',
       extra: true,
@@ -1750,6 +1806,22 @@ const HEALTH_MODEL = {
     {
       when: (v) => v.steps > 2000 && v.cardio > 0, dir: 'neutral', input: 'Steps', source: ['lancet2025steps'],
       text: 'Daily step count and self-reported cardio (MVPA min/week) partially capture the same physical activity — walking for exercise counts in both. Their effects are NOT additive: the true combined benefit lies between each estimate. Step count captures total daily movement (including light activity like errands) that the cardio slider misses.',
+    },
+    {
+      when: (v) => v.sunExposure >= 5, dir: 'bad', input: 'Sun exposure', source: ['mahamat2020', 'stevenson2024'],
+      text: 'high sun exposure increases skin cancer incidence (melanoma and keratinocyte cancers; Mahamat-Saleh 2020). However, UK Biobank studies (Stevenson 2024, Sun-BEEM 2026) find no clear increase in skin cancer MORTALITY — the CVD and non-skin cancer mortality benefits of UV appear to outweigh skin cancer mortality risk in temperate climates.',
+    },
+    {
+      when: (v) => v.sunExposure <= 0.5, dir: 'bad', input: 'Sun exposure', source: ['lindqvist2014', 'stevenson2024'],
+      text: 'very low sun exposure is associated with substantially higher all-cause mortality — Lindqvist 2014 found a ~2× mortality rate among Swedish women who actively avoided sun vs the highest exposure group. AHS-2 confirms elevated risk at <0.5 h/day. Too little sun misses vitamin D, nitric oxide and circadian benefits.',
+    },
+    {
+      when: (v) => v.sunExposure >= 1 && v.sunExposure <= 5, dir: 'good', input: 'Sun exposure', source: ['stevenson2024', 'adventist2025'],
+      text: 'moderate to high sun exposure (1–5 h/day) is associated with lower all-cause and CVD mortality in the Adventist Health Study 2 and UK Biobank (Stevenson 2024). Benefit persists without attenuation at higher levels. Mechanisms include vitamin D synthesis, nitric-oxide-mediated blood pressure reduction, and circadian entrainment.',
+    },
+    {
+      when: (v) => v.sunExposure >= 0.5, dir: 'good', input: 'Sun exposure', source: ['stevenson2024'],
+      text: 'sun boosts vitamin D and circadian entrainment, which may boost cognition. However, direct evidence for cognitive benefits from sun exposure specifically is limited — the cognition output does not include a sun contribution.',
     },
   ],
 
@@ -2236,6 +2308,38 @@ const HEALTH_MODEL = {
       journal: 'European Journal of Preventive Cardiology, 30(18):1975–1985',
       url: 'https://doi.org/10.1093/eurjpc/zwad229',
       pmid: '37555447',
+    },
+    stevenson2024: {
+      authors: 'Stevenson AC, Clemens T, Pairo-Castineira E, Webb DJ, Weller RB, Dibben C',
+      year: 2024,
+      title: 'Higher ultraviolet light exposure is associated with lower mortality: an analysis of data from the UK Biobank cohort study',
+      journal: 'Health & Place, 89:103328',
+      url: 'https://doi.org/10.1016/j.healthplace.2024.103328',
+      pmid: null,
+    },
+    adventist2025: {
+      authors: 'Nazeeh N, Orlich MJ, Segovia-Siapco G, Fraser GE, Shavlik D',
+      year: 2025,
+      title: 'The association between time spent outdoors during daylight and mortality among participants of the Adventist Health Study 2 cohort',
+      journal: 'Environmental Epidemiology, 9(3):e401',
+      url: 'https://doi.org/10.1097/EE9.0000000000000401',
+      pmid: null,
+    },
+    mahamat2020: {
+      authors: 'Mahamat-Saleh Y, Aune D, Schlesinger S',
+      year: 2020,
+      title: '25-Hydroxyvitamin D status, vitamin D intake, and skin cancer risk: a systematic review and dose-response meta-analysis of prospective studies',
+      journal: 'Scientific Reports, 10:13151',
+      url: 'https://doi.org/10.1038/s41598-020-70078-y',
+      pmid: '32753685',
+    },
+    lindqvist2014: {
+      authors: 'Lindqvist PG, Epstein E, Landin-Olsson M, et al.',
+      year: 2014,
+      title: 'Avoidance of sun exposure is a risk factor for all-cause mortality: results from the Melanoma in Southern Sweden cohort',
+      journal: 'Journal of Internal Medicine, 276(1):77–86',
+      url: 'https://doi.org/10.1111/joim.12251',
+      pmid: '24697969',
     },
   },
 };

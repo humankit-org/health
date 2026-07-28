@@ -131,7 +131,7 @@
         <h3>All-cause mortality risk <!-- <span class="ev" data-ev="high">high</span></h3> --> </h3>
         <div class="mort-top">
           <div class="output-highlight">
-            <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× average</span></div>
+            <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× reference</span></div>
           </div>
           <div class="mort-right">
             <div class="hr-sub" id="hr-sub"></div>
@@ -148,7 +148,7 @@
       <div class="output-row split">
       <div class="output-card" id="out-cancer">
         <h3>Cancer mortality risk <!-- <span class="ev" data-ev="moderate">moderate</span></h3> --> </h3>
-        <div class="hr-big"><output id="cancer-estimate">–</output><span class="hr-unit">× average</span></div>
+        <div class="hr-big"><output id="cancer-estimate">–</output><span class="hr-unit">× reference</span></div>
         <div class="hr-sub" id="cancer-sub"></div>
         <div class="gauge" id="cancer-gauge" role="img" aria-label="Cancer mortality hazard gauge">
           <div class="gauge-band" id="cancer-band"></div>
@@ -160,7 +160,7 @@
       </div>
       <div class="output-card" id="out-cvd">
         <h3>Cardiovascular mortality risk <!-- <span class="ev" data-ev="moderate">moderate</span></h3> --> </h3>
-        <div class="hr-big"><output id="cvd-estimate">–</output><span class="hr-unit">× average</span></div>
+        <div class="hr-big"><output id="cvd-estimate">–</output><span class="hr-unit">× reference</span></div>
         <div class="hr-sub" id="cvd-sub"></div>
         <div class="gauge" id="cvd-gauge" role="img" aria-label="Cardiovascular mortality hazard gauge">
           <div class="gauge-band" id="cvd-band"></div>
