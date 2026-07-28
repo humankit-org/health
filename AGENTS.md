@@ -116,6 +116,17 @@ integrity: sorted steps, bracketing CIs, existing sources).
   fiber). Similar partial overlaps are noted in `note` fields: resting heart
   rate ↔ cardio/VO2max; grip ↔ strength training; sleep regularity ↔ sleep
   duration.
+- **Screen time is a mind-only input** (v0.7): recreational screen time
+  (slider, h/day) affects ONLY happiness (Hunt 2018 RCT, Allcott 2020 RCT,
+  Zhai 2015 meta — direction consistent, magnitude genuinely contested, so
+  points are small and evidence is `low`). Its mortality/CVD pathway is
+  sedentary behaviour, so the overlap rule applies: counted by `sitting` +
+  fitness inputs, credited in findings (Stamatakis 2011; Celis-Morales 2018,
+  incl. the fitness-attenuation nuance), never multiplied. Sleep displacement
+  is a finding (Hale 2015), not an effect — the sleep sliders already count
+  it. No credible cancer/cognition data, so it shows as no-data on those
+  cards. A separate "doomscrolling" input was rejected (only correlational
+  scale-development studies exist).
 - **Every verified number was checked against the primary source** (PubMed
   abstracts) on 2026-07-24. Items still needing a second look are marked in
   their `note`: sauna all-cause HRs (verify vs paper Table 2), NCHS baseline

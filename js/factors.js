@@ -25,7 +25,7 @@ const HEALTH_MODEL = {
   meta: {
     name: 'HumanKit Health',
     version: '0.1.0',
-    updated: '2026-07-24',
+    updated: '2026-07-28',
   },
 
   constants: {
@@ -991,6 +991,29 @@ const HEALTH_MODEL = {
       ],
     },
     {
+      id: 'screenTime',
+      group: 'mind',
+      extra: true,
+      label: 'Recreational screen time',
+      kind: 'slider',
+      unit: 'hours/day',
+      min: 0, max: 12, step: 0.5, default: 5,
+      hint: 'TV, social media, doomscrolling, gaming — not work screens. US average ≈ 4–6 h/day (TV ~3 h + social media ~2–2.5 h; verify vs ATUS/DataReportal).',
+      effects: [
+        {
+          output: 'happiness', type: 'steps', evidence: 'low', source: 'hunt2018',
+          steps: [
+            { max: 1, points: 0 },
+            { max: 3, points: -0.05 },
+            { max: 5, points: -0.15 },
+            { max: 7, points: -0.30 },
+            { max: Infinity, points: -0.45 },
+          ],
+          note: 'Direction is consistent across designs: an RCT limiting social media to ~30 min/day reduced loneliness and depression (Hunt 2018); 4-week Facebook deactivation improved subjective wellbeing (Allcott 2020); meta-analysis RR 1.22 depression for prolonged computer/internet use (Zhai 2015). But population associations are tiny (≤0.4% of wellbeing variance, Orben 2019), non-users ≈ low users (Twenge 2018), and reverse causality is plausible — points are deliberately small. The mortality/CVD pathways of screen time run through sitting and low fitness and are NOT double-counted here (see findings; Stamatakis 2011, Celis-Morales 2018).',
+        },
+      ],
+    },
+    {
       id: 'meditation',
       group: 'mind',
       extra: true,
@@ -1616,6 +1639,30 @@ const HEALTH_MODEL = {
       when: (v) => v.pm25 <= 5, dir: 'good', input: 'Air pollution', source: 'di2017',
       text: 'at or below the WHO guideline for PM2.5 — but mortality risk keeps falling with every µg/m³, there\'s no clear safe floor',
     },
+    {
+      when: (v) => v.screenTime >= 6, dir: 'bad', input: 'Screen time', source: 'stamatakis2011',
+      text: 'screen-based entertainment ≥4 h/day tracked 1.5× all-cause mortality and 2.3× cardiovascular events in a Scottish cohort — that physical pathway is sitting and low fitness, which we count in those sliders rather than twice here',
+    },
+    {
+      when: (v) => v.screenTime >= 4 && (v.cardio >= 150 || (v.vo2maxOn && v.vo2max >= 35)), dir: 'good', input: 'Screen time', source: 'celis2018',
+      text: 'UK Biobank (390k people): the screen-time–mortality association (HR 1.31 per 2 h/day in the least strong/fit) was null in people with high grip strength, fitness or activity (HR 1.04, NS) — the harm is largely the sitting, and fitness attenuates it',
+    },
+    {
+      when: (v) => v.screenTime >= 5 && v.sleep < 7, dir: 'bad', input: 'Screen time', source: 'hale2015',
+      text: 'screens near bedtime displace and delay sleep — 90% of studies in a 67-study review found shorter or later sleep; if your sleep slider is set honestly, this is already counted there',
+    },
+    {
+      when: (v) => v.screenTime <= 1, dir: 'neutral', input: 'Screen time', source: 'orben2019',
+      text: 'context: across 355k adolescents, digital-technology use explained at most 0.4% of wellbeing variation — at low-to-moderate use the measurable association is tiny either way',
+    },
+    {
+      when: (v) => v.screenTime >= 3 && v.screenTime < 6, dir: 'neutral', input: 'Screen time', source: 'allcott2020',
+      text: 'in a randomized experiment, deactivating Facebook for 4 weeks improved subjective wellbeing — and reduced factual news knowledge; lower use persisted after the experiment',
+    },
+    {
+      when: (v) => v.screenTime >= 7, dir: 'bad', input: 'Screen time', source: 'twenge2018',
+      text: 'in a US national sample, 7+ vs 1 h/day screen time tracked 2.4× diagnosed depression and 2.3× diagnosed anxiety in adolescents (cross-sectional — causality unclear)',
+    },
   ],
 
   // ---------------------------------------------------------------- Sources
@@ -2013,6 +2060,70 @@ const HEALTH_MODEL = {
       journal: 'New England Journal of Medicine, 376(26):2513–2522',
       url: 'https://doi.org/10.1056/NEJMoa1702747',
       pmid: '28657878',
+    },
+    hunt2018: {
+      authors: 'Hunt MG, Marx R, Lipson C, Young J',
+      year: 2018,
+      title: 'No More FOMO: limiting social media decreases loneliness and depression',
+      journal: 'Journal of Social and Clinical Psychology, 37(10):751–768',
+      url: 'https://doi.org/10.1521/jscp.2018.37.10.751',
+      pmid: null,
+    },
+    allcott2020: {
+      authors: 'Allcott H, Braghieri L, Eichmeyer S, Gentzkow M',
+      year: 2020,
+      title: 'The welfare effects of social media',
+      journal: 'American Economic Review, 110(3):629–676',
+      url: 'https://doi.org/10.1257/aer.20190658',
+      pmid: null,
+    },
+    zhai2015: {
+      authors: 'Zhai L, Zhang Y, Zhang D',
+      year: 2015,
+      title: 'Sedentary behaviour and the risk of depression: a meta-analysis',
+      journal: 'British Journal of Sports Medicine, 49(11):705–709',
+      url: 'https://doi.org/10.1136/bjsports-2014-093613',
+      pmid: '25183627',
+    },
+    stamatakis2011: {
+      authors: 'Stamatakis E, Hamer M, Dunstan DW',
+      year: 2011,
+      title: 'Screen-based entertainment time, all-cause mortality, and cardiovascular events: population-based study with ongoing mortality and hospital events follow-up',
+      journal: 'Journal of the American College of Cardiology, 57(3):292–299',
+      url: 'https://doi.org/10.1016/j.jacc.2010.05.065',
+      pmid: '21232666',
+    },
+    celis2018: {
+      authors: 'Celis-Morales CA, Lyall DM, Steell L, et al.',
+      year: 2018,
+      title: 'Associations of discretionary screen time with mortality, cardiovascular disease and cancer are attenuated by strength, fitness and physical activity: findings from the UK Biobank study',
+      journal: 'BMC Medicine, 16(1):97',
+      url: 'https://doi.org/10.1186/s12916-018-1063-1',
+      pmid: '29792209',
+    },
+    hale2015: {
+      authors: 'Hale L, Guan S',
+      year: 2015,
+      title: 'Screen time and sleep among school-aged children and adolescents: a systematic literature review',
+      journal: 'Sleep Medicine Reviews, 21:50–58',
+      url: 'https://doi.org/10.1016/j.smrv.2014.07.007',
+      pmid: '25193149',
+    },
+    orben2019: {
+      authors: 'Orben A, Przybylski AK',
+      year: 2019,
+      title: 'The association between adolescent well-being and digital technology use',
+      journal: 'Nature Human Behaviour, 3(2):173–182',
+      url: 'https://doi.org/10.1038/s41562-018-0506-1',
+      pmid: '30944443',
+    },
+    twenge2018: {
+      authors: 'Twenge JM, Campbell WK',
+      year: 2018,
+      title: 'Associations between screen time and lower psychological well-being among children and adolescents: evidence from a population-based study',
+      journal: 'Preventive Medicine Reports, 12:271–283',
+      url: 'https://doi.org/10.1016/j.pmedr.2018.10.003',
+      pmid: '30406005',
     },
   },
 };
