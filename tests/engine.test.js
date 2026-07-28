@@ -46,7 +46,8 @@ console.log('\n[1] Data integrity');
     ok(!ids.has(input.id), `input id unique: ${input.id}`);
     ids.add(input.id);
     for (const effect of input.effects) {
-      ok(!!model.sources[effect.source], `${input.id}/${effect.output} cites existing source "${effect.source}"`);
+      const srcs = Array.isArray(effect.source) ? effect.source : [effect.source];
+      srcs.forEach((s) => ok(!!model.sources[s], `${input.id}/${effect.output} cites existing source "${s}"`));
       ok(!!effect.note && effect.note.length > 10, `${input.id}/${effect.output} has an explanatory note`);
       if (effect.type === 'steps') {
         const sorted = effect.steps.every((s, i) => i === 0 || s.max > effect.steps[i - 1].max);
@@ -62,8 +63,10 @@ console.log('\n[1] Data integrity');
   }
   const bmiSorted = model.bmi.steps.every((s, i) => i === 0 || s.max > model.bmi.steps[i - 1].max);
   ok(bmiSorted, 'bmi steps sorted ascending');
-  ok(!!model.sources[model.bmi.source], 'bmi cites existing source');
-  ok(!!model.sources[model.baseline.source], 'baseline cites existing source');
+  const bmiSrcs = Array.isArray(model.bmi.source) ? model.bmi.source : [model.bmi.source];
+  bmiSrcs.forEach((s) => ok(!!model.sources[s], 'bmi cites existing source "' + s + '"'));
+  const baseSrcs = Array.isArray(model.baseline.source) ? model.baseline.source : [model.baseline.source];
+  baseSrcs.forEach((s) => ok(!!model.sources[s], 'baseline cites existing source "' + s + '"'));
 }
 
 console.log('\n[2] Single-factor effects');
@@ -269,20 +272,20 @@ console.log('\n[11] New inputs');
 console.log('\n[12] Findings react to inputs');
 {
   const r = engine.evaluate(model, { ...neutralValues(), smoking: 'current' });
-  ok(r.findings.some((f) => f.source === 'jha2013' && /lung cancer/.test(f.text)), 'smoker sees lung-cancer finding');
+  ok(r.findings.some((f) => f.source.includes('jha2013') && /lung cancer/.test(f.text)), 'smoker sees lung-cancer finding');
 
   const r0 = engine.evaluate(model, neutralValues());
-  ok(!r0.findings.some((f) => f.source === 'jha2013'), 'reference profile -> no smoking findings');
-  ok(!r0.findings.some((f) => f.dir === 'bad' && f.source === 'pan2012'), 'reference profile -> no processed-meat findings');
+  ok(!r0.findings.some((f) => f.source.includes('jha2013')), 'reference profile -> no smoking findings');
+  ok(!r0.findings.some((f) => f.dir === 'bad' && f.source.includes('pan2012')), 'reference profile -> no processed-meat findings');
 
   const r2 = engine.evaluate(model, { ...neutralValues(), vitaminD: 'supplement' });
-  ok(r2.findings.some((f) => f.source === 'manson2019' && f.dir === 'neutral'), 'supplementing vitamin D shows the honest-null finding');
+  ok(r2.findings.some((f) => f.source.includes('manson2019') && f.dir === 'neutral'), 'supplementing vitamin D shows the honest-null finding');
 
   const r3 = engine.evaluate(model, { ...neutralValues(), processedMeat: 8 });
-  ok(r3.findings.some((f) => f.source === 'pan2012' && f.dir === 'bad'), 'daily processed meat shows cancer finding');
+  ok(r3.findings.some((f) => f.source.includes('pan2012') && f.dir === 'bad'), 'daily processed meat shows cancer finding');
 
   const r4 = engine.evaluate(model, engine.defaults(model));
-  ok(r4.findings.some((f) => f.source === 'manson2019omega3'), 'average profile (fish 1-2/wk) shows the omega-3 honest null');
+  ok(r4.findings.some((f) => f.source.includes('manson2019omega3')), 'average profile (fish 1-2/wk) shows the omega-3 honest null');
 }
 
 console.log('\n[13] Cancer output');
@@ -310,26 +313,26 @@ console.log('\n[13] Cancer output');
 console.log('\n[14] Functional-independence findings');
 {
   const f = engine.evaluate(model, { ...neutralValues(), strength: 0, sex: 'female' });
-  ok(f.findings.some((x) => x.source === 'howe2011'), 'no strength training + female -> osteoporosis finding');
-  ok(f.findings.some((x) => x.source === 'sherrington2019'), 'no strength training -> falls finding');
+  ok(f.findings.some((x) => x.source.includes('howe2011')), 'no strength training + female -> osteoporosis finding');
+  ok(f.findings.some((x) => x.source.includes('sherrington2019')), 'no strength training -> falls finding');
 
   const g = engine.evaluate(model, { ...neutralValues(), strength: 2 });
-  ok(!g.findings.some((x) => x.source === 'sherrington2019'), 'strength training on -> no falls finding');
+  ok(!g.findings.some((x) => x.source.includes('sherrington2019')), 'strength training on -> no falls finding');
 
   const grip = engine.evaluate(model, { ...neutralValues(), gripOn: true, grip: 30 });
-  ok(grip.findings.some((x) => x.source === 'leong2015' && x.dir === 'neutral'), 'grip enabled -> honest-null injury finding');
+  ok(grip.findings.some((x) => x.source.includes('leong2015') && x.dir === 'neutral'), 'grip enabled -> honest-null injury finding');
 
   const nuts = engine.evaluate(model, { ...neutralValues(), nuts: 25 });
-  ok(nuts.findings.some((x) => x.source === 'aune2016nuts' && x.dir === 'good'), 'nuts >= 20 g -> respiratory/diabetes finding');
+  ok(nuts.findings.some((x) => x.source.includes('aune2016nuts') && x.dir === 'good'), 'nuts >= 20 g -> respiratory/diabetes finding');
 
   const reg = engine.evaluate(model, { ...neutralValues(), sleepRegularity: 2 });
-  ok(reg.findings.some((x) => x.source === 'windred2024' && x.dir === 'bad'), 'irregular sleep -> regularity-over-duration finding');
+  ok(reg.findings.some((x) => x.source.includes('windred2024') && x.dir === 'bad'), 'irregular sleep -> regularity-over-duration finding');
 
   const pm = engine.evaluate(model, { ...neutralValues(), pm25: 15 });
-  ok(pm.findings.some((x) => x.source === 'di2017' && x.dir === 'bad'), 'PM2.5 > 12 -> exposure finding');
+  ok(pm.findings.some((x) => x.source.includes('di2017') && x.dir === 'bad'), 'PM2.5 > 12 -> exposure finding');
 
   const grains = engine.evaluate(model, { ...neutralValues(), fiber: 30 });
-  ok(grains.findings.some((x) => x.source === 'aune2016grain'), 'high fiber -> whole-grains-not-double-counted finding');
+  ok(grains.findings.some((x) => x.source.includes('aune2016grain')), 'high fiber -> whole-grains-not-double-counted finding');
 }
 
 console.log('\n[15] CVD output');
@@ -378,9 +381,10 @@ console.log('\n[16] Citation numbering (index.html <-> sources.html)');
 {
   const refs = engine.sourceIndex(model);
   const cited = new Set();
-  for (const input of model.inputs) for (const e of input.effects) cited.add(e.source);
-  cited.add(model.bmi.source);
-  cited.add(model.baseline.source);
+  const addAll = (keys) => { if (keys) (Array.isArray(keys) ? keys : [keys]).forEach((k) => cited.add(k)); };
+  for (const input of model.inputs) for (const e of input.effects) addAll(e.source);
+  addAll(model.bmi.source);
+  addAll(model.baseline.source);
   ok(Object.keys(refs).length === cited.size, 'sourceIndex covers every cited source');
   const nums = Object.values(refs).sort((a, b) => a - b);
   ok(nums.every((n, i) => n === i + 1), 'citation numbers contiguous from 1');

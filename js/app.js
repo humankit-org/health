@@ -223,9 +223,12 @@
     return '±0%';
   }
 
-  function refLink(sourceKey) {
-    const n = refs[sourceKey];
-    return `<a class="chip-ref" href="sources.html#ref-${n}">[${n}]</a>`;
+  function refLink(sourceKeys) {
+    const keys = Array.isArray(sourceKeys) ? sourceKeys : [sourceKeys];
+    return keys.map((key) => {
+      const n = refs[key];
+      return `<a class="chip-ref" href="sources.html#ref-${n}">[${n}]</a>`;
+    }).join(' ');
   }
 
   // ------------------------------------------------------------- updating
@@ -409,7 +412,7 @@
       return `<li>
         <span class="contrib-effect ${dir}">${effect}</span>
         <span class="contrib-label">${c.label}</span>
-        <a class="contrib-ref" href="sources.html#ref-${refs[c.source]}" title="${c.note}">[${refs[c.source]}]</a>
+        ${Array.isArray(c.source) ? c.source.map((key) => `<a class="contrib-ref" href="sources.html#ref-${refs[key]}" title="${c.note}">[${refs[key]}]</a>`).join(' ') : `<a class="contrib-ref" href="sources.html#ref-${refs[c.source]}" title="${c.note}">[${refs[c.source]}]</a>`}
         <span class="ev small" data-ev="${c.evidence}" title="${EVIDENCE_TITLE[c.evidence]}">${c.evidence}</span>
       </li>`;
     }).join('');

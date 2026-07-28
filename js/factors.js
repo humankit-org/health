@@ -67,7 +67,7 @@ const HEALTH_MODEL = {
   baseline: {
     // US life expectancy at birth, 2023. VERIFY against the NCHS report below.
     lifeExpectancy: { female: 81.1, male: 75.8, unspecified: 78.4 },
-    source: 'nchs2023',
+    source: ['nchs2023'],
   },
 
   // Score bands for the mind outputs (points -> label).
@@ -172,7 +172,7 @@ const HEALTH_MODEL = {
       hint: 'Brisk walking, cycling, jogging… count vigorous minutes double.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'high', source: 'arem2015',
+          output: 'mortality', type: 'steps', evidence: 'high', source: ['arem2015'],
           supersededBy: 'vo2maxOn', // measured fitness is the better predictor — use it instead when available
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -185,7 +185,7 @@ const HEALTH_MODEL = {
           note: 'HRs vs. no leisure-time activity, pooled from 661k people. 7.5 MET-h/wk ≈ 150 min moderate. No harm seen even at 10x the guideline minimum.',
         },
         {
-          output: 'happiness', type: 'steps', evidence: 'low', source: 'chekroud2018',
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['chekroud2018'],
           steps: [
             { max: 0, points: 0 },
             { max: 149, points: 0.3 },
@@ -195,7 +195,7 @@ const HEALTH_MODEL = {
           note: '1.2M-person cross-sectional study: exercisers reported 43% fewer poor-mental-health days; best at ~45 min, 3–5x/week. Correlational.',
         },
         {
-          output: 'cognition', type: 'steps', evidence: 'moderate', source: 'erickson2011',
+          output: 'cognition', type: 'steps', evidence: 'moderate', source: ['erickson2011'],
           steps: [
             { max: 0, points: 0 },
             { max: 149, points: 0.2 },
@@ -204,7 +204,7 @@ const HEALTH_MODEL = {
           note: 'RCT in 120 older adults: 1 year of aerobic exercise grew hippocampal volume ~2% and improved spatial memory.',
         },
         {
-          output: 'cancer', type: 'steps', evidence: 'moderate', source: 'arem2015',
+          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['arem2015'],
           supersededBy: 'vo2maxOn',
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -217,7 +217,7 @@ const HEALTH_MODEL = {
           note: 'Arem 2015 reports a similar dose–response for cancer mortality as for all-cause; we reuse those HRs (marked moderate evidence for the extrapolation).',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'high', source: 'arem2015',
+          output: 'cvd', type: 'steps', evidence: 'high', source: ['arem2015'],
           supersededBy: 'vo2maxOn',
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -241,7 +241,7 @@ const HEALTH_MODEL = {
       hint: 'Assume ~30 min per session.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'momma2022',
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['momma2022'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 1, hr: 0.92, hrLow: 0.88, hrHigh: 0.96 },
@@ -251,7 +251,7 @@ const HEALTH_MODEL = {
           note: 'Meta-analysis: 10–17% lower all-cause mortality, max benefit ~30–60 min/week; J-shaped (more is not clearly better). CI bounds approximate — verify against paper Fig. 2.',
         },
         {
-          output: 'happiness', type: 'steps', evidence: 'moderate', source: 'gordon2018',
+          output: 'happiness', type: 'steps', evidence: 'moderate', source: ['gordon2018'],
           steps: [
             { max: 0, points: 0 },
             { max: Infinity, points: 0.3 },
@@ -259,7 +259,7 @@ const HEALTH_MODEL = {
           note: 'Meta-analysis of 33 RCTs: resistance training reduced depressive symptoms (effect size 0.66, NNT 4).',
         },
         {
-          output: 'cognition', type: 'steps', evidence: 'low', source: 'momma2022',
+          output: 'cognition', type: 'steps', evidence: 'low', source: ['momma2022'],
           steps: [
             { max: 1, points: 0 },
             { max: Infinity, points: 0.2 },
@@ -267,7 +267,7 @@ const HEALTH_MODEL = {
           note: 'Weak/small effects on executive function in meta-analyses of older adults; indirect citation — replace with a dedicated source.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'momma2022',
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['momma2022'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 1, hr: 0.90, hrLow: 0.81, hrHigh: 0.99 },
@@ -290,7 +290,7 @@ const HEALTH_MODEL = {
       hint: 'Heavy physical work (construction, nursing, warehouse…). Not the same as leisure exercise!',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'coenen2018',
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['coenen2018'],
           steps: [
             { max: 2, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 6, hr: 1.10, hrLow: 1.03, hrHigh: 1.20 },
@@ -299,7 +299,7 @@ const HEALTH_MODEL = {
           note: 'The "physical activity paradox": meta-analysis (194k workers) found HIGH occupational activity → HR 1.18 in MEN (women: HR 0.90, NS). Middle step interpolated. Leisure activity benefits don\'t transfer to heavy work.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'coenen2018',
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['coenen2018'],
           steps: [
             { max: 2, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 6, hr: 1.08, hrLow: 1.01, hrHigh: 1.18 },
@@ -321,7 +321,7 @@ const HEALTH_MODEL = {
       hint: 'Desk, commute and couch. US average ≈ 8–10 h/day.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'biswas2015',
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['biswas2015'],
           steps: [
             { max: 6, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 9, hr: 1.10, hrLow: 1.04, hrHigh: 1.22 },
@@ -331,7 +331,7 @@ const HEALTH_MODEL = {
           note: 'Meta-analysis (47 studies): prolonged sitting → HR 1.24 all-cause mortality, adjusted for activity. BUT the effect attenuates at higher activity levels — an interaction we do not model. Middle steps interpolated.',
         },
         {
-          output: 'cancer', type: 'steps', evidence: 'moderate', source: 'biswas2015',
+          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['biswas2015'],
           steps: [
             { max: 6, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 9, hr: 1.08, hrLow: 1.04, hrHigh: 1.15 },
@@ -341,7 +341,7 @@ const HEALTH_MODEL = {
           note: 'Same meta-analysis, cancer mortality: HR 1.173 (1.108–1.242); middle steps interpolated.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'biswas2015',
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['biswas2015'],
           steps: [
             { max: 6, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 9, hr: 1.06, hrLow: 1.03, hrHigh: 1.10 },
@@ -367,11 +367,11 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 10, capAt: 30,
           hr: 0.90, hrLow: 0.86, hrHigh: 0.94,
-          evidence: 'high', source: 'yang2015',
+          evidence: 'high', source: ['yang2015'],
           note: 'Meta-analysis (17 cohorts, ~1M people): RR 0.90 (0.86–0.94) per +10 g/day. Benefit capped at 30 g/day in this model; the top-vs-bottom-tertile comparison (RR 0.84) suggests the linear dose may overstate at high intakes.',
         },
         {
-          output: 'cancer', type: 'steps', evidence: 'moderate', source: 'reynolds2019',
+          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['reynolds2019'],
           steps: [
             { max: 9, hr: 1.15, hrLow: 1.05, hrHigh: 1.25 },
             { max: 24, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -380,7 +380,7 @@ const HEALTH_MODEL = {
           note: 'Lancet series (185 prospective studies): 15–30% lower colorectal cancer incidence for high vs low fiber consumers, with dose–response for colorectal and breast cancer; 25–29 g/day looked optimal. Our step mapping is approximate.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'reynolds2019',
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['reynolds2019'],
           steps: [
             { max: 9, hr: 1.12, hrLow: 1.03, hrHigh: 1.22 },
             { max: 24, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -402,11 +402,11 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 1, capAt: 5,
           hr: 0.95, hrLow: 0.92, hrHigh: 0.98,
-          evidence: 'high', source: 'wang2014',
+          evidence: 'high', source: ['wang2014'],
           note: 'Dose-response meta-analysis (16 cohorts): HR 0.95 (0.92–0.98) per serving/day, plateauing around 5 servings.',
         },
         {
-          output: 'happiness', type: 'steps', evidence: 'low', source: 'wang2014',
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['wang2014'],
           steps: [
             { max: 4.9, points: 0 },
             { max: Infinity, points: 0.15 },
@@ -416,13 +416,13 @@ const HEALTH_MODEL = {
         {
           output: 'cancer', type: 'perUnit', per: 1, capAt: 5,
           hr: 1.00, hrLow: 0.97, hrHigh: 1.03,
-          evidence: 'moderate', source: 'wang2014',
+          evidence: 'moderate', source: ['wang2014'],
           note: 'Same meta-analysis: fruit & veg were "not appreciably associated" with cancer mortality — studied, honestly null (unlike cardiovascular mortality).',
         },
         {
           output: 'cvd', type: 'perUnit', per: 1, capAt: 5,
           hr: 0.96, hrLow: 0.93, hrHigh: 0.99,
-          evidence: 'high', source: 'wang2014',
+          evidence: 'high', source: ['wang2014'],
           note: 'Same meta-analysis, cardiovascular mortality: HR 0.96 (0.93–0.99) per serving/day — small, graded, and robust across cohorts.',
         },
       ],
@@ -437,7 +437,7 @@ const HEALTH_MODEL = {
       hint: 'One drink ≈ 14 g ethanol (a beer, glass of wine, or shot).',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'high', source: 'wood2018',
+          output: 'mortality', type: 'steps', evidence: 'high', source: ['wood2018'],
           steps: [
             { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 14, hr: 1.05, hrLow: 1.03, hrHigh: 1.07 },
@@ -447,7 +447,7 @@ const HEALTH_MODEL = {
           note: '83 studies, 600k drinkers: minimum risk ≤100 g/wk (~7 drinks); above that, life expectancy at 40 fell ~0.5 y (>100–200 g/wk), 1–2 y (200–350), 4–5 y (>350). HRs here are those published year-losses converted via the Gompertz constant. Reference is light drinkers; abstainer-bias debate noted.',
         },
         {
-          output: 'cognition', type: 'steps', evidence: 'moderate', source: 'wood2018',
+          output: 'cognition', type: 'steps', evidence: 'moderate', source: ['wood2018'],
           steps: [
             { max: 14, points: 0 },
             { max: Infinity, points: -0.4 },
@@ -455,7 +455,7 @@ const HEALTH_MODEL = {
           note: 'Heavy drinking is associated with worse cognitive outcomes; moderate intake effects unclear. Indirect citation — replace with a dedicated source.',
         },
         {
-          output: 'happiness', type: 'steps', evidence: 'low', source: 'wood2018',
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['wood2018'],
           steps: [
             { max: 14, points: 0 },
             { max: Infinity, points: -0.3 },
@@ -463,7 +463,7 @@ const HEALTH_MODEL = {
           note: 'Heavy alcohol use co-occurs with lower wellbeing; direction of causality unclear. Indirect citation — replace with a dedicated source.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'high', source: 'wood2018',
+          output: 'cvd', type: 'steps', evidence: 'high', source: ['wood2018'],
           steps: [
             { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 14, hr: 1.04, hrLow: 1.01, hrHigh: 1.07 },
@@ -488,7 +488,7 @@ const HEALTH_MODEL = {
     //hint: 'Cigarettes.',
       effects: [
         {
-          output: 'mortality', type: 'byOption', evidence: 'high', source: 'jha2013',
+          output: 'mortality', type: 'byOption', evidence: 'high', source: ['jha2013'],
           byOption: {
             never: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             former: { hr: 1.30, hrLow: 1.15, hrHigh: 1.45 },
@@ -497,17 +497,17 @@ const HEALTH_MODEL = {
           note: 'US nationally representative: current smokers HR ≈ 2.8 (men)–3.0 (women), >10 years of life lost. Quitting before 40 avoids ~90% of the excess risk; the "former" value is an average — it depends heavily on quit age and dose.',
         },
         {
-          output: 'cognition', type: 'byOption', evidence: 'low', source: 'jha2013',
+          output: 'cognition', type: 'byOption', evidence: 'low', source: ['jha2013'],
           byOption: { never: { points: 0 }, former: { points: -0.05 }, current: { points: -0.2 } },
           note: 'Smoking is associated with faster cognitive decline in cohort studies. Indirect citation — replace with a dedicated source.',
         },
         {
-          output: 'happiness', type: 'byOption', evidence: 'low', source: 'jha2013',
+          output: 'happiness', type: 'byOption', evidence: 'low', source: ['jha2013'],
           byOption: { never: { points: 0 }, former: { points: -0.05 }, current: { points: -0.2 } },
           note: 'Smokers report lower wellbeing on average, but causality is entangled with dependence and withdrawal. Indirect citation — replace with a dedicated source.',
         },
         {
-          output: 'cancer', type: 'byOption', evidence: 'moderate', source: 'thun2013',
+          output: 'cancer', type: 'byOption', evidence: 'moderate', source: ['thun2013'],
           byOption: {
             never: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             former: { hr: 1.40, hrLow: 1.20, hrHigh: 1.60 },
@@ -516,7 +516,7 @@ const HEALTH_MODEL = {
           note: 'Approximate all-cancer mortality for current smokers. The striking verified number is organ-specific: lung-cancer DEATH ~25× never-smokers in contemporary US cohorts (Thun 2013). Replace with Carter 2015 site-specific figures in a later pass.',
         },
         {
-          output: 'cvd', type: 'byOption', evidence: 'high', source: 'jha2013',
+          output: 'cvd', type: 'byOption', evidence: 'high', source: ['jha2013'],
           byOption: {
             never: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             former: { hr: 1.25, hrLow: 1.10, hrHigh: 1.40 },
@@ -537,7 +537,7 @@ const HEALTH_MODEL = {
       hint: 'Decaf also counts.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'poole2017',
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['poole2017'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 2, hr: 0.90, hrLow: 0.86, hrHigh: 0.95 },
@@ -547,7 +547,7 @@ const HEALTH_MODEL = {
           note: 'Umbrella review: largest all-cause risk reduction at 3–4 cups/day (RR 0.83, 0.79–0.88). The 1–2 and 5+ steps are interpolated/U-shaped approximations — verify against the paper.',
         },
         {
-          output: 'cancer', type: 'steps', evidence: 'moderate', source: 'poole2017',
+          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['poole2017'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 2, hr: 0.92, hrLow: 0.85, hrHigh: 1.00 },
@@ -557,7 +557,7 @@ const HEALTH_MODEL = {
           note: 'Same umbrella review, incident cancer: 18% lower at high vs low consumption (0.82, 0.74–0.89). 1–2 and 5+ steps interpolated.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'poole2017',
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['poole2017'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 2, hr: 0.88, hrLow: 0.80, hrHigh: 0.96 },
@@ -583,7 +583,7 @@ const HEALTH_MODEL = {
      // hint: 'Swedish-style snus has the best data. Less harmful than smoking — not harmless.',
       effects: [
         {
-          output: 'mortality', type: 'byOption', evidence: 'moderate', source: 'byhamre2021',
+          output: 'mortality', type: 'byOption', evidence: 'moderate', source: ['byhamre2021'],
           byOption: {
             no: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             yes: { hr: 1.28, hrLow: 1.20, hrHigh: 1.35 },
@@ -591,7 +591,7 @@ const HEALTH_MODEL = {
           note: 'Pooled 8 Swedish cohorts, 169k never-smoking men: exclusive current snus use → aHR 1.28 all-cause, 1.27 cardiovascular, 1.12 cancer mortality. Men-only data; other smokeless products may differ.',
         },
         {
-          output: 'cancer', type: 'byOption', evidence: 'moderate', source: 'byhamre2021',
+          output: 'cancer', type: 'byOption', evidence: 'moderate', source: ['byhamre2021'],
           byOption: {
             no: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             yes: { hr: 1.12, hrLow: 1.00, hrHigh: 1.26 },
@@ -599,7 +599,7 @@ const HEALTH_MODEL = {
           note: 'Same pooled analysis, cancer mortality: aHR 1.12 (1.00–1.26) — weaker and borderline, mostly pancreatic in the wider literature.',
         },
         {
-          output: 'cvd', type: 'byOption', evidence: 'moderate', source: 'byhamre2021',
+          output: 'cvd', type: 'byOption', evidence: 'moderate', source: ['byhamre2021'],
           byOption: {
             no: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             yes: { hr: 1.27, hrLow: 1.20, hrHigh: 1.35 },
@@ -623,7 +623,7 @@ const HEALTH_MODEL = {
       //hint: 'Smoked or otherwise. Honest summary: mortality data weak, mental-health data concerning.',
       effects: [
         {
-          output: 'mortality', type: 'byOption', evidence: 'low', source: 'sidney1997',
+          output: 'mortality', type: 'byOption', evidence: 'low', source: ['sidney1997'],
           byOption: {
             never: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             occasional: { hr: 1.05, hrLow: 0.90, hrHigh: 1.25 },
@@ -632,12 +632,12 @@ const HEALTH_MODEL = {
           note: 'Kaiser Permanente cohort (65k): current use NOT significantly associated with mortality (men RR 1.12, CI crosses 1.0). An honest null — but "no mortality signal" ≠ safe; see findings below. Smoked cannabis likely shares combustion harms with tobacco (not yet quantified).',
         },
         {
-          output: 'cognition', type: 'byOption', evidence: 'low', source: 'moore2007',
+          output: 'cognition', type: 'byOption', evidence: 'low', source: ['moore2007'],
           byOption: { never: { points: 0 }, occasional: { points: -0.1 }, regular: { points: -0.3 } },
           note: 'Systematic review: psychosis risk rises dose-dependently (ever-use OR 1.41; heavy use OR 2.09). Evidence for depression/anxiety outcomes less consistent. Cognitive points are qualitative.',
         },
         {
-          output: 'happiness', type: 'byOption', evidence: 'low', source: 'moore2007',
+          output: 'happiness', type: 'byOption', evidence: 'low', source: ['moore2007'],
           byOption: { never: { points: 0 }, occasional: { points: -0.05 }, regular: { points: -0.25 } },
           note: 'Affective outcomes (depression, anxiety) associated in some cohorts but confounding is substantial — the review calls the evidence "less strong" than for psychosis.',
         },
@@ -656,13 +656,13 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 100, ref: 250, minDose: 150, capAt: 450,
           hr: 0.90, hrLow: 0.81, hrHigh: 0.99,
-          evidence: 'moderate', source: 'fang2016',
+          evidence: 'moderate', source: ['fang2016'],
           note: 'Dose-response meta-analysis (40 cohorts, >1M people): RR 0.90 (0.81–0.99) per +100 mg/day, anchored here at 250 mg and capped at 450 mg. Dietary intake — partly a marker of overall diet quality; supplement trials are weaker.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 100, ref: 250, minDose: 150, capAt: 450,
           hr: 0.85, hrLow: 0.77, hrHigh: 0.93,
-          evidence: 'moderate', source: 'fang2016',
+          evidence: 'moderate', source: ['fang2016'],
           note: 'Same meta-analysis, CVD-specific: RR 0.85 (0.77–0.93) per +100 mg/day — stronger than the all-cause effect, consistent with magnesium\'s role in blood-pressure regulation and arrhythmia prevention.',
         },
       ],
@@ -678,7 +678,7 @@ const HEALTH_MODEL = {
       hint: '"My life has direction and meaning." 1 = not at all, 10 = completely.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'cohen2016',
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['cohen2016'],
           steps: [
             { max: 3, hr: 1.10, hrLow: 1.00, hrHigh: 1.33 },
             { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -687,7 +687,7 @@ const HEALTH_MODEL = {
           note: 'Meta-analysis (10 prospective studies, 136k people): high purpose → RR 0.83 (0.75–0.91) all-cause mortality and CV events. The low-purpose step is our approximation. Causality unproven — purpose may mark depression or circumstance.',
         },
         {
-          output: 'happiness', type: 'steps', evidence: 'low', source: 'cohen2016',
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['cohen2016'],
           steps: [
             { max: 3, points: -0.6 },
             { max: 7, points: 0 },
@@ -696,7 +696,7 @@ const HEALTH_MODEL = {
           note: 'Purpose and wellbeing overlap almost by definition; included so the slider visibly does something.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'cohen2016',
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['cohen2016'],
           steps: [
             { max: 3, hr: 1.10, hrLow: 1.00, hrHigh: 1.30 },
             { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -719,19 +719,19 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 7, ref: 1.5, capAt: 14,
           hr: 1.20, hrLow: 1.15, hrHigh: 1.24,
-          evidence: 'high', source: 'pan2012',
+          evidence: 'high', source: ['pan2012'],
           note: 'NHS + HPFS cohorts (124k people): HR 1.20 (1.15–1.24) per daily serving of processed red meat (unprocessed red meat: 1.13). Anchored at the US-average ~1.5 servings/week. Substituting 1 daily serving with fish/poultry/nuts/legumes → 7–19% lower mortality in the same study.',
         },
         {
           output: 'cancer', type: 'perUnit', per: 7, ref: 1.5, capAt: 14,
           hr: 1.16, hrLow: 1.09, hrHigh: 1.23,
-          evidence: 'high', source: 'pan2012',
+          evidence: 'high', source: ['pan2012'],
           note: 'Same cohorts, cancer mortality: HR 1.16 (1.09–1.23) per daily serving of processed meat.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 7, ref: 1.5, capAt: 14,
           hr: 1.13, hrLow: 1.08, hrHigh: 1.19,
-          evidence: 'high', source: 'pan2012',
+          evidence: 'high', source: ['pan2012'],
           note: 'Same cohorts, CVD mortality: HR 1.13 (1.08–1.19) per daily serving — driven largely by stroke (sodium content) and coronary heart disease (saturated fat).',
         },
       ],
@@ -747,7 +747,7 @@ const HEALTH_MODEL = {
       hint: 'Soda, sweetened juices, energy drinks. One serving = 355 ml',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'high', source: 'malik2019',
+          output: 'mortality', type: 'steps', evidence: 'high', source: ['malik2019'],
           steps: [
             { max: 0.2, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 1, hr: 1.01, hrLow: 0.98, hrHigh: 1.04 },
@@ -758,7 +758,7 @@ const HEALTH_MODEL = {
           note: 'NHS + HPFS: graded dose-response vs <1/month — 1–4/mo 1.01, 2–6/wk 1.06, 1–2/day 1.14, ≥2/day 1.21 (1.13–1.28); CVD mortality 1.31 and cancer mortality 1.16 at the extremes. Artificially sweetened drinks: mostly null (unconfirmed signal in women only).',
         },
         {
-          output: 'cancer', type: 'steps', evidence: 'moderate', source: 'malik2019',
+          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['malik2019'],
           steps: [
             { max: 0.2, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 6, hr: 1.05, hrLow: 1.00, hrHigh: 1.12 },
@@ -768,7 +768,7 @@ const HEALTH_MODEL = {
           note: 'Same cohorts, cancer mortality: 1.16 (1.04–1.29) at ≥2/day; lower steps interpolated.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'high', source: 'malik2019',
+          output: 'cvd', type: 'steps', evidence: 'high', source: ['malik2019'],
           steps: [
             { max: 0.2, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 1, hr: 1.01, hrLow: 0.97, hrHigh: 1.05 },
@@ -795,7 +795,7 @@ const HEALTH_MODEL = {
       //hint: 'Modest mortality benefit (~3–5% lower), slightly stronger for CVD (~4–6% lower). Observational — part of the benefit may be substitution (fish replacing red meat).',
       effects: [
         {
-          output: 'mortality', type: 'byOption', evidence: 'moderate', source: 'kwok2019',
+          output: 'mortality', type: 'byOption', evidence: 'moderate', source: ['kwok2019', 'li2020'],
           byOption: {
             none: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             some: { hr: 0.97, hrLow: 0.93, hrHigh: 1.01 },
@@ -804,7 +804,7 @@ const HEALTH_MODEL = {
           note: 'Dose-response meta-analyses find RR ≈ 0.97 (0.93–1.00) per serving/week; 3+/week corresponds to ~0.95 (0.91–1.00). Observational — residual confounding and substitution (fish replacing meat) likely drive part of the association, but the dose-response gradient is consistent across cohorts.',
         },
         {
-          output: 'cancer', type: 'byOption', evidence: 'low', source: 'kwok2019',
+          output: 'cancer', type: 'byOption', evidence: 'low', source: ['kwok2019'],
           byOption: {
             none: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             some: { hr: 1.00, hrLow: 0.94, hrHigh: 1.06 },
@@ -813,7 +813,7 @@ const HEALTH_MODEL = {
           note: 'Limited and inconsistent evidence for fish intake and cancer incidence in general populations. Unlike red/processed meat, no convincing association exists between fish and cancer — possibly because the fatty acids in fish are neutral or beneficial, and the primary confounding is with healthier overall diet.',
         },
         {
-          output: 'cvd', type: 'byOption', evidence: 'moderate', source: 'kwok2019',
+          output: 'cvd', type: 'byOption', evidence: 'moderate', source: ['kwok2019'],
           byOption: {
             none: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             some: { hr: 0.96, hrLow: 0.92, hrHigh: 1.00 },
@@ -837,19 +837,19 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 28, capAt: 35,
           hr: 0.78, hrLow: 0.72, hrHigh: 0.84,
-          evidence: 'high', source: 'aune2016nuts',
+          evidence: 'high', source: ['aune2016nuts'],
           note: 'Dose-response meta-analysis (20 studies): RR 0.78 (0.72–0.84) per 28 g/day; tree nuts = peanuts. Benefit capped at 35 g/day in this model.',
         },
         {
           output: 'cancer', type: 'perUnit', per: 28, capAt: 35,
           hr: 0.85, hrLow: 0.76, hrHigh: 0.94,
-          evidence: 'high', source: 'aune2016nuts',
+          evidence: 'high', source: ['aune2016nuts'],
           note: 'Same meta-analysis, total cancer: RR 0.85 (0.76–0.94) per 28 g/day.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 28, capAt: 35,
           hr: 0.79, hrLow: 0.70, hrHigh: 0.88,
-          evidence: 'high', source: 'aune2016nuts',
+          evidence: 'high', source: ['aune2016nuts'],
           note: 'Same meta-analysis, CVD mortality: RR 0.79 (0.70–0.88) per 28 g/day — the lipid-lowering, anti-inflammatory and endothelial effects of nuts are clearest for CVD.',
         },
       ],
@@ -866,7 +866,7 @@ const HEALTH_MODEL = {
       hint: 'Habitual sleep duration.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'high', source: 'cappuccio2010',
+          output: 'mortality', type: 'steps', evidence: 'high', source: ['cappuccio2010'],
           steps: [
             { max: 6.9, hr: 1.12, hrLow: 1.06, hrHigh: 1.18 },
             { max: 9.0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -875,7 +875,7 @@ const HEALTH_MODEL = {
           note: 'Meta-analysis (16 studies, 1.4M people): short sleep RR 1.12, long sleep RR 1.30. U-shaped; long sleep may partly reflect illness (reverse causation).',
         },
         {
-          output: 'cognition', type: 'steps', evidence: 'low', source: 'cappuccio2010',
+          output: 'cognition', type: 'steps', evidence: 'low', source: ['cappuccio2010'],
           steps: [
             { max: 6.4, points: -0.5 },
             { max: 9.4, points: 0 },
@@ -884,7 +884,7 @@ const HEALTH_MODEL = {
           note: 'Sleep loss acutely impairs attention and memory (well-established experimentally); points here are a qualitative extrapolation. Replace with a dedicated source.',
         },
         {
-          output: 'happiness', type: 'steps', evidence: 'low', source: 'cappuccio2010',
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['cappuccio2010'],
           steps: [
             { max: 6.4, points: -0.4 },
             { max: 9.4, points: 0 },
@@ -893,7 +893,7 @@ const HEALTH_MODEL = {
           note: 'Short sleep is strongly tied to same-day mood; bidirectional. Indirect citation — replace with a dedicated source.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'high', source: 'cappuccio2010',
+          output: 'cvd', type: 'steps', evidence: 'high', source: ['cappuccio2010'],
           steps: [
             { max: 6.9, hr: 1.07, hrLow: 1.00, hrHigh: 1.15 },
             { max: 9.0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -913,7 +913,7 @@ const HEALTH_MODEL = {
       hint: '1 = calm, 10 = overwhelmed, most days.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'high', source: 'russ2012',
+          output: 'mortality', type: 'steps', evidence: 'high', source: ['russ2012'],
           steps: [
             { max: 3, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 6, hr: 1.20, hrLow: 1.13, hrHigh: 1.27 },
@@ -923,7 +923,7 @@ const HEALTH_MODEL = {
           note: 'Pooled 68k adults: psychological distress (GHQ-12) predicted mortality dose-dependently — HR 1.20 / 1.43 / 1.94 for rising distress tiers. Our 1–10 slider is mapped onto those tiers.',
         },
         {
-          output: 'cognition', type: 'steps', evidence: 'low', source: 'russ2012',
+          output: 'cognition', type: 'steps', evidence: 'low', source: ['russ2012'],
           steps: [
             { max: 7, points: 0 },
             { max: Infinity, points: -0.4 },
@@ -931,7 +931,7 @@ const HEALTH_MODEL = {
           note: 'Chronic stress impairs working memory and attention experimentally; points are a qualitative extrapolation. Replace with a dedicated source.',
         },
         {
-          output: 'happiness', type: 'steps', evidence: 'low', source: 'russ2012',
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['russ2012'],
           steps: [
             { max: 3, points: 0 },
             { max: 7, points: -0.2 },
@@ -940,7 +940,7 @@ const HEALTH_MODEL = {
           note: 'Near-tautological (stress and unhappiness overlap by definition); included so the slider visibly does something.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'russ2012',
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['russ2012'],
           steps: [
             { max: 3, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 6, hr: 1.18, hrLow: 1.08, hrHigh: 1.28 },
@@ -962,7 +962,7 @@ const HEALTH_MODEL = {
       hint: 'Days with social contact.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'holtlunstad2010',
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['holtlunstad2010'],
           steps: [
             { max: 1, hr: 1.35, hrLow: 1.25, hrHigh: 1.45 },
             { max: 3, hr: 1.15, hrLow: 1.08, hrHigh: 1.22 },
@@ -971,7 +971,7 @@ const HEALTH_MODEL = {
           note: 'Meta-analysis (148 studies): stronger social relationships → 50% higher survival odds (OR 1.50, 1.42–1.59). HRs here approximate that OR; strongest for complex social integration (OR 1.91).',
         },
         {
-          output: 'happiness', type: 'steps', evidence: 'low', source: 'holtlunstad2010',
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['holtlunstad2010'],
           steps: [
             { max: 1, points: -0.5 },
             { max: 3, points: -0.1 },
@@ -980,7 +980,7 @@ const HEALTH_MODEL = {
           note: 'Social connection is among the strongest correlates of life satisfaction; correlational. Indirect citation — replace with a dedicated source.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'holtlunstad2010',
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['holtlunstad2010'],
           steps: [
             { max: 1, hr: 1.30, hrLow: 1.18, hrHigh: 1.42 },
             { max: 3, hr: 1.12, hrLow: 1.05, hrHigh: 1.19 },
@@ -1001,7 +1001,7 @@ const HEALTH_MODEL = {
       hint: 'TV, social media, doomscrolling, gaming. Not work screens. US average ≈ 4–6 h/day (TV ~3 h + social media ~2 h).',
       effects: [
         {
-          output: 'happiness', type: 'steps', evidence: 'low', source: 'hunt2018',
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['hunt2018'],
           steps: [
             { max: 1, points: 0 },
             { max: 3, points: -0.05 },
@@ -1024,7 +1024,7 @@ const HEALTH_MODEL = {
       //hint: 'Mindfulness-style practice.',
       effects: [
         {
-          output: 'happiness', type: 'steps', evidence: 'moderate', source: 'goyal2014',
+          output: 'happiness', type: 'steps', evidence: 'moderate', source: ['goyal2014'],
           steps: [
             { max: 0, points: 0 },
             { max: 59, points: 0.1 },
@@ -1046,7 +1046,7 @@ const HEALTH_MODEL = {
       hint: 'Same sleep/wake times day to day? 1 = all over the place, 10 = like clockwork.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'windred2024',
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['windred2024'],
           steps: [
             { max: 3, hr: 1.25, hrLow: 1.10, hrHigh: 1.45 },
             { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -1055,7 +1055,7 @@ const HEALTH_MODEL = {
           note: 'UK Biobank accelerometer cohort (61k people): the top four Sleep Regularity Index quintiles had 20–48% lower all-cause mortality than the least-regular quintile — and regularity predicted mortality BETTER than duration did. Our 1–10 self-rating mapped onto their quintiles, approximate.',
         },
         {
-          output: 'cancer', type: 'steps', evidence: 'moderate', source: 'windred2024',
+          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['windred2024'],
           steps: [
             { max: 3, hr: 1.15, hrLow: 1.05, hrHigh: 1.30 },
             { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -1064,7 +1064,7 @@ const HEALTH_MODEL = {
           note: 'Same cohort, cancer mortality: 16–39% lower across the more-regular quintiles.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'windred2024',
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['windred2024'],
           steps: [
             { max: 3, hr: 1.20, hrLow: 1.08, hrHigh: 1.38 },
             { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -1085,7 +1085,7 @@ const HEALTH_MODEL = {
       //hint: 'Finnish-style sauna.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'low', source: 'laukkanen2015',
+          output: 'mortality', type: 'steps', evidence: 'low', source: ['laukkanen2015'],
           steps: [
             { max: 1, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 3, hr: 0.75, hrLow: 0.64, hrHigh: 0.90 },
@@ -1094,7 +1094,7 @@ const HEALTH_MODEL = {
           note: 'Single Finnish cohort of 2315 men: 4–7 vs 1 session/wk → ~40% lower all-cause mortality (unadjusted deaths 30.8% vs 49.1%). Observational, one population, likely residual confounding — treat as speculative. Exact adjusted all-cause HRs to be verified against paper Table 2.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'low', source: 'laukkanen2015',
+          output: 'cvd', type: 'steps', evidence: 'low', source: ['laukkanen2015'],
           steps: [
             { max: 1, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 3, hr: 0.72, hrLow: 0.58, hrHigh: 0.88 },
@@ -1115,7 +1115,7 @@ const HEALTH_MODEL = {
       effects: [
         {
           output: 'cognition', type: 'toggle', points: 0.5,
-          evidence: 'moderate', source: 'avgerinos2018',
+          evidence: 'moderate', source: ['avgerinos2018'],
           note: 'Systematic review of RCTs: creatine improved short-term memory and reasoning; effect clearer in vegetarians, older and stressed individuals. Other domains unclear.',
         },
       ],
@@ -1130,28 +1130,28 @@ const HEALTH_MODEL = {
       //hint: 'A lot of people take these hoping for the benefits of eating fish. The best trial says they don\'t work.',
       effects: [
         {
-          output: 'mortality', type: 'toggle', evidence: 'high', source: 'manson2019omega3',
+          output: 'mortality', type: 'toggle', evidence: 'high', source: ['manson2019omega3'],
           hr: 1.02, hrLow: 0.90, hrHigh: 1.15,
           note: 'VITAL RCT (n=26k, 5.3 y): all-cause mortality HR 1.02 (0.90–1.15) — 978 deaths, slightly MORE deaths in the omega-3 group. Not statistically significant and effectively null.',
         },
         {
-          output: 'cvd', type: 'toggle', evidence: 'high', source: 'manson2019omega3',
+          output: 'cvd', type: 'toggle', evidence: 'high', source: ['manson2019omega3'],
           hr: 0.92, hrLow: 0.80, hrHigh: 1.06,
           note: 'VITAL RCT: major cardiovascular events HR 0.92 (0.80–1.06) — null (CI includes 1.0). A secondary signal for MI (HR 0.72, 0.59–0.90) did not survive correction for multiplicity. Meta-analyses of all RCTs confirm no significant benefit for primary prevention.',
         },
         {
-          output: 'cancer', type: 'toggle', evidence: 'high', source: 'manson2019omega3',
+          output: 'cancer', type: 'toggle', evidence: 'high', source: ['manson2019omega3'],
           hr: 1.03, hrLow: 0.93, hrHigh: 1.13,
           note: 'VITAL RCT: invasive cancer incidence HR 1.03 (0.93–1.13) — null. Cancer mortality HR 0.97 — also null. The observational suggestion that omega-3 prevents cancer does not hold up in a trial.',
         },
         {
           output: 'cognition', type: 'toggle', points: 0,
-          evidence: 'moderate', source: 'manson2019omega3',
+          evidence: 'moderate', source: ['manson2019omega3'],
           note: 'No credible RCT evidence that omega-3 supplements improve cognition in healthy adults. VITAL did not test cognition directly, but smaller RCTs show null or trivial effects in the general population.',
         },
         {
           output: 'happiness', type: 'toggle', points: 0,
-          evidence: 'moderate', source: 'manson2019omega3',
+          evidence: 'moderate', source: ['manson2019omega3'],
           note: 'No evidence that omega-3 supplements measurably affect mood or wellbeing in generally healthy adults. The fish → happiness pathway runs through eating fish, not taking pills.',
         },
       ],
@@ -1171,7 +1171,7 @@ const HEALTH_MODEL = {
 //      hint: 'Best guess of your 25(OH)D level if you haven\'t measured it.',
       effects: [
         {
-          output: 'mortality', type: 'byOption', evidence: 'moderate', source: 'schottker2014',
+          output: 'mortality', type: 'byOption', evidence: 'moderate', source: ['schottker2014'],
           byOption: {
             deficient: { hr: 1.57, hrLow: 1.36, hrHigh: 1.81 },
             sufficient: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -1180,12 +1180,12 @@ const HEALTH_MODEL = {
           note: 'Deficiency (bottom vs top quintile) → RR 1.57 in pooled cohorts — BUT the VITAL RCT (26k people) found supplements did NOT reduce cancer, CVD or mortality (HR 0.99). Deficiency likely marks poor health; whether correcting it helps is unresolved.',
         },
         {
-          output: 'cognition', type: 'byOption', evidence: 'low', source: 'schottker2014',
+          output: 'cognition', type: 'byOption', evidence: 'low', source: ['schottker2014'],
           byOption: { deficient: { points: -0.2 }, sufficient: { points: 0 }, supplement: { points: 0 } },
           note: 'Deficiency is associated with worse cognitive outcomes observationally; supplementation trials show no clear cognitive benefit. Indirect citation — replace with a dedicated source.',
         },
         {
-          output: 'cancer', type: 'byOption', evidence: 'moderate', source: 'manson2019',
+          output: 'cancer', type: 'byOption', evidence: 'moderate', source: ['manson2019'],
           byOption: {
             deficient: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             sufficient: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -1194,7 +1194,7 @@ const HEALTH_MODEL = {
           note: 'VITAL RCT, cancer DEATH with supplementation: HR 0.83 (0.67–1.02) — suggestive but not significant; cancer incidence was null (1.03).',
         },
         {
-          output: 'cvd', type: 'byOption', evidence: 'moderate', source: 'schottker2014',
+          output: 'cvd', type: 'byOption', evidence: 'moderate', source: ['schottker2014'],
           byOption: {
             deficient: { hr: 1.45, hrLow: 1.25, hrHigh: 1.65 },
             sufficient: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -1215,12 +1215,12 @@ const HEALTH_MODEL = {
       effects: [
         {
           output: 'happiness', type: 'toggle', points: -0.4,
-          evidence: 'moderate', source: 'houston2018',
+          evidence: 'moderate', source: ['houston2018'],
           note: 'RCT meta-analysis: correcting non-anaemic iron deficiency REDUCES fatigue (SMD −0.38) — so leaving it untreated costs you that. No effect on measured physical capacity.',
         },
         {
           output: 'cognition', type: 'toggle', points: -0.2,
-          evidence: 'low', source: 'houston2018',
+          evidence: 'low', source: ['houston2018'],
           note: 'Iron deficiency is linked to reduced attention/cognitive performance, mostly studied in children and anaemic patients; effect size in non-anaemic adults unclear. Indirect citation — replace with a dedicated source.',
         },
       ],
@@ -1236,7 +1236,7 @@ const HEALTH_MODEL = {
       hint: 'Sudoku, crosswords, brain-training apps.',
       effects: [
         {
-          output: 'cognition', type: 'steps', evidence: 'low', source: 'edwards2017',
+          output: 'cognition', type: 'steps', evidence: 'low', source: ['edwards2017'],
           steps: [
             { max: 0, points: 0 },
             { max: Infinity, points: 0.15 },
@@ -1260,13 +1260,13 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 10, ref: 8, minDose: 3, capAt: 30,
           hr: 1.073, hrLow: 1.071, hrHigh: 1.075,
-          evidence: 'high', source: 'di2017',
+          evidence: 'high', source: ['di2017'],
           note: 'Medicare open cohort (61M people, 460M person-years): +7.3% (7.1–7.5) all-cause mortality per +10 µg/m³ PM2.5 — and +13.6% even below the 12 µg/m³ US standard. Anchored at the US mean (8). Levers: location, HEPA purifiers, masks, avoiding high-traffic routes.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 10, ref: 8, minDose: 3, capAt: 30,
           hr: 1.10, hrLow: 1.08, hrHigh: 1.12,
-          evidence: 'high', source: 'di2017',
+          evidence: 'high', source: ['di2017'],
           note: 'Same cohort, CVD mortality: +10% (8–12%) per +10 µg/m³ — CVD is the primary mechanism for PM2.5 mortality effects through inflammation, oxidative stress and plaque progression.',
         },
       ],
@@ -1295,13 +1295,13 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 3.5, ref: 28, capAt: 56,
           hr: 0.87, hrLow: 0.84, hrHigh: 0.90,
-          evidence: 'high', source: 'kodama2009',
+          evidence: 'high', source: ['kodama2009'],
           note: 'Meta-analysis (33 studies): RR 0.87 (0.84–0.90) per 1-MET (3.5 ml/kg/min) higher fitness, anchored at 28 (low-average) and capped at 56. Corroborated by Mandsager 2018: elite vs low fitness HR 0.20.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 3.5, ref: 28, capAt: 56,
           hr: 0.85, hrLow: 0.82, hrHigh: 0.88,
-          evidence: 'high', source: 'kodama2009',
+          evidence: 'high', source: ['kodama2009'],
           note: 'Same meta-analysis, CVD events: RR 0.85 (0.82–0.88) per 1-MET — the CVD effect is slightly stronger than all-cause, consistent with cardiorespiratory fitness being a direct measure of cardiovascular health.',
         },
       ],
@@ -1328,7 +1328,7 @@ const HEALTH_MODEL = {
       //hint: 'When enabled, this REPLACES the BMI estimate.',
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: 'jayedi2022',
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['jayedi2022'],
           steps: [
             { max: 18, hr: 1.15, hrLow: 1.05, hrHigh: 1.30 },
             { max: 28, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -1338,7 +1338,7 @@ const HEALTH_MODEL = {
           note: 'Dose-response meta-analysis (35 cohorts, 923k people): J-shaped, lowest risk near 25%; HR ~1.11 per +10% BF above that. Sex-specific ideal ranges differ; our steps are unisex approximations — verify against the paper.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: 'jayedi2022',
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['jayedi2022'],
           steps: [
             { max: 18, hr: 1.12, hrLow: 1.02, hrHigh: 1.25 },
             { max: 28, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -1373,13 +1373,13 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 5, ref: 35, minDose: 15, capAt: 60,
           hr: 0.8621, hrLow: 0.8333, hrHigh: 0.8850,
-          evidence: 'moderate', source: 'leong2015',
+          evidence: 'moderate', source: ['leong2015'],
           note: 'PURE study (17 countries, 140k people): HR 1.16 (1.13–1.20) per 5 kg LOWER grip — expressed as 0.862 per +5 kg, anchored at 35 kg. Grip predicted mortality more strongly than systolic blood pressure. Probably a marker of overall strength (overlaps the strength-training input); whether improving grip itself helps is untested.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 5, ref: 35, minDose: 15, capAt: 60,
           hr: 0.84, hrLow: 0.81, hrHigh: 0.87,
-          evidence: 'moderate', source: 'leong2015',
+          evidence: 'moderate', source: ['leong2015'],
           note: 'PURE study, CVD mortality: HR 1.19 (1.15–1.23) per 5 kg LOWER grip — expressed as 0.84 per +5 kg. Grip predicted CVD mortality even more strongly than all-cause in the PURE cohort. Marker, not necessarily modifiable lever.',
         },
       ],
@@ -1408,19 +1408,19 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 10, ref: 70, minDose: 45, capAt: 100,
           hr: 1.17, hrLow: 1.14, hrHigh: 1.19,
-          evidence: 'moderate', source: 'aune2017rhr',
+          evidence: 'moderate', source: ['aune2017rhr'],
           note: 'Dose-response meta-analysis (87 studies): +17% (1.14–1.19) all-cause mortality per +10 bpm. RHR is partly a proxy for cardiorespiratory fitness — it overlaps the cardio/VO2max inputs, though the association survived activity adjustment in most studies.',
         },
         {
           output: 'cancer', type: 'perUnit', per: 10, ref: 70, minDose: 45, capAt: 100,
           hr: 1.14, hrLow: 1.06, hrHigh: 1.23,
-          evidence: 'moderate', source: 'aune2017rhr',
+          evidence: 'moderate', source: ['aune2017rhr'],
           note: 'Same meta-analysis, total cancer: +14% (1.06–1.23) per +10 bpm.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 10, ref: 70, minDose: 45, capAt: 100,
           hr: 1.15, hrLow: 1.12, hrHigh: 1.18,
-          evidence: 'moderate', source: 'aune2017rhr',
+          evidence: 'moderate', source: ['aune2017rhr'],
           note: 'Same meta-analysis, CVD-specific: +15% (12–18%) per +10 bpm — the RHR–CVD association is the best-established of all, reflecting the direct relationship between heart rate and myocardial oxygen demand.',
         },
       ],
@@ -1431,7 +1431,7 @@ const HEALTH_MODEL = {
   bmi: {
     label: 'BMI (derived)',
     evidence: 'high',
-    source: 'diangelantonio2016',
+    source: ['diangelantonio2016'],
     supersededBy: 'bodyFatOn', // measured body fat % is the better adiposity signal
     steps: [
       { max: 18.5, hr: 1.51, hrLow: 1.43, hrHigh: 1.59 },
@@ -1446,7 +1446,7 @@ const HEALTH_MODEL = {
     note: 'Individual-participant meta-analysis of 239 studies (never-smokers): all-cause mortality minimal at BMI 20–25. BMI ignores muscle mass and fat distribution — a crude proxy.',
     cvd: {
       evidence: 'high',
-      source: 'diangelantonio2016',
+      source: ['diangelantonio2016'],
       steps: [
         { max: 18.5, hr: 1.35, hrLow: 1.22, hrHigh: 1.48 },
         { max: 20.0, hr: 1.10, hrLow: 1.05, hrHigh: 1.15 },
@@ -1468,199 +1468,199 @@ const HEALTH_MODEL = {
    */
   findings: [
     {
-      when: (v) => v.smoking === 'current', dir: 'bad', input: 'Smoking', source: 'jha2013',
+      when: (v) => v.smoking === 'current', dir: 'bad', input: 'Smoking', source: ['jha2013'],
       text: 'markedly increased risk of lung cancer, COPD and vascular disease — most of the excess mortality in smokers comes from these causes',
     },
     {
-      when: (v) => v.smoking === 'current', dir: 'bad', input: 'Smoking', source: 'thun2013',
+      when: (v) => v.smoking === 'current', dir: 'bad', input: 'Smoking', source: ['thun2013'],
       text: 'current smokers have ~25× the lung-cancer death rate of never-smokers (and ~23× the COPD death rate) in contemporary US cohorts',
     },
     {
-      when: (v) => v.strength < 1, dir: 'bad', input: 'Strength', source: 'sherrington2019',
+      when: (v) => v.strength < 1, dir: 'bad', input: 'Strength', source: ['sherrington2019'],
       text: 'no strength/balance training → more falls later in life: exercise cuts fall rates ~23% and fall-related fractures ~27% in adults 60+ (high-certainty Cochrane evidence)',
     },
     {
-      when: (v) => v.strength < 1 && v.sex === 'female', dir: 'bad', input: 'Strength', source: 'howe2011',
+      when: (v) => v.strength < 1 && v.sex === 'female', dir: 'bad', input: 'Strength', source: ['howe2011'],
       text: 'increased chance of osteoporosis for inactive lifestyles: in postmenopausal women, resistance training preserves bone density (femoral neck +1%, spine +3% vs controls) — disuse accelerates bone loss',
     },
     {
-      when: (v) => v.strength < 1 && v.sex !== 'female', dir: 'bad', input: 'Strength', source: 'howe2011',
+      when: (v) => v.strength < 1 && v.sex !== 'female', dir: 'bad', input: 'Strength', source: ['howe2011'],
       text: 'increased chance of osteoporosis for inactive lifestyles: mechanical loading is what keeps bone — without resistance exercise, bone density declines with age',
     },
     {
-      when: (v) => v.cardio >= 150 && v.sex === 'female', dir: 'good', input: 'Cardio', source: 'rong2016',
+      when: (v) => v.cardio >= 150 && v.sex === 'female', dir: 'good', input: 'Cardio', source: ['rong2016'],
       text: 'leisure-time physical activity was associated with ~7% lower hip-fracture risk per activity increment in older women',
     },
     {
-      when: (v) => v.gripOn, dir: 'neutral', input: 'Grip', source: 'leong2015',
+      when: (v) => v.gripOn, dir: 'neutral', input: 'Grip', source: ['leong2015'],
       text: 'honest null: grip strength predicted death but NOT falls or fractures in PURE — a mortality marker, not an injury marker',
     },
     {
-      when: (v) => v.alcohol > 14, dir: 'bad', input: 'Alcohol', source: 'gbd2016',
+      when: (v) => v.alcohol > 14, dir: 'bad', input: 'Alcohol', source: ['gbd2016'],
       text: 'alcohol is a Group 1 carcinogen: cancer risk rises with every level of consumption, and ~19–27% of alcohol-attributable deaths after 50 are cancers',
     },
     {
-      when: (v) => v.smoking === 'former', dir: 'good', input: 'Smoking', source: 'jha2013',
+      when: (v) => v.smoking === 'former', dir: 'good', input: 'Smoking', source: ['jha2013'],
       text: 'quitting before ~40 avoids about 90% of the excess mortality of continued smoking',
     },
     {
-      when: (v) => v.cardio >= 150, dir: 'good', input: 'Cardio', source: 'arem2015',
+      when: (v) => v.cardio >= 150, dir: 'good', input: 'Cardio', source: ['arem2015'],
       text: 'similar dose–response for cardiovascular and cancer mortality, not just all-cause',
     },
     {
-      when: (v) => v.vo2maxOn && v.vo2max >= 42, dir: 'good', input: 'Fitness', source: 'mandsager2018',
+      when: (v) => v.vo2maxOn && v.vo2max >= 42, dir: 'good', input: 'Fitness', source: ['mandsager2018'],
       text: 'elite-fitness patients had ~80% lower adjusted mortality than low-fitness ones — fitness is one of the strongest modifiable mortality markers, with no observed upper limit of benefit',
     },
     {
-      when: (v) => v.alcohol > 14, dir: 'bad', input: 'Alcohol', source: 'wood2018',
+      when: (v) => v.alcohol > 14, dir: 'bad', input: 'Alcohol', source: ['wood2018'],
       text: 'higher risk of stroke (HR ≈ 1.14 per 100 g/week), heart failure and fatal hypertensive disease',
     },
     {
-      when: (v) => v.alcohol > 0 && v.alcohol <= 14, dir: 'neutral', input: 'Alcohol', source: 'wood2018',
+      when: (v) => v.alcohol > 0 && v.alcohol <= 14, dir: 'neutral', input: 'Alcohol', source: ['wood2018'],
       text: 'light-to-moderate intake was associated with slightly lower myocardial infarction risk (HR 0.94 per 100 g/week) — but no net all-cause benefit above ~7 drinks/week',
     },
     {
-      when: (v) => v.coffee >= 3, dir: 'good', input: 'Coffee', source: 'poole2017',
+      when: (v) => v.coffee >= 3, dir: 'good', input: 'Coffee', source: ['poole2017'],
       text: 'associated with lower cardiovascular mortality (RR 0.81 at 3–4 cups/day)',
     },
     {
-      when: (v) => v.coffee >= 5 && v.sex === 'female', dir: 'bad', input: 'Coffee', source: 'poole2017',
+      when: (v) => v.coffee >= 5 && v.sex === 'female', dir: 'bad', input: 'Coffee', source: ['poole2017'],
       text: 'high intake was associated with increased fracture risk in women (not men)',
     },
     {
-      when: (v) => v.sauna >= 4, dir: 'good', input: 'Sauna', source: 'laukkanen2015',
+      when: (v) => v.sauna >= 4, dir: 'good', input: 'Sauna', source: ['laukkanen2015'],
       text: '4–7 sessions/week was associated with ~63% lower sudden cardiac death risk in Finnish men',
     },
     {
-      when: (v) => v.strength >= 1, dir: 'good', input: 'Strength', source: 'momma2022',
+      when: (v) => v.strength >= 1, dir: 'good', input: 'Strength', source: ['momma2022'],
       text: 'associated with lower type-2 diabetes risk (L-shaped, strongest up to ~60 min/week)',
     },
     {
-      when: (v) => v.fruitVeg >= 5, dir: 'good', input: 'Fruit & veg', source: 'wang2014',
+      when: (v) => v.fruitVeg >= 5, dir: 'good', input: 'Fruit & veg', source: ['wang2014'],
       text: 'lower cardiovascular mortality (HR ≈ 0.96 per serving/day); no clear cancer-mortality effect',
     },
     {
-      when: (v) => v.social <= 1, dir: 'bad', input: 'Social', source: 'holtlunstad2010',
+      when: (v) => v.social <= 1, dir: 'bad', input: 'Social', source: ['holtlunstad2010'],
       text: 'weak social ties carry a mortality risk comparable to well-established behavioural risk factors',
     },
     {
-      when: (v) => v.magnesium >= 400, dir: 'good', input: 'Magnesium', source: 'fang2016',
+      when: (v) => v.magnesium >= 400, dir: 'good', input: 'Magnesium', source: ['fang2016'],
       text: 'higher dietary magnesium associated with lower heart-failure (RR 0.78 per 100 mg/day) and type-2 diabetes risk (RR 0.81)',
     },
     {
-      when: (v) => v.cannabis === 'regular', dir: 'bad', input: 'Cannabis', source: 'moore2007',
+      when: (v) => v.cannabis === 'regular', dir: 'bad', input: 'Cannabis', source: ['moore2007'],
       text: 'regular use is associated with roughly doubled odds of psychotic outcomes (dose-dependent); evidence for depression/anxiety is weaker',
     },
     {
-      when: (v) => v.cannabis !== 'never', dir: 'neutral', input: 'Cannabis', source: 'sidney1997',
+      when: (v) => v.cannabis !== 'never', dir: 'neutral', input: 'Cannabis', source: ['sidney1997'],
       text: 'no clear all-cause mortality increase in long-term cohorts — but "no mortality signal" is not the same as safe',
     },
     {
-      when: (v) => v.vitaminD === 'supplement', dir: 'neutral', input: 'Vitamin D', source: 'manson2019',
+      when: (v) => v.vitaminD === 'supplement', dir: 'neutral', input: 'Vitamin D', source: ['manson2019'],
       text: 'VITAL RCT (26k people): 2000 IU/day did not reduce cancer, cardiovascular events or mortality in generally healthy adults',
     },
     {
-      when: (v) => v.snus === 'yes', dir: 'bad', input: 'Snus', source: 'byhamre2021',
+      when: (v) => v.snus === 'yes', dir: 'bad', input: 'Snus', source: ['byhamre2021'],
       text: 'pooled Swedish cohorts: ~28% higher all-cause and ~27% higher cardiovascular mortality — safer than smoking, not safe',
     },
     {
-      when: (v) => v.occupationalPA >= 6 && v.sex === 'male', dir: 'bad', input: 'Occupational PA', source: 'coenen2018',
+      when: (v) => v.occupationalPA >= 6 && v.sex === 'male', dir: 'bad', input: 'Occupational PA', source: ['coenen2018'],
       text: 'the "physical activity paradox": heavy occupational activity tracked ~18% higher mortality in men — work strain and leisure exercise are not interchangeable',
     },
     {
-      when: (v) => v.cognitiveTraining >= 1, dir: 'good', input: 'Brain training', source: 'edwards2017',
+      when: (v) => v.cognitiveTraining >= 1, dir: 'good', input: 'Brain training', source: ['edwards2017'],
       text: 'speed-of-processing training cut 10-year dementia risk ~29% in the ACTIVE trial — but gains are mostly domain-specific (you get better at the task itself)',
     },
     {
-      when: (v) => v.ironDeficiency, dir: 'neutral', input: 'Iron', source: 'houston2018',
+      when: (v) => v.ironDeficiency, dir: 'neutral', input: 'Iron', source: ['houston2018'],
       text: 'correcting non-anaemic iron deficiency reduced fatigue in RCTs (SMD −0.38) without improving measured physical capacity',
     },
     {
-      when: (v) => v.stress >= 8, dir: 'bad', input: 'Stress', source: 'russ2012',
+      when: (v) => v.stress >= 8, dir: 'bad', input: 'Stress', source: ['russ2012'],
       text: 'distress this severe tracks mortality even after adjusting for somatic illness, behaviour and socioeconomic factors',
     },
     {
-      when: (v) => v.creatine && v.fruitVeg <= 2, dir: 'neutral', input: 'Creatine', source: 'avgerinos2018',
+      when: (v) => v.creatine && v.fruitVeg <= 2, dir: 'neutral', input: 'Creatine', source: ['avgerinos2018'],
       text: 'the cognitive effect is clearest in vegetarians and older/stressed individuals — meat eaters already get dietary creatine',
     },
     {
-      when: (v) => v.processedMeat >= 7, dir: 'bad', input: 'Processed meat', source: 'pan2012',
+      when: (v) => v.processedMeat >= 7, dir: 'bad', input: 'Processed meat', source: ['pan2012'],
       text: 'each daily serving of processed meat tracked ~16% higher cancer mortality; IARC classifies processed meat as carcinogenic to humans (Group 1)',
     },
     {
-      when: (v) => v.processedMeat >= 3, dir: 'good', input: 'Processed meat', source: 'pan2012',
+      when: (v) => v.processedMeat >= 3, dir: 'good', input: 'Processed meat', source: ['pan2012'],
       text: 'swapping 1 daily serving of red meat for fish, poultry, nuts or legumes was associated with 7–19% lower mortality',
     },
     {
-      when: (v) => v.ssb >= 7, dir: 'bad', input: 'Sugary drinks', source: 'malik2019',
+      when: (v) => v.ssb >= 7, dir: 'bad', input: 'Sugary drinks', source: ['malik2019'],
       text: 'driven mostly by cardiovascular mortality (HR 1.31 at ≥2/day); artificially sweetened drinks showed no clear association',
     },
     {
-      when: (v) => v.fish !== 'none', dir: 'neutral', input: 'Fish', source: 'manson2019omega3',
+      when: (v) => v.fish !== 'none', dir: 'neutral', input: 'Fish', source: ['manson2019omega3'],
       text: 'omega-3 SUPPLEMENTS did not reduce major cardiovascular events, cancer or mortality in the VITAL RCT (a −28% heart-attack signal was secondary) — eating fish and taking pills are not the same experiment',
     },
     {
-      when: (v) => v.omega3 === true, dir: 'neutral', input: 'Omega-3 supplements', source: 'manson2019omega3',
+      when: (v) => v.omega3 === true, dir: 'neutral', input: 'Omega-3 supplements', source: ['manson2019omega3'],
       text: 'The VITAL RCT (26k people, 5.3 years) found that omega-3 supplements had no effect on mortality (HR 1.02, 0.90–1.15), cardiovascular events (HR 0.92, 0.80–1.06), or cancer (HR 1.03, 0.93–1.13) in generally healthy adults — all CIs include 1.0. The small benefits seen with eating fish do not replicate in a pill; the fish benefit appears to be about replacing meat, not about omega-3.',
     },
     {
-      when: (v) => v.fish === 'lots' && v.processedMeat >= 3, dir: 'good', input: 'Fish', source: 'pan2012',
+      when: (v) => v.fish === 'lots' && v.processedMeat >= 3, dir: 'good', input: 'Fish', source: ['pan2012'],
       text: 'part of the fish benefit is likely substitution — fish on the plate often means processed meat off it',
     },
     {
-      when: (v) => v.sitting >= 10 && v.cardio < 150, dir: 'bad', input: 'Sitting', source: 'biswas2015',
+      when: (v) => v.sitting >= 10 && v.cardio < 150, dir: 'bad', input: 'Sitting', source: ['biswas2015'],
       text: 'sedentary time hits hardest when leisure activity is low; its mortality association shrinks substantially in active people',
     },
     {
-      when: (v) => v.purpose <= 3, dir: 'bad', input: 'Purpose', source: 'cohen2016',
+      when: (v) => v.purpose <= 3, dir: 'bad', input: 'Purpose', source: ['cohen2016'],
       text: 'a low sense of purpose tracks higher mortality in prospective cohorts — treat it as a signal worth taking seriously, not a diagnosis',
     },
     {
-      when: (v) => v.gripOn && v.grip <= 25, dir: 'bad', input: 'Grip', source: 'leong2015',
+      when: (v) => v.gripOn && v.grip <= 25, dir: 'bad', input: 'Grip', source: ['leong2015'],
       text: 'in PURE, grip strength predicted all-cause mortality more strongly than systolic blood pressure did',
     },
     {
-      when: (v) => v.nuts >= 20, dir: 'good', input: 'Nuts', source: 'aune2016nuts',
+      when: (v) => v.nuts >= 20, dir: 'good', input: 'Nuts', source: ['aune2016nuts'],
       text: 'a handful a day was also associated with ~50% lower respiratory-disease and ~40% lower diabetes mortality',
     },
     {
-      when: (v) => v.fiber >= 25, dir: 'good', input: 'Fiber', source: 'aune2016grain',
+      when: (v) => v.fiber >= 25, dir: 'good', input: 'Fiber', source: ['aune2016grain'],
       text: 'whole grains are likely part of your fiber benefit: RR 0.83 (0.77–0.90) per 3 servings/day — we don\'t count them separately to avoid double-counting',
     },
     {
-      when: (v) => v.sleepRegularity <= 3, dir: 'bad', input: 'Sleep regularity', source: 'windred2024',
+      when: (v) => v.sleepRegularity <= 3, dir: 'bad', input: 'Sleep regularity', source: ['windred2024'],
       text: 'an irregular schedule predicted mortality more strongly than short sleep did in UK Biobank — a fixed wake time is a real lever, even before more hours',
     },
     {
-      when: (v) => v.pm25 > 12, dir: 'bad', input: 'Air pollution', source: 'di2017',
+      when: (v) => v.pm25 > 12, dir: 'bad', input: 'Air pollution', source: ['di2017'],
       text: 'above the US annual standard (12 µg/m³); WHO\'s guideline is 5 — HEPA purifiers, masks and route/location choices measurably reduce exposure',
     },
     {
-      when: (v) => v.pm25 <= 5, dir: 'good', input: 'Air pollution', source: 'di2017',
+      when: (v) => v.pm25 <= 5, dir: 'good', input: 'Air pollution', source: ['di2017'],
       text: 'at or below the WHO guideline for PM2.5 — but mortality risk keeps falling with every µg/m³, there\'s no clear safe floor',
     },
     {
-      when: (v) => v.screenTime >= 6, dir: 'bad', input: 'Screen time', source: 'stamatakis2011',
+      when: (v) => v.screenTime >= 6, dir: 'bad', input: 'Screen time', source: ['stamatakis2011'],
       text: 'screen-based entertainment ≥4 h/day tracked 1.5× all-cause mortality and 2.3× cardiovascular events in a Scottish cohort — that physical pathway is sitting and low fitness, which we count in those sliders rather than twice here',
     },
     {
-      when: (v) => v.screenTime >= 4 && (v.cardio >= 150 || (v.vo2maxOn && v.vo2max >= 35)), dir: 'good', input: 'Screen time', source: 'celis2018',
+      when: (v) => v.screenTime >= 4 && (v.cardio >= 150 || (v.vo2maxOn && v.vo2max >= 35)), dir: 'good', input: 'Screen time', source: ['celis2018'],
       text: 'UK Biobank (390k people): the screen-time–mortality association (HR 1.31 per 2 h/day in the least strong/fit) was null in people with high grip strength, fitness or activity (HR 1.04, NS) — the harm is largely the sitting, and fitness attenuates it',
     },
     {
-      when: (v) => v.screenTime >= 5 && v.sleep < 7, dir: 'bad', input: 'Screen time', source: 'hale2015',
+      when: (v) => v.screenTime >= 5 && v.sleep < 7, dir: 'bad', input: 'Screen time', source: ['hale2015'],
       text: 'screens near bedtime displace and delay sleep — 90% of studies in a 67-study review found shorter or later sleep; if your sleep slider is set honestly, this is already counted there',
     },
     {
-      when: (v) => v.screenTime <= 1, dir: 'neutral', input: 'Screen time', source: 'orben2019',
+      when: (v) => v.screenTime <= 1, dir: 'neutral', input: 'Screen time', source: ['orben2019'],
       text: 'context: across 355k adolescents, digital-technology use explained at most 0.4% of wellbeing variation — at low-to-moderate use the measurable association is tiny either way',
     },
     {
-      when: (v) => v.screenTime >= 3 && v.screenTime < 6, dir: 'neutral', input: 'Screen time', source: 'allcott2020',
+      when: (v) => v.screenTime >= 3 && v.screenTime < 6, dir: 'neutral', input: 'Screen time', source: ['allcott2020'],
       text: 'in a randomized experiment, deactivating Facebook for 4 weeks improved subjective wellbeing — and reduced factual news knowledge; lower use persisted after the experiment',
     },
     {
-      when: (v) => v.screenTime >= 7, dir: 'bad', input: 'Screen time', source: 'twenge2018',
+      when: (v) => v.screenTime >= 7, dir: 'bad', input: 'Screen time', source: ['twenge2018'],
       text: 'in a US national sample, 7+ vs 1 h/day screen time tracked 2.4× diagnosed depression and 2.3× diagnosed anxiety in adolescents (cross-sectional — causality unclear)',
     },
   ],
@@ -1940,6 +1940,14 @@ const HEALTH_MODEL = {
       journal: 'European Journal of Preventive Cardiology, 26(13):1415–1429',
       url: 'https://doi.org/10.1177/2047487319843667',
       pmid: '30971126',
+    },
+    li2020: {
+      authors: 'Li Y, Guo L, He K, Fan L, Liang W, He Q',
+      year: 2020,
+      title: 'Fish intake and cardiovascular disease and all-cause mortality: a dose-response meta-analysis of prospective cohorts',
+      journal: 'Heart, 106(2):124–130',
+      url: 'https://doi.org/10.1136/heartjnl-2019-315087',
+      pmid: '31451418',
     },
     manson2019omega3: {
       authors: 'Manson JE, Cook NR, Lee IM, et al. (VITAL Research Group)',
