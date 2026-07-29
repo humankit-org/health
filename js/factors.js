@@ -1944,6 +1944,8 @@ const HEALTH_MODEL = {
    * Findings: sourced facts that don't fit on a slider (disease-specific
    * outcomes, honest nulls, caveats). Shown only when `when(values)` is true,
    * so the list reacts to the current inputs. dir: good | bad | neutral.
+   *
+   * Only add extra findings that aren't already apparent in the outputs.
    */
   findings: [
     {
@@ -1964,7 +1966,7 @@ const HEALTH_MODEL = {
     },
     {
       when: (v) => v.cardio >= 150 && v.sex === 'female', dir: 'good', input: 'Cardio', source: ['rong2016'],
-      text: 'leisure-time physical activity was associated with ~7% lower hip-fracture risk in older women',
+      text: 'Leisure-time physical activity was associated with ~7% lower hip-fracture risk in older women',
     },
     {
       when: (v) => v.gripOn, dir: 'neutral', input: 'Grip', source: ['leong2015'],
@@ -1980,7 +1982,7 @@ const HEALTH_MODEL = {
     },
     {
       when: (v) => v.coffee >= 5 && v.sex === 'female', dir: 'bad', input: 'Coffee', source: ['poole2017'],
-      text: 'high intake was associated with increased fracture risk in women',
+      text: 'High intake was associated with increased fracture risk in women',
     },
     {
       when: (v) => v.magnesium >= 400, dir: 'good', input: 'Magnesium', source: ['fang2016'],
