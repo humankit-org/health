@@ -20,7 +20,7 @@
   </header>
 
   <section class="page-section" id="methodology">
-    <h2>How this site works (and why you shouldn't fully trust it)</h2>
+    <h1>About & Sources</h1>
 
     <h3>None of your data is stored</h3>
     <p>This is a static site. Nothing is sent anywhere.</p>
@@ -35,44 +35,30 @@
     <h3>How it works</h3>
     <p>Each input maps to a <strong>hazard ratio (HR)</strong> from a published study, e.g.
     meeting exercise guidelines corresponds to HR 0.69, a 31% lower mortality hazard. HRs
-    are combined <strong>multiplicatively, assuming independence</strong>. Real lifestyle
-    effects overlap, so this overstates combined benefits. We therefore <strong>cap the total</strong>
+    are combined <strong>multiplicatively, assuming independence</strong>. Sometimes the numbers differ from the study, as we try to get our reference points (HR = 1) to be the average value for a given input. For example, 20 BMI = 1.0 HR, and 30 BMI = 1.07, but we instead divide and get 20 BMI = 0.93 and 30 BMI = 1.0 as 30 BMI is closer to the average.
+    We <strong>cap the total</strong>
     at a 55% hazard reduction (HR 0.45) and a 4× increase (HR 4.0)</p>
-    <p>HR → years of life expectancy uses a <strong>Gompertz approximation</strong> (adult
-    mortality risk doubles roughly every 7 years). Cross-checked against two published
-    results: our exercise HRs reproduce Moore 2012's measured +4.5 y, and the smoking
-    HR reproduces Jha 2013's "&gt;10 years lost".</p>
+    <p>HR → years of life expectancy uses a Gompertz approximation (adult
+    mortality risk doubles roughly every 7 years).</p>
+    <p>In an attempt to be more accurate, some math is applied. Exactly how can be seen in the <a href="https://github.com/humankit-org/health">source code</a>.</p>
+    <ul><li>
+    Studies also give confidence intervals, which we combine in log quadrature.
+    </li>
+    <li>
+    Measured values (VO₂ max, body fat %) replace other inputs to try to avoid double-counting benefits.
+    </li>
 
-    <h3>Correlation does not equal causation!</h3>
-    <p>Real lifestyle effects overlap. exercisers generally
-    sleep better, so both the exercise and sleep studies show positive results, but
-    multiplying them is likely wrong. In a similar vein, 8 hours of sleep might be
-    neutral for you but correlates with being an exerciser, who is already healthy.
-    These numbers are hard to work with, and multiplying them assumes no overlap at all.</p>
+    </ul>
 
-    <h3>This math is <strong>NOT</strong> a doctor</h3>
-    <p>A lot of mistakes are likely being made in the calculation. There's no science out
-    there saying you can just multiply hazard ratios together or do what this site does.
-    You should take everything here with a grain of salt. It's just a bit of insight
-    into what kind of effects different choices <strong>statistically</strong> have on your health. There
-    are confounding residuals everywhere.</p>
-    <p>We do try to mitigate this in a couple of ways. Each estimate carries a confidence
-    interval (CI) from its source study, which we combine <strong>in quadrature</strong>
-    (log-space, assuming independent errors) and
-    widen them for weaker evidence (×1 high, ×1.5 moderate, ×2.25 low), so the final
-    ranges try to reflect how uncertain we are. The central estimate gets clamped first
-    (0.45–4.0), then the uncertainty is applied around the clamped value. And measured
-    values (VO₂ max, body fat %) replace their self-reported counterparts to try to avoid double-counting.</p>
-    <p>If you're interested, would like to improve the math, or found a mistake,
-    <strong><a href="https://github.com/humankit-org/health">please contact on the GitHub, seriously.</a></strong>.</p>
+    <h3>This math is <strong>NOT</strong> a doctor!</h3>
+    <p>A lot of mistakes are likely being made in the calculation, so don't take the final result as accurate. There's NO scientific basis for the math we do in this site.</p>
+    <p>Correlation does not equal causation. Some of these sources just check for a variable and output a number. Exercisers generally sleep better, eat better and move more daily, so how can the study be sure, when measuring exercise, whether it's the exercise, sleep, diet or daily movement that's increasing your life expectancy? As such, multiplying the -20% mortality from both the exercise, sleep, diet and daily movement studies as if they were independent likely conflates and overstates benefit.</p>
+    <p>Furthermore, some of these studies have a lot more caveats than we can fit into a slider. For example, creatine's cognitive effects are most prevalent in vegetarians and older adults. The real number that that applies to *you* specifically is very hard to find. Even more so when some studies do account for confounding variables, like one of our sun exposure studies accounting for the fact that exercisers spend more time in the sun. If you'd like to help, feel free to reach out on the <a href="https://github.com/humankit-org/health">GitHub</a></p>
+    <p>Similarly, cognition and happiness are deliberately very fuzzy, as there's no real measure of "brain score".</p>
+    <h3>Caveats</h3>
+    <p>The reference attempts to be the "average citizen", meaning better than the reference is only better than average, not necessarily "good".</p>
+    <p>The goal of the website is only to give a collected overview of insights into what kind of lifestyle factors affect your health and by how much, whilst maybe sharing some new information. Is a daily multivitamin 'healthy' enough to offset never exercising? (no).</p>
 
-    <h3>Cognition &amp; happiness</h3>
-    <p>There is no honest way to put a number on these. Effects are small, mostly
-    correlational, and often domain-specific (e.g. creatine helps <em>short-term memory
-    and reasoning</em>, mainly in vegetarians and older adults). So we show qualitative
-    bands with a deliberately fuzzy marker, and the marker gets <em>fuzzier</em> for
-    every low-evidence input currently contributing. Nothing here should be read as
-    "your brain score".</p>
   </section>
 
   <section class="page-section" id="references">

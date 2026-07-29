@@ -17,7 +17,8 @@
   const GROUPS = [
     { id: 'you', title: 'About you' },
     { id: 'movement', title: 'Movement' },
-    { id: 'diet', title: 'Diet & substances' },
+    { id: 'diet', title: 'Diet' },
+    { id: 'substances', title: 'Substances' },
     { id: 'mind', title: 'Recovery & mind' },
     { id: 'extras', title: 'Extras' },
     { id: 'environment', title: 'Environment' },
@@ -41,31 +42,22 @@
   function renderInputs() {
     const host = document.getElementById('inputs');
     for (const group of GROUPS) {
-      const inputs = model.inputs.filter((i) => i.group === group.id && !i.extra);
-      if (!inputs.length) continue;
+      const primary = model.inputs.filter((i) => i.group === group.id && !i.extra);
+      const extra = model.inputs.filter((i) => i.group === group.id && i.extra);
+      if (!primary.length && !extra.length) continue;
       const section = el(`<section class="group"><h2>${group.title}</h2></section>`);
-      for (const input of inputs) section.appendChild(renderInput(input));
+      for (const input of primary) section.appendChild(renderInput(input));
+      if (extra.length) {
+        const details = el(`<details class="advanced-toggle">
+        <summary>More inputs</summary>`);
+        for (const input of extra) details.appendChild(renderInput(input));
+        section.appendChild(details);
+      }
       if (group.id === 'you') {
         const bmi = el('<div class="bmi-readout" id="bmi-readout" aria-live="polite"></div>');
         section.appendChild(bmi);
       }
       host.appendChild(section);
-    }
-
-    for (const group of GROUPS) {
-      if (group.id === 'advanced') continue;
-      let inputs;
-      if (group.id === 'movement') {
-        inputs = model.inputs.filter((i) => (i.group === 'movement' || i.group === 'advanced') && i.extra);
-      } else {
-        inputs = model.inputs.filter((i) => i.group === group.id && i.extra);
-      }
-      if (!inputs.length) continue;
-      const details = el(`<details class="extra-toggle"><summary>${group.title}</summary></details>`);
-      const section = el(`<section class="group"></section>`);
-      for (const input of inputs) section.appendChild(renderInput(input));
-      details.appendChild(section);
-      host.appendChild(details);
     }
   }
 
@@ -131,7 +123,7 @@
         <h3>All-cause mortality risk <!-- <span class="ev" data-ev="high">high</span></h3> --> </h3>
         <div class="mort-top">
           <div class="output-highlight">
-            <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× average</span></div>
+            <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× reference</span></div>
           </div>
           <div class="mort-right">
             <div class="hr-sub" id="hr-sub"></div>
@@ -148,7 +140,7 @@
       <div class="output-row split">
       <div class="output-card" id="out-cancer">
         <h3>Cancer mortality risk <!-- <span class="ev" data-ev="moderate">moderate</span></h3> --> </h3>
-        <div class="hr-big"><output id="cancer-estimate">–</output><span class="hr-unit">× average</span></div>
+        <div class="hr-big"><output id="cancer-estimate">–</output><span class="hr-unit">× reference</span></div>
         <div class="hr-sub" id="cancer-sub"></div>
         <div class="gauge" id="cancer-gauge" role="img" aria-label="Cancer mortality hazard gauge">
           <div class="gauge-band" id="cancer-band"></div>
@@ -160,7 +152,7 @@
       </div>
       <div class="output-card" id="out-cvd">
         <h3>Cardiovascular mortality risk <!-- <span class="ev" data-ev="moderate">moderate</span></h3> --> </h3>
-        <div class="hr-big"><output id="cvd-estimate">–</output><span class="hr-unit">× average</span></div>
+        <div class="hr-big"><output id="cvd-estimate">–</output><span class="hr-unit">× reference</span></div>
         <div class="hr-sub" id="cvd-sub"></div>
         <div class="gauge" id="cvd-gauge" role="img" aria-label="Cardiovascular mortality hazard gauge">
           <div class="gauge-band" id="cvd-band"></div>
@@ -223,9 +215,12 @@
     return '±0%';
   }
 
-  function refLink(sourceKey) {
-    const n = refs[sourceKey];
-    return `<a class="chip-ref" href="sources.html#ref-${n}">[${n}]</a>`;
+  function refLink(sourceKeys) {
+    const keys = Array.isArray(sourceKeys) ? sourceKeys : [sourceKeys];
+    return keys.map((key) => {
+      const n = refs[key];
+      return `<a class="chip-ref" href="sources.html#ref-${n}">[${n}]</a>`;
+    }).join(' ');
   }
 
   // ------------------------------------------------------------- updating
@@ -409,7 +404,7 @@
       return `<li>
         <span class="contrib-effect ${dir}">${effect}</span>
         <span class="contrib-label">${c.label}</span>
-        <a class="contrib-ref" href="sources.html#ref-${refs[c.source]}" title="${c.note}">[${refs[c.source]}]</a>
+        ${Array.isArray(c.source) ? c.source.map((key) => `<a class="contrib-ref" href="sources.html#ref-${refs[key]}" title="${c.note}">[${refs[key]}]</a>`).join(' ') : `<a class="contrib-ref" href="sources.html#ref-${refs[c.source]}" title="${c.note}">[${refs[c.source]}]</a>`}
         <span class="ev small" data-ev="${c.evidence}" title="${EVIDENCE_TITLE[c.evidence]}">${c.evidence}</span>
       </li>`;
     }).join('');

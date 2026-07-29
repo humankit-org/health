@@ -396,9 +396,10 @@
   function sourceIndex(model) {
     const order = [];
     const push = (s) => { if (s && !order.includes(s)) order.push(s); };
-    for (const input of model.inputs) for (const e of input.effects) push(e.source);
-    push(model.bmi.source);
-    push(model.baseline.source);
+    const pushAll = (keys) => { if (keys) (Array.isArray(keys) ? keys : [keys]).forEach(push); };
+    for (const input of model.inputs) for (const e of input.effects) pushAll(e.source);
+    pushAll(model.bmi.source);
+    pushAll(model.baseline.source);
     const map = {};
     order.forEach((key, i) => (map[key] = i + 1));
     return map;

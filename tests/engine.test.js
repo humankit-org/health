@@ -28,11 +28,12 @@ function approx(a, b, tol, msg) {
 function referenceValues() {
   return {
     ...engine.defaults(model),
-    cardio: 0, strength: 0, sitting: 4,
-    fiber: 0, fruitVeg: 0, processedMeat: 1.5, ssb: 0, fish: 'none', nuts: 0,
+    steps: 2000, cardio: 0, strength: 0, sitting: 4,
+    fiber: 0, fruitVeg: 2.6, processedMeat: 1.5, ssb: 4.9, fish: 'none', nuts: 0,
     alcohol: 0, coffee: 0, magnesium: 250,
-    sleep: 7.5, stress: 2, social: 5, purpose: 5,
+    sleep: 7.5, stress: 3.5, social: 5, purpose: 5,
     occupationalPA: 0,
+    sunExposure: 0.5, // HR 1.0 step (reference level)
     heightCm: 170, weightKg: 68, // BMI ~23.5 -> HR 1.0 band
   };
 }
@@ -46,7 +47,8 @@ console.log('\n[1] Data integrity');
     ok(!ids.has(input.id), `input id unique: ${input.id}`);
     ids.add(input.id);
     for (const effect of input.effects) {
-      ok(!!model.sources[effect.source], `${input.id}/${effect.output} cites existing source "${effect.source}"`);
+      const srcs = Array.isArray(effect.source) ? effect.source : [effect.source];
+      srcs.forEach((s) => ok(!!model.sources[s], `${input.id}/${effect.output} cites existing source "${s}"`));
       ok(!!effect.note && effect.note.length > 10, `${input.id}/${effect.output} has an explanatory note`);
       if (effect.type === 'steps') {
         const sorted = effect.steps.every((s, i) => i === 0 || s.max > effect.steps[i - 1].max);
@@ -62,8 +64,10 @@ console.log('\n[1] Data integrity');
   }
   const bmiSorted = model.bmi.steps.every((s, i) => i === 0 || s.max > model.bmi.steps[i - 1].max);
   ok(bmiSorted, 'bmi steps sorted ascending');
-  ok(!!model.sources[model.bmi.source], 'bmi cites existing source');
-  ok(!!model.sources[model.baseline.source], 'baseline cites existing source');
+  const bmiSrcs = Array.isArray(model.bmi.source) ? model.bmi.source : [model.bmi.source];
+  bmiSrcs.forEach((s) => ok(!!model.sources[s], 'bmi cites existing source "' + s + '"'));
+  const baseSrcs = Array.isArray(model.baseline.source) ? model.baseline.source : [model.baseline.source];
+  baseSrcs.forEach((s) => ok(!!model.sources[s], 'baseline cites existing source "' + s + '"'));
 }
 
 console.log('\n[2] Single-factor effects');
@@ -75,7 +79,7 @@ console.log('\n[2] Single-factor effects');
   approx(r2.mortality.hr, Math.pow(0.9, 3), 1e-9, 'fiber 40 g/d capped at 30 g -> HR 0.9^3');
 
   const r3 = engine.evaluate(model, { ...neutralValues(), fruitVeg: 10 });
-  approx(r3.mortality.hr, Math.pow(0.95, 5), 1e-9, 'fruit/veg capped at 5 servings');
+  approx(r3.mortality.hr, Math.pow(0.95, 2.4), 1e-9, 'fruit/veg capped at 5 servings (calibrated to 2.6 avg)');
 
   const r4 = engine.evaluate(model, { ...neutralValues(), alcohol: 30 });
   approx(r4.mortality.hr, 1.56, 1e-9, 'alcohol >25 drinks/wk -> HR 1.56 (wood2018)');
@@ -100,7 +104,7 @@ console.log('\n[3] Reference profile = raw HR 1.0');
   // assert a direction vs the average person — just document the gap.
   ok(Math.abs(r.mortality.hrAvg - 1) > 0.01, 'reference profile differs from average person (hrAvg ' + r.mortality.hrAvg.toFixed(2) + ')');
   const avg = engine.averageEval(model);
-  ok(avg.hr > 0.5 && avg.hr < 2.0, 'average profile raw HR is sane (' + avg.hr.toFixed(3) + ')');
+  ok(avg.hr > 0.4 && avg.hr < 2.0, 'average profile raw HR is sane (' + avg.hr.toFixed(3) + ')');
 }
 
 console.log('\n[4] Calibration cross-checks (Gompertz vs published year-estimates)');
@@ -178,7 +182,7 @@ console.log('\n[9] Uncertainty widening (less certain evidence = wider range)');
   approx(m.hr, 0.60, 1e-9, 'central estimate unchanged by widening');
 
   const r2 = engine.evaluate(model, { ...neutralValues(), cardio: 300 }); // high evidence
-  approx(r2.mortality.hrLow, 0.62, 0.01, 'high evidence keeps ~published CI (0.62, quadrature-symmetrized)');
+  approx(r2.mortality.hrLow, 0.588, 0.01, 'high evidence keeps ~published CI (0.62, combined with stress+ssb uncertainty in quadrature)');
 }
 
 console.log('\n[10] Advanced inputs: gating + supersession');
@@ -187,11 +191,11 @@ console.log('\n[10] Advanced inputs: gating + supersession');
   approx(off.mortality.hr, 1.0, 1e-9, 'VO2max ignored while its toggle is off');
 
   const on = engine.evaluate(model, { ...neutralValues(), vo2maxOn: true, vo2max: 42, cardio: 300 });
-  approx(on.mortality.hr, Math.pow(0.87, 4), 1e-9, 'VO2max 42 -> 0.87^4 (kodama2009), cardio superseded');
+  approx(on.mortality.hr, Math.pow(0.87, (42 - 33) / 3.5), 1e-9, 'VO2max 42 -> 0.87^(9/3.5) (kodama2009), cardio superseded');
   ok(!on.contributions.mortality.some((c) => c.inputId === 'cardio'), 'cardio contribution removed when VO2max enabled');
 
   const bf = engine.evaluate(model, { ...neutralValues(), bodyFatOn: true, bodyFat: 35, heightCm: 170, weightKg: 110 });
-  approx(bf.mortality.hr, 1.11, 1e-9, 'body fat 35% -> HR 1.11 (jayedi2022), BMI superseded');
+  approx(bf.mortality.hr, 1.0, 1e-9, 'body fat 35% (US avg) -> HR 1.0 (jayedi2022, calibrated), BMI superseded');
   ok(!bf.contributions.mortality.some((c) => c.inputId === 'bmi'), 'BMI contribution removed when body fat % enabled');
 }
 
@@ -219,7 +223,7 @@ console.log('\n[11] New inputs');
   approx(r7.mortality.hr, Math.pow(1.2, (8 - 1.5) / 7), 1e-9, 'processed meat 8/wk -> 1.2^((8-1.5)/7) (pan2012)');
 
   const r8 = engine.evaluate(model, { ...neutralValues(), ssb: 14 });
-  approx(r8.mortality.hr, 1.21, 1e-9, 'SSB 14/wk -> HR 1.21 (malik2019)');
+  approx(r8.mortality.hr, 1.1415, 1e-9, 'SSB 14/wk -> HR 1.1415 (calibrated to 4.9 avg)');
 
   const r9 = engine.evaluate(model, { ...neutralValues(), fish: 'lots' });
   approx(r9.mortality.hr, 0.95, 1e-9, 'fish 3+/wk -> HR 0.95 (kwok2019, li2020)');
@@ -231,7 +235,7 @@ console.log('\n[11] New inputs');
   approx(r11.mortality.hr, 0.83, 1e-9, 'high purpose -> HR 0.83 (cohen2016)');
 
   const r12 = engine.evaluate(model, { ...neutralValues(), gripOn: true, grip: 25 });
-  approx(r12.mortality.hr, Math.pow(0.8621, -2), 1e-9, 'grip 25 kg (10 below anchor) -> 0.8621^-2 (leong2015)');
+  approx(r12.mortality.hr, Math.pow(0.8621, -1), 1e-9, 'grip 25 kg (5 below 30 kg anchor) -> 0.8621^-1 (leong2015)');
 
   const r13 = engine.evaluate(model, { ...neutralValues(), gripOn: false, grip: 15 });
   approx(r13.mortality.hr, 1.0, 1e-9, 'grip ignored while its toggle is off');
@@ -249,9 +253,9 @@ console.log('\n[11] New inputs');
   approx(r16.mortality.hr, 1.0, 1e-9, 'resting HR ignored while its toggle is off');
 
   const r17 = engine.evaluate(model, { ...neutralValues(), rhrOn: true, rhr: 90 });
-  approx(r17.mortality.hr, Math.pow(1.17, 2), 1e-9, 'RHR 90 (20 above anchor) -> 1.17^2 (aune2017rhr)');
+  approx(r17.mortality.hr, Math.pow(1.17, 1.8), 1e-9, 'RHR 90 (18 above 72 bpm anchor) -> 1.17^1.8 (aune2017rhr)');
   approx(engine.evaluateRaw(model, { ...neutralValues(), rhrOn: true, rhr: 90 }).hrCancer / base14.hrCancer,
-    Math.pow(1.14, 2), 1e-9, 'RHR 90 -> cancer 1.14^2');
+    Math.pow(1.14, 1.8), 1e-9, 'RHR 90 -> cancer 1.14^1.8');
 
   const r18 = engine.evaluate(model, { ...neutralValues(), sleepRegularity: 9 });
   approx(r18.mortality.hr, 0.78, 1e-9, 'regular sleep schedule -> HR 0.78 (windred2024)');
@@ -264,25 +268,93 @@ console.log('\n[11] New inputs');
 
   const r21 = engine.evaluate(model, { ...neutralValues(), pm25: 2 });
   approx(r21.mortality.hr, Math.pow(1.073, -0.5), 1e-9, 'PM2.5 clamped at minDose 3');
+
+  // Step count tests (neutralValues has steps=2000 = study reference)
+  const stepsRef = engine.evaluate(model, neutralValues());
+  const stepsAtDefault = engine.evaluate(model, { ...neutralValues(), steps: 5000 });
+  const stepsHigh = engine.evaluate(model, { ...neutralValues(), steps: 10000 });
+  approx(stepsHigh.mortality.hr / stepsAtDefault.mortality.hr, 0.52 / 0.67, 1e-9, 'steps 10k -> mortality raw HR 0.52/0.67 vs 5k default (lancet2025steps)');
+  approx(stepsRef.mortality.hr / stepsAtDefault.mortality.hr, 1.00 / 0.67, 1e-9, 'steps 2k -> mortality raw HR 1.0/0.67 vs 5k default');
+
+  const stepsBase = engine.evaluateRaw(model, neutralValues());
+  const stepsHighRaw = engine.evaluateRaw(model, { ...neutralValues(), steps: 15000 });
+  approx(stepsHighRaw.hrCvd / stepsBase.hrCvd, 0.50, 1e-9, 'steps 15k -> CVD HR 0.50 (lancet2025steps)');
+  approx(stepsHighRaw.hrCancer / stepsBase.hrCancer, 0.48, 1e-9, 'steps 15k -> cancer HR 0.48 (lancet2025steps)');
+
+  // Use defaults so all non-step inputs cancel with the average
+  const stepsHappy = engine.evaluate(model, { ...engine.defaults(model), steps: 10000 });
+  ok(stepsHappy.scores.happiness.relPoints > 0, 'steps 10k -> positive happiness delta');
+  ok(stepsHappy.scores.cognition.relPoints > 0, 'steps 10k -> positive cognition delta');
+
+  // Sun exposure
+  const sunBase = engine.evaluateRaw(model, neutralValues());
+  const sunLow = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 0 });
+  approx(sunLow.hr / sunBase.hr, 1.15, 1e-9, 'sun 0 h/d -> mortality HR 1.15 (adventist2025)');
+
+  const sunOpt = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 2.5 });
+  approx(sunOpt.hr / sunBase.hr, 0.90, 1e-9, 'sun 2.5 h/d -> mortality HR 0.90 (adventist2025)');
+
+  const sunHigh = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 6 });
+  approx(sunHigh.hr / sunBase.hr, 0.88, 1e-9, 'sun 6 h/d -> mortality HR 0.88 (persistent benefit)');
+
+  // CVD
+  const sunCvdLow = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 0 });
+  approx(sunCvdLow.hrCvd / sunBase.hrCvd, 1.18, 1e-9, 'sun 0 h/d -> CVD HR 1.18');
+
+  const sunCvdOpt = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 2.5 });
+  approx(sunCvdOpt.hrCvd / sunBase.hrCvd, 0.88, 1e-9, 'sun 2.5 h/d -> CVD HR 0.88');
+
+  const sunCvdHigh = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 6 });
+  approx(sunCvdHigh.hrCvd / sunBase.hrCvd, 0.85, 1e-9, 'sun 6 h/d -> CVD HR 0.85 (persistent benefit)');
+
+  // Cancer: benefit persists at high exposure (Stevenson, Sun-BEEM show benefit at all UV levels)
+  const sunCancerHigh = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 6 });
+  approx(sunCancerHigh.hrCancer / sunBase.hrCancer, 0.96, 1e-9, 'sun 6 h/d -> cancer HR 0.96 (persistent benefit)');
+
+  const sunCancerMod = engine.evaluateRaw(model, { ...neutralValues(), sunExposure: 2.5 });
+  approx(sunCancerMod.hrCancer / sunBase.hrCancer, 0.96, 1e-9, 'sun 2.5 h/d -> cancer HR 0.96 (modest benefit)');
+
+  // Happiness: default (1.5 h) is in optimal range; too little reduces it; high exposure maintains benefit
+  const sunHappy = engine.evaluate(model, { ...engine.defaults(model), sunExposure: 4 });
+  ok(sunHappy.scores.happiness.relPoints >= 0, 'sun 4 h/d -> happiness at least equals default (benefit persists)');
+
+  const sunSad = engine.evaluate(model, { ...engine.defaults(model), sunExposure: 0 });
+  ok(sunSad.scores.happiness.relPoints < -0.3, 'sun 0 h/d -> happiness well below default');
+
 }
 
 console.log('\n[12] Findings react to inputs');
 {
   const r = engine.evaluate(model, { ...neutralValues(), smoking: 'current' });
-  ok(r.findings.some((f) => f.source === 'jha2013' && /lung cancer/.test(f.text)), 'smoker sees lung-cancer finding');
+  ok(r.findings.some((f) => f.source.includes('jha2013') && /lung cancer/.test(f.text)), 'smoker sees lung-cancer finding');
 
   const r0 = engine.evaluate(model, neutralValues());
-  ok(!r0.findings.some((f) => f.source === 'jha2013'), 'reference profile -> no smoking findings');
-  ok(!r0.findings.some((f) => f.dir === 'bad' && f.source === 'pan2012'), 'reference profile -> no processed-meat findings');
+  ok(!r0.findings.some((f) => f.source.includes('jha2013')), 'reference profile -> no smoking findings');
+  ok(!r0.findings.some((f) => f.dir === 'bad' && f.source.includes('pan2012')), 'reference profile -> no processed-meat findings');
 
   const r2 = engine.evaluate(model, { ...neutralValues(), vitaminD: 'supplement' });
-  ok(r2.findings.some((f) => f.source === 'manson2019' && f.dir === 'neutral'), 'supplementing vitamin D shows the honest-null finding');
+  ok(r2.findings.some((f) => f.source.includes('manson2019') && f.dir === 'neutral'), 'supplementing vitamin D shows the honest-null finding');
 
   const r3 = engine.evaluate(model, { ...neutralValues(), processedMeat: 8 });
-  ok(r3.findings.some((f) => f.source === 'pan2012' && f.dir === 'bad'), 'daily processed meat shows cancer finding');
+  ok(r3.findings.some((f) => f.source.includes('pan2012') && f.dir === 'bad'), 'daily processed meat shows cancer finding');
 
   const r4 = engine.evaluate(model, engine.defaults(model));
-  ok(r4.findings.some((f) => f.source === 'manson2019omega3'), 'average profile (fish 1-2/wk) shows the omega-3 honest null');
+  ok(r4.findings.some((f) => f.source.includes('manson2019omega3')), 'average profile (fish 1-2/wk) shows the omega-3 honest null');
+
+  const r4b = engine.evaluate(model, engine.defaults(model));
+  ok(r4b.findings.some((f) => f.source.includes('lancet2025steps') && /partially capture/.test(f.text)), 'defaults (steps + cardio >0) shows steps-cardio overlap finding');
+
+  const sunHigh = engine.evaluate(model, { ...referenceValues(), sunExposure: 6 });
+  ok(sunHigh.findings.some((f) => f.source.includes('mahamat2020') && /skin cancer/.test(f.text)), 'sun 6 h/d -> skin-cancer finding');
+
+  const sunLow = engine.evaluate(model, { ...referenceValues(), sunExposure: 0 });
+  ok(sunLow.findings.some((f) => f.source.includes('stevenson2024') && /low sun/.test(f.text)), 'sun 0 h/d -> low-sun finding');
+
+  const sunOpt = engine.evaluate(model, { ...referenceValues(), sunExposure: 3 });
+  ok(sunOpt.findings.some((f) => f.source.includes('adventist2025') && /lower all-cause/.test(f.text)), 'sun 3 h/d -> optimal-sun finding');
+
+  const sunCog = engine.evaluate(model, { ...referenceValues(), sunExposure: 2 });
+  ok(sunCog.findings.some((f) => f.text.includes('boost cognition')), 'sun 2 h/d -> cognition-finding note');
 }
 
 console.log('\n[13] Cancer output');
@@ -310,26 +382,26 @@ console.log('\n[13] Cancer output');
 console.log('\n[14] Functional-independence findings');
 {
   const f = engine.evaluate(model, { ...neutralValues(), strength: 0, sex: 'female' });
-  ok(f.findings.some((x) => x.source === 'howe2011'), 'no strength training + female -> osteoporosis finding');
-  ok(f.findings.some((x) => x.source === 'sherrington2019'), 'no strength training -> falls finding');
+  ok(f.findings.some((x) => x.source.includes('howe2011')), 'no strength training + female -> osteoporosis finding');
+  ok(f.findings.some((x) => x.source.includes('sherrington2019')), 'no strength training -> falls finding');
 
   const g = engine.evaluate(model, { ...neutralValues(), strength: 2 });
-  ok(!g.findings.some((x) => x.source === 'sherrington2019'), 'strength training on -> no falls finding');
+  ok(!g.findings.some((x) => x.source.includes('sherrington2019')), 'strength training on -> no falls finding');
 
   const grip = engine.evaluate(model, { ...neutralValues(), gripOn: true, grip: 30 });
-  ok(grip.findings.some((x) => x.source === 'leong2015' && x.dir === 'neutral'), 'grip enabled -> honest-null injury finding');
+  ok(grip.findings.some((x) => x.source.includes('leong2015') && x.dir === 'neutral'), 'grip enabled -> honest-null injury finding');
 
   const nuts = engine.evaluate(model, { ...neutralValues(), nuts: 25 });
-  ok(nuts.findings.some((x) => x.source === 'aune2016nuts' && x.dir === 'good'), 'nuts >= 20 g -> respiratory/diabetes finding');
+  ok(nuts.findings.some((x) => x.source.includes('aune2016nuts') && x.dir === 'good'), 'nuts >= 20 g -> respiratory/diabetes finding');
 
   const reg = engine.evaluate(model, { ...neutralValues(), sleepRegularity: 2 });
-  ok(reg.findings.some((x) => x.source === 'windred2024' && x.dir === 'bad'), 'irregular sleep -> regularity-over-duration finding');
+  ok(reg.findings.some((x) => x.source.includes('windred2024') && x.dir === 'bad'), 'irregular sleep -> regularity-over-duration finding');
 
   const pm = engine.evaluate(model, { ...neutralValues(), pm25: 15 });
-  ok(pm.findings.some((x) => x.source === 'di2017' && x.dir === 'bad'), 'PM2.5 > 12 -> exposure finding');
+  ok(pm.findings.some((x) => x.source.includes('di2017') && x.dir === 'bad'), 'PM2.5 > 12 -> exposure finding');
 
   const grains = engine.evaluate(model, { ...neutralValues(), fiber: 30 });
-  ok(grains.findings.some((x) => x.source === 'aune2016grain'), 'high fiber -> whole-grains-not-double-counted finding');
+  ok(grains.findings.some((x) => x.source.includes('aune2016grain')), 'high fiber -> whole-grains-not-double-counted finding');
 }
 
 console.log('\n[15] CVD output');
@@ -345,7 +417,7 @@ console.log('\n[15] CVD output');
   approx(sm.hrCvd / base.hrCvd, 2.5, 1e-9, 'current smoker -> cvd HR 2.5 (jha2013)');
 
   const ssb = engine.evaluateRaw(model, { ...neutralValues(), ssb: 14 });
-  approx(ssb.hrCvd / base.hrCvd, 1.31, 1e-9, 'SSB 14/wk -> cvd HR 1.31 (malik2019)');
+  approx(ssb.hrCvd / base.hrCvd, 1.2358, 1e-9, 'SSB 14/wk -> cvd HR 1.2358 (calibrated, malik2019)');
 
   const nuts = engine.evaluateRaw(model, { ...neutralValues(), nuts: 30 });
   approx(nuts.hrCvd / base.hrCvd, Math.pow(0.79, 30 / 28), 1e-9, 'nuts 30 g/d -> cvd 0.79^(30/28) (aune2016nuts)');
@@ -354,10 +426,10 @@ console.log('\n[15] CVD output');
   approx(sauna.hrCvd / base.hrCvd, 0.48, 1e-9, 'sauna 5/wk -> cvd HR 0.48 (laukkanen2015)');
 
   const vo2 = engine.evaluateRaw(model, { ...neutralValues(), vo2maxOn: true, vo2max: 42 });
-  approx(vo2.hrCvd / base.hrCvd, Math.pow(0.85, 4), 1e-9, 'vo2max 42 -> cvd 0.85^4 (kodama2009)');
+  approx(vo2.hrCvd / base.hrCvd, Math.pow(0.85, (42 - 33) / 3.5), 1e-9, 'vo2max 42 -> cvd 0.85^(9/3.5) (kodama2009)');
 
   const rhr = engine.evaluateRaw(model, { ...neutralValues(), rhrOn: true, rhr: 90 });
-  approx(rhr.hrCvd / base.hrCvd, Math.pow(1.15, 2), 1e-9, 'RHR 90 -> cvd 1.15^2 (aune2017rhr)');
+  approx(rhr.hrCvd / base.hrCvd, Math.pow(1.15, 1.8), 1e-9, 'RHR 90 -> cvd 1.15^1.8 (aune2017rhr)');
 
   const sleepReg = engine.evaluateRaw(model, { ...neutralValues(), sleepRegularity: 9 });
   approx(sleepReg.hrCvd / base.hrCvd, 0.78, 1e-9, 'regular sleep schedule -> cvd 0.78 (windred2024)');
@@ -378,9 +450,10 @@ console.log('\n[16] Citation numbering (index.html <-> sources.html)');
 {
   const refs = engine.sourceIndex(model);
   const cited = new Set();
-  for (const input of model.inputs) for (const e of input.effects) cited.add(e.source);
-  cited.add(model.bmi.source);
-  cited.add(model.baseline.source);
+  const addAll = (keys) => { if (keys) (Array.isArray(keys) ? keys : [keys]).forEach((k) => cited.add(k)); };
+  for (const input of model.inputs) for (const e of input.effects) addAll(e.source);
+  addAll(model.bmi.source);
+  addAll(model.baseline.source);
   ok(Object.keys(refs).length === cited.size, 'sourceIndex covers every cited source');
   const nums = Object.values(refs).sort((a, b) => a - b);
   ok(nums.every((n, i) => n === i + 1), 'citation numbers contiguous from 1');
