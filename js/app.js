@@ -17,7 +17,8 @@
   const GROUPS = [
     { id: 'you', title: 'About you' },
     { id: 'movement', title: 'Movement' },
-    { id: 'diet', title: 'Diet & substances' },
+    { id: 'diet', title: 'Diet' },
+    { id: 'substances', title: 'Substances' },
     { id: 'mind', title: 'Recovery & mind' },
     { id: 'extras', title: 'Extras' },
     { id: 'environment', title: 'Environment' },

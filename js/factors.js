@@ -441,7 +441,6 @@ const HEALTH_MODEL = {
     {
       id: 'fiber',
       group: 'diet',
-      extra: true,
       label: 'Dietary fiber',
       kind: 'slider',
       unit: 'g/day',
@@ -513,7 +512,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'alcohol',
-      group: 'diet',
+      group: 'substances',
       label: 'Alcohol',
       kind: 'slider',
       unit: 'drinks/week',
@@ -560,7 +559,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'smoking',
-      group: 'diet',
+      group: 'substances',
       label: 'Smoking',
       kind: 'segmented',
       default: 'never',
@@ -655,7 +654,7 @@ const HEALTH_MODEL = {
 
     {
       id: 'snus',
-      group: 'diet',
+      group: 'substances',
       extra: true,
       label: 'Snus / smokeless tobacco',
       kind: 'segmented',
@@ -694,7 +693,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'cannabis',
-      group: 'diet',
+      group: 'substances',
       extra: true,
       label: 'Cannabis',
       kind: 'segmented',
@@ -753,7 +752,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'purpose',
-      group: 'mind',
+      group: 'extras',
       extra: true,
       label: 'Sense of purpose',
       kind: 'slider',
@@ -793,7 +792,6 @@ const HEALTH_MODEL = {
     {
       id: 'processedMeat',
       group: 'diet',
-      extra: true,
       label: 'Processed meat',
       kind: 'slider',
       unit: 'servings/week',
@@ -1099,7 +1097,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'meditation',
-      group: 'mind',
+      group: 'extras',
       extra: true,
       label: 'Meditation',
       kind: 'slider',
@@ -1190,7 +1188,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'creatine',
-      group: 'extras',
+      group: 'diet',
       extra: true,
       label: 'Creatine (~5 g/day)',
       kind: 'toggle',
@@ -1206,7 +1204,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'omega3',
-      group: 'extras',
+      group: 'diet',
       extra: true,
       label: 'Fish oil / omega-3 supplements',
       kind: 'toggle',
@@ -1242,7 +1240,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'vitaminD',
-      group: 'extras',
+      group: 'diet',
       extra: true,
       label: 'Vitamin D status',
       kind: 'segmented',
@@ -1290,7 +1288,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'ironDeficiency',
-      group: 'extras',
+      group: 'diet',
       extra: true,
       label: 'Untreated iron deficiency',
       kind: 'toggle',
