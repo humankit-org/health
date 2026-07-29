@@ -1990,11 +1990,7 @@ const HEALTH_MODEL = {
     },
     {
       when: (v) => v.cannabis === 'regular', dir: 'bad', input: 'Cannabis', source: ['moore2007'],
-      text: 'Regular use is associated with roughly doubled odds of psychotic outcomes (dose-dependent). Evidence for depression/anxiety is weaker',
-    },
-    {
-      when: (v) => v.cannabis !== 'regular', dir: 'neutral', input: 'Cannabis', source: ['sidney1997'],
-      text: 'No clear all-cause mortality increase in long-term, but "no mortality signal" is not the same as safe',
+      text: 'Regular use is associated with roughly doubled odds of psychotic outcomes (dose-dependent). Evidence for depression/anxiety is weaker. No clear all-cause mortality long-term, but "no mortality signal" is not the same as safe.',
     },
     {
       when: (v) => v.cognitiveTraining >= 1, dir: 'good', input: 'Brain training', source: ['edwards2017'],
@@ -2051,7 +2047,7 @@ const HEALTH_MODEL = {
     },
     {
       when: (v) => v.screenTime >= 3 && v.screenTime < 6, dir: 'neutral', input: 'Screen time', source: ['allcott2020', 'orben2019'],
-      text: 'Deactivating Facebook for 4 weeks improved subjective wellbeing — and reduced factual news knowledge. Lower use persisted after the experiment.',
+      text: 'Deactivating Facebook for 4 weeks improved subjective wellbeing, and reduced factual news knowledge. Lower use persisted after the experiment.',
     },
     {
       when: (v) => v.screenTime >= 7, dir: 'bad', input: 'Screen time', source: ['twenge2018'],
