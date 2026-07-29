@@ -41,31 +41,22 @@
   function renderInputs() {
     const host = document.getElementById('inputs');
     for (const group of GROUPS) {
-      const inputs = model.inputs.filter((i) => i.group === group.id && !i.extra);
-      if (!inputs.length) continue;
+      const primary = model.inputs.filter((i) => i.group === group.id && !i.extra);
+      const extra = model.inputs.filter((i) => i.group === group.id && i.extra);
+      if (!primary.length && !extra.length) continue;
       const section = el(`<section class="group"><h2>${group.title}</h2></section>`);
-      for (const input of inputs) section.appendChild(renderInput(input));
+      for (const input of primary) section.appendChild(renderInput(input));
+      if (extra.length) {
+        const details = el(`<details class="advanced-toggle">
+        <summary>More inputs</summary>`);
+        for (const input of extra) details.appendChild(renderInput(input));
+        section.appendChild(details);
+      }
       if (group.id === 'you') {
         const bmi = el('<div class="bmi-readout" id="bmi-readout" aria-live="polite"></div>');
         section.appendChild(bmi);
       }
       host.appendChild(section);
-    }
-
-    for (const group of GROUPS) {
-      if (group.id === 'advanced') continue;
-      let inputs;
-      if (group.id === 'movement') {
-        inputs = model.inputs.filter((i) => (i.group === 'movement' || i.group === 'advanced') && i.extra);
-      } else {
-        inputs = model.inputs.filter((i) => i.group === group.id && i.extra);
-      }
-      if (!inputs.length) continue;
-      const details = el(`<details class="extra-toggle"><summary>${group.title}</summary></details>`);
-      const section = el(`<section class="group"></section>`);
-      for (const input of inputs) section.appendChild(renderInput(input));
-      details.appendChild(section);
-      host.appendChild(details);
     }
   }
 

@@ -1413,7 +1413,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'vo2maxOn',
-      group: 'advanced',
+      group: 'movement',
       extra: true,
       label: 'I know my VO2 max',
       kind: 'toggle',
@@ -1423,7 +1423,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'vo2max',
-      group: 'advanced',
+      group: 'movement',
       extra: true,
       label: 'VO2 max',
       kind: 'slider',
@@ -1448,7 +1448,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'bodyFatOn',
-      group: 'advanced',
+      group: 'movement',
       extra: true,
       label: 'I know my body fat %',
       kind: 'toggle',
@@ -1458,7 +1458,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'bodyFat',
-      group: 'advanced',
+      group: 'movement',
       extra: true,
       label: 'Body fat',
       kind: 'slider',
@@ -1491,7 +1491,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'gripOn',
-      group: 'advanced',
+      group: 'movement',
       extra: true,
       label: 'I know my grip strength',
       kind: 'toggle',
@@ -1501,7 +1501,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'grip',
-      group: 'advanced',
+      group: 'movement',
       extra: true,
       label: 'Grip strength',
       kind: 'slider',
@@ -1526,7 +1526,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'rhrOn',
-      group: 'advanced',
+      group: 'movement',
       extra: true,
       label: 'I know my resting heart rate',
       kind: 'toggle',
@@ -1536,7 +1536,7 @@ const HEALTH_MODEL = {
     },
     {
       id: 'rhr',
-      group: 'advanced',
+      group: 'movement',
       extra: true,
       label: 'Resting heart rate',
       kind: 'slider',

@@ -258,22 +258,16 @@ input[type="range"] {
   .output-main { flex-direction: column; align-items: stretch; }
   .output-highlight { min-width: 0; }
 }
-.extra-toggle {
-  margin-top: 1.5rem;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 0.8rem 1.1rem;
+.advanced-toggle {
+  margin-top: 0.8rem;
 }
-.extra-toggle[open] { padding-bottom: 0.4rem; }
-.extra-toggle summary {
+.advanced-toggle summary {
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--accent);
   user-select: none;
 }
-.extra-toggle .group { border: none; padding: 0.6rem 0 0; margin-bottom: 0; }
 
 .output-tiles {
   display: block;
