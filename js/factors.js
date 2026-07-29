@@ -170,6 +170,16 @@ const HEALTH_MODEL = {
       unit: 'min/week',
       min: 0, max: 600, step: 15, default: 60,
       hint: 'Brisk walking, cycling, jogging… count vigorous minutes double.',
+      // arem2015 pooled 661k people from 6 cohorts: dose-response across all outcomes (all-cause, CVD, cancer)
+      // HR 0.80 at 150 min/wk, 0.63 at 449, 0.61 at 749, 0.69 at 10x guideline (no harm even at extremes)
+      // CVD mortality benefit (0.56 at 750+) is the dominant driver of all-cause reduction
+      //
+      // chekroud2018 cross-sectional 1.2M people: exercisers reported 43% fewer poor-mental-health days
+      // Best at ~45 min, 3-5x/week. Correlational — reverse causality plausible.
+      //
+      // erickson2011 RCT in 120 older adults: 1 year aerobic exercise → hippocampal volume +2%, spatial memory improved
+      //
+      // rong2016: leisure-time PA → ~7% lower hip-fracture risk per activity increment in older women (finding)
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'high', source: ['arem2015'],
@@ -325,6 +335,11 @@ const HEALTH_MODEL = {
       unit: 'hours/day',
       min: 0, max: 10, step: 0.5, default: 0.5,
       hint: 'Heavy physical work (construction, nursing, warehouse…). Not the same as leisure exercise!',
+      // coenen2018 meta-analysis: 194k workers, the "physical activity paradox"
+      // High occupational activity → HR 1.18 all-cause in MEN (women HR 0.90, NS)
+      // CVD mortality same pattern: HR 1.15 in men for high vs low
+      // Mechanism: sustained elevated BP, incomplete recovery, chronic inflammation
+      // Leisure activity benefits DO NOT transfer to heavy work — posture, duration, recovery all differ
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: ['coenen2018'],
@@ -356,6 +371,15 @@ const HEALTH_MODEL = {
       unit: 'steps/day',
       min: 0, max: 20000, step: 500, default: 4800,
       hint: 'Total steps per day from walking, errands, exercise. US average ≈ 4,500–5,000.',
+      // lancet2025steps: largest and most comprehensive meta-analysis — 57 studies, 35 cohorts
+      // All-cause: HR ~0.45 at 12,000 vs 2,000 steps/day, non-linear, steepest gains 2,000→6,000
+      // CVD: linear dose-response, HR ~0.50 at 12,000. Cancer: HR 0.48 at 12,000 (wider CI)
+      // Dementia: cognition points from HR ~0.58 at 12,000 steps — observational
+      // banach2023 cross-checks: 14 studies, HR ~0.51 for higher vs lower quartile
+      //
+      // OVERLAP with cardio (MVPA min/week) — both capture overlapping activity.
+      // Effect is NOT additive with cardio; true combined benefit lies between each alone.
+      // Steps captures total daily movement (light activity, errands) that the cardio slider misses.
       effects: [
         /*
          * OVERLAP NOTE: Steps and cardio (MVPA min/week) capture overlapping
@@ -440,6 +464,11 @@ const HEALTH_MODEL = {
       unit: 'hours/day',
       min: 4, max: 14, step: 0.5, default: 9,
       hint: 'Desk, commute and couch. US average ≈ 8–10 h/day.',
+      // biswas2015 meta-analysis (47 studies): prolonged sitting → HR 1.24 all-cause, after activity adjustment
+      // Cancer: HR 1.17, CVD: HR 1.15 at high vs low sedentary time
+      // BUT the effect ATTENUATES at higher activity levels — an interaction we don't model
+      // Sedentary time hits hardest when leisure activity is low (finding: sitting >= 10 && cardio < 150)
+      // CVD pathway: impaired endothelial function, reduced lipoprotein lipase activity, metabolic dysregulation
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: ['biswas2015'],
@@ -483,6 +512,15 @@ const HEALTH_MODEL = {
       unit: 'g/day',
       min: 0, max: 50, step: 1, default: 15,
       hint: 'Vegetables, fruit, legumes, whole grains. US average ≈ 15 g/day.',
+      // yang2015 meta-analysis (17 cohorts, ~1M people): RR 0.90 per +10g/day for all-cause mortality
+      // Benefit capped at 30g/day; top-vs-bottom-tertile RR 0.84 — linear dose may overstate at high intakes
+      //
+      // reynolds2019 Lancet series (185 prospective studies): 15-30% lower colorectal cancer incidence
+      // 25-29 g/day optimal for cancer; 10-20% lower CVD mortality driven by cholesterol/BP effects
+      // CVD pathway: soluble fiber lowers LDL, insoluble fiber improves glycaemic control
+      //
+      // aune2016grain (finding): whole grains are part of the fiber benefit — RR 0.83 per 3 servings/day
+      // We don't count whole grains separately to avoid double-counting (overlap rule)
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 10, capAt: 30,
@@ -518,6 +556,13 @@ const HEALTH_MODEL = {
       unit: 'servings/day',
       min: 0, max: 10, step: 0.5, default: 2.6,
       hint: 'One serving ≈ 80 g: a fist-sized portion.',
+      // wang2014 dose-response meta-analysis (16 cohorts): HR 0.95 per serving/day, plateau ~5 servings
+      // CVD: HR 0.96 per serving — small, graded, robust across cohorts
+      // CANCER: "not appreciably associated" — honestly null (unlike CVD). Important negative result.
+      //
+      // ocean2019 UK Household Longitudinal Study (50k+, fixed effects): wellbeing +0.13 GHQ points
+      // per additional portion of fruit/veg; dose-response, robust to time-invariant confounding
+      // Correlational but prospective — reverse causality partly addressed by FE design
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 1, ref: 2.6, capAt: 5,
@@ -555,6 +600,20 @@ const HEALTH_MODEL = {
       unit: 'drinks/week',
       min: 0, max: 30, step: 0.5, default: 2.5,
       hint: 'One drink ≈ 14 g ethanol (a beer, glass of wine, or shot).',
+      // wood2018: 83 studies, 600k drinkers — the largest individual-participant analysis
+      // Minimum mortality risk ≤100 g/wk (~7 drinks); above that, life expectancy at 40 fell progressively
+      // CVD: J-shaped, but NO protective "J" for stroke (HR 1.14 per 100 g/wk throughout)
+      // Low-dose CHD protection (HR 0.94 per 100 g/wk) does NOT translate to net all-cause benefit
+      // Abstainer-bias debate noted: former/ill drinkers in the reference group inflate apparent benefit
+      //
+      // mewton2023 IPD meta (15 studies, 24k >60y): light-moderate → lower dementia HR 0.78 vs abstainers
+      // J-shaped, but abstainer-bias may inflate the apparent benefit at low doses
+      //
+      // baumberg2016 (BCS70 10k, FE): alcohol problems → lower life satisfaction −0.18 on 0-10
+      // Gronkjær 2022 Copenhagen midlife: abstainers AND heavy drinkers both lower life satisfaction
+      // Mappiness app (31k): momentary happiness +3.9/100 when drinking, little overspill to overall life
+      //
+      // gbd2016 (finding): alcohol is Group 1 carcinogen — cancer risk rises with every level
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'high', source: ['wood2018'],
@@ -606,6 +665,18 @@ const HEALTH_MODEL = {
         { value: 'current', label: 'Current' },
       ],
     //hint: 'Cigarettes.',
+      // jha2013 US nationally representative: current smokers HR ~2.8 (men)–3.0 (women)
+      // >10 years of life lost; quitting before 40 avoids ~90% of excess risk
+      // CVD mortality is the LARGEST contributor to excess deaths — 2.5× vs never-smokers
+      //
+      // thun2013 50-year trends: lung-cancer DEATH rate ~25× never-smokers in contemporary US cohorts
+      // All-cancer mortality for current smokers is approximate — replace with Carter 2015 site-specific figures
+      //
+      // anstey2007 meta (19 studies, 26k): current vs never RR 1.79 Alzheimer's, 1.78 vascular dementia
+      // Faster yearly MMSE decline β=−0.13; former smokers not at elevated dementia risk
+      //
+      // lappan2020 HRS cross-lagged panel: smoking → lower life satisfaction β=−0.25, optimism, positive affect
+      // Bidirectional — higher wellbeing also predicts reduced likelihood of smoking (reciprocal)
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'high', source: ['jha2013'],
@@ -655,6 +726,14 @@ const HEALTH_MODEL = {
       unit: 'cups/day',
       min: 0, max: 6, step: 1, default: 2,
       hint: 'Decaf also counts.',
+      // poole2017 umbrella review: largest all-cause reduction at 3-4 cups/day (RR 0.83, 0.79-0.88)
+      // CVD mortality strongest of all outcomes: RR 0.81 (0.72-0.90) at 3-4 cups — consistent across cohorts
+      // Cancer incidence: 18% lower at high vs low (RR 0.82, 0.74-0.89)
+      // Cognition: lower Alzheimer's and cognitive decline in prospective studies (moderate evidence)
+      // Depression: inverse dose-response association (RR ~0.85 at 3-4 cups) — observational, confounded
+      //
+      // Finding: CVD mortality benefit at 3+ cups; increased fracture risk in women at 5+ cups (poole2017)
+      // Overall pattern: robust inverse association, U-shaped at very high intakes (5+ cups slightly attenuated)
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: ['poole2017'],
@@ -719,6 +798,11 @@ const HEALTH_MODEL = {
         { value: 'yes', label: 'Yes' },
       ],
      // hint: 'Swedish-style snus has the best data. Less harmful than smoking — not harmless.',
+      // byhamre2021 pooled 8 Swedish cohorts (169k never-smoking men): exclusive current snus use
+      // All-cause: aHR 1.28 (1.20-1.35), CVD: aHR 1.27 (driven by stroke + ischaemic heart disease)
+      // Cancer: aHR 1.12 (1.00-1.26) — weaker, borderline, mostly pancreatic in wider literature
+      // Men-only data; other smokeless products (US, Indian) may differ substantially
+      // Harm reduction relative to smoking (no combustion) but not harmless — ~28% higher all-cause
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'moderate', source: ['byhamre2021'],
@@ -759,6 +843,16 @@ const HEALTH_MODEL = {
         { value: 'regular', label: 'Regular' },
       ],
       //hint: 'Smoked or otherwise. Honest summary: mortality data weak, mental-health data concerning.',
+      // sidney1997 Kaiser Permanente (65k): current use NOT significantly associated with mortality
+      // RR 1.12 (CI crosses 1.0) — an honest null. But "no mortality signal" ≠ safe.
+      // Smoked cannabis likely shares combustion harms with tobacco (not quantified here).
+      //
+      // moore2007 systematic review: psychosis risk rises dose-dependently
+      // Ever-use OR 1.41; heavy use OR 2.09. Affective outcomes less consistent — depression/anxiety
+      // evidence weaker, confounding substantial.
+      //
+      // Finding: no clear all-cause mortality increase in long-term cohorts (sidney1997)
+      // Finding: ~doubled odds of psychotic outcomes at regular use (moore2007)
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'low', source: ['sidney1997'],
@@ -790,6 +884,12 @@ const HEALTH_MODEL = {
       unit: 'mg/day',
       min: 0, max: 600, step: 10, default: 280,
       hint: 'Nuts, legumes, whole grains, leafy greens. Typical intake ≈ 250–350 mg/day.',
+      // fang2016 dose-response meta (40 cohorts, >1M people): RR 0.90 per +100mg/day all-cause
+      // CVD stronger: RR 0.85 per +100mg/day — consistent with Mg's role in BP regulation + arrhythmia prevention
+      // Dietary intake partly a marker of overall diet quality; supplement trials are weaker
+      //
+      // Finding (fang2016): higher Mg associated with lower heart-failure risk (RR 0.78 per 100mg/day)
+      // and lower type-2 diabetes risk (RR 0.81) — both plausible mechanisms (electrolyte balance, insulin sensitivity)
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 100, ref: 250, minDose: 150, capAt: 450,
@@ -814,6 +914,12 @@ const HEALTH_MODEL = {
       unit: '/ 10',
       min: 1, max: 10, step: 1, default: 6,
       hint: '"My life has direction and meaning." 1 = not at all, 10 = completely.',
+      // cohen2016 meta-analysis (10 prospective, 136k people): high purpose → RR 0.83 all-cause + CV events
+      // Association persisted after adjusting for depression, health behaviours, SES
+      // But causality unproven — purpose may mark lower depression, higher activity, better adherence
+      // Low-purpose finding: tracks higher mortality in prospective cohorts — a signal worth taking seriously
+      // CVD mechanism largely indirect: higher purpose → more activity, less smoking, better treatment adherence
+      // Happiness effect: purpose and wellbeing overlap almost by definition
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: ['cohen2016'],
@@ -852,6 +958,13 @@ const HEALTH_MODEL = {
       unit: 'servings/week',
       min: 0, max: 14, step: 0.5, default: 1.5,
       hint: 'Bacon, sausages, deli meats, hot dogs. US average ≈ 1–2 servings/week.',
+      // pan2012 NHS+HPFS (124k people): HR 1.20 per daily serving processed red meat for all-cause
+      // CVD mortality: HR 1.13 driven by stroke (sodium) and CHD (saturated fat)
+      // Cancer mortality: HR 1.16 — IARC Group 1 carcinogen (colorectal cancer evidence strongest)
+      // Unprocessed red meat: HR 1.13 (weaker, not separately modelled)
+      //
+      // Finding: swapping 1 daily serving for fish/poultry/nuts/legumes → 7-19% lower mortality
+      // Substitution matters more than absolute intake — the benefit of reducing is partly about what replaces it
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 7, ref: 1.5, capAt: 14,
@@ -882,6 +995,11 @@ const HEALTH_MODEL = {
       unit: 'servings/week',
       min: 0, max: 21, step: 0.5, default: 4.9,
       hint: 'Soda, sweetened juices, energy drinks. One serving = 355 ml',
+      // malik2019 NHS+HPFS: graded dose-response across all outcomes vs <1/month consumption
+      // CVD mortality strongest: HR 1.31 at ≥2/day — driven by fructose metabolic effects
+      // (insulin resistance, hypertension, dyslipidaemia, visceral adiposity)
+      // Cancer: HR 1.16 at ≥2/day, mechanism through obesity and insulin pathways
+      // Artificially sweetened drinks: mostly null (unconfirmed signal in women only — needs replication)
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'high', source: ['malik2019'],
@@ -930,6 +1048,16 @@ const HEALTH_MODEL = {
         { value: 'lots', label: '3+ / week' },
       ],
       //hint: 'Modest mortality benefit (~3–5% lower), slightly stronger for CVD (~4–6% lower). Observational — part of the benefit may be substitution (fish replacing red meat).',
+      // kwok2019 + li2020 dose-response meta-analyses: RR ~0.97 per serving/week all-cause
+      // CVD stronger: ~4-6% lower per 1-2 servings/week (RR 0.96) — consistent across cohorts
+      // Mechanism: omega-3 (triglycerides, anti-inflammatory), substituting red meat
+      //
+      // Cancer (kwok2019): limited and inconsistent — no convincing association exists
+      // Unlike red meat, fish fatty acids are neutral or beneficial; residual confounding with healthier diet
+      //
+      // li2016fish meta (21 studies, 260k): fish consumption → lower depression risk RR 0.88
+      // Dose-response gradient, observational only. Omega-3 supplements DO NOT replicate this
+      // (VITAL: null) — the fish benefit is partly about eating fish, not isolated omega-3
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'moderate', source: ['kwok2019', 'li2020'],
@@ -979,6 +1107,14 @@ const HEALTH_MODEL = {
       unit: 'g/day',
       min: 0, max: 50, step: 1, default: 5,
       hint: 'A small handful ≈ 25–30 g. US average is low (~5 g/day).',
+      // aune2016nuts dose-response meta (20 studies): RR 0.78 per 28g/day all-cause — tree nuts = peanuts
+      // CVD: RR 0.79 per 28g/day — lipid-lowering, anti-inflammatory, endothelial effects clearest here
+      // Cancer: RR 0.85 per 28g/day — weaker but significant; antioxidants, fibre, phytosterols
+      // Benefit capped at ~35g/day in this model
+      //
+      // Finding (aune2016nuts): also ~50% lower respiratory-disease and ~40% lower diabetes mortality
+      // at a handful/day — the effect extends well beyond CVD, suggesting multiple pathways
+      // (micronutrients, healthy fat profile, fibre, antioxidant content)
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 28, capAt: 35,
@@ -1010,6 +1146,15 @@ const HEALTH_MODEL = {
       unit: 'hours/night',
       min: 4, max: 11, step: 0.5, default: 7,
       hint: 'Habitual sleep duration.',
+      // cappuccio2010 meta (16 studies, 1.4M): U-shaped — short sleep RR 1.12, long RR 1.30
+      // Long sleep partly reflects illness/confounding (reverse causation — sick people sleep more)
+      // CVD: short RR 1.07 (BP pathways), long RR 1.28 (weaker than all-cause, more confounded)
+      //
+      // lowe2017 meta (61 experimental studies): sleep restriction impairs executive function (g=−0.324)
+      // sustained attention (g=−0.409), long-term memory (g=−0.192) — medium effects, increase with age
+      //
+      // bacaro2023 longitudinal meta (42 studies): good sleep predicts higher well-being (r=0.18)
+      // and psychological well-being (r=0.15). Bidirectional — small-to-moderate effect sizes
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'high', source: ['cappuccio2010'],
@@ -1057,6 +1202,14 @@ const HEALTH_MODEL = {
       unit: '/ 10',
       min: 1, max: 10, step: 0.5, default: 3.5,
       hint: '1 = calm, 10 = overwhelmed, most days.',
+      // russ2012 pooled 68k adults (GHQ-12): psychological distress predicts mortality dose-dependently
+      // High distress ~62% higher all-cause mortality; CVD shows similar gradient
+      // Effect persists after adjusting for somatic illness, behaviour and SES (finding)
+      //
+      // franks2021 meta + aggarwal2014 CHAP cohort (6k >65y): higher stress → MCI HR 1.19, dementia HR 1.44
+      // Aggarwal: accelerated cognitive decline over 7 years, independent of depression and neuroticism
+      //
+      // Happiness: stress and unhappiness overlap by definition — our 1-10 slider calibrated to US avg ~3.5
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'high', source: ['russ2012'],
@@ -1106,6 +1259,14 @@ const HEALTH_MODEL = {
       unit: 'days/week',
       min: 0, max: 7, step: 1, default: 3,
       hint: 'Days with social contact.',
+      // holtlunstad2010 meta (148 studies): stronger social relationships → 50% higher survival odds
+      // OR 1.50 (1.42-1.59); strongest for complex social integration (OR 1.91)
+      // CVD effect particularly strong, persists after adjusting for activity, smoking, BMI
+      // Effect size comparable to quitting smoking — social isolation is a major risk factor
+      //
+      // Happiness: strongest known correlate of wellbeing across cultures (same meta)
+      // Reciprocal: happiness also predicts future social bond formation (Veenhoven 2023)
+      // Finding: weak social ties carry mortality risk comparable to established behavioural risk factors
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: ['holtlunstad2010'],
@@ -1145,6 +1306,17 @@ const HEALTH_MODEL = {
       unit: 'hours/day',
       min: 0, max: 12, step: 0.5, default: 5,
       hint: 'TV, social media, doomscrolling, gaming. Not work screens. US average ≈ 4–6 h/day (TV ~3 h + social media ~2 h).',
+      // hunt2018 RCT: limiting social media to ~30 min/day reduced loneliness and depression
+      // allcott2020: 4-week Facebook deactivation improved subjective wellbeing (RCT)
+      // zhai2015 meta: RR 1.22 depression for prolonged computer/internet use
+      //
+      // BUT effect sizes are tiny across populations: ≤0.4% of wellbeing variance (orben2019)
+      // Non-users ≈ low users (twenge2018), reverse causality plausible — points deliberately small
+      //
+      // Mortality/CVD pathways run through sitting + low fitness — NOT double-counted here (overlap rule)
+      // stamatakis2011: screen ≥4h/day → 1.5× all-cause, 2.3× CVD — captured by sitting/sedentary sliders
+      // celis-morales2018 UK Biobank: screen-time-mortality association null in fit/strong people (HR 1.04 NS)
+      // hale2015: screens near bedtime displace sleep — already counted in sleep slider if set honestly
       effects: [
         {
           output: 'happiness', type: 'steps', evidence: 'low', source: ['hunt2018'],
@@ -1168,6 +1340,10 @@ const HEALTH_MODEL = {
       unit: 'min/week',
       min: 0, max: 300, step: 15, default: 0,
       //hint: 'Mindfulness-style practice.',
+      // goyal2014 meta of 47 RCTs with active controls: mindfulness meditation reduces anxiety (ES 0.38)
+      // and depression (ES 0.30) — small-to-moderate effects relative to no treatment
+      // BUT no evidence it beats other active treatments (exercise, therapy) — specificity unclear
+      // Effects on happiness/wellbeing are indirect: reducing negative affect rather than boosting positive
       effects: [
         {
           output: 'happiness', type: 'steps', evidence: 'moderate', source: ['goyal2014'],
@@ -1190,6 +1366,13 @@ const HEALTH_MODEL = {
       unit: '/ 10',
       min: 1, max: 10, step: 1, default: 6,
       hint: 'Same sleep/wake times day to day? 1 = all over the place, 10 = like clockwork.',
+      // windred2024 UK Biobank accelerometer cohort (61k): top 4 SRI quintiles → 20-48% lower all-cause
+      // Regularity predicted mortality BETTER than duration did — a striking finding
+      // Cancer: 16-39% lower; CVD: similar gradient — likely through BP variability + autonomic regulation
+      // Our 1-10 self-rating is an approximate mapping onto their accelerometer-derived quintiles
+      //
+      // Finding: irregular schedule predicted mortality more strongly than short sleep (same study)
+      // Implication: a fixed wake time is a real lever, even before chasing more hours
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: ['windred2024'],
@@ -1229,6 +1412,11 @@ const HEALTH_MODEL = {
       unit: 'sessions/week',
       min: 0, max: 7, step: 1, default: 0,
       //hint: 'Finnish-style sauna.',
+      // laukkanen2015 single Finnish cohort (2315 men, mean f/up 21y): 4-7 vs 1 session/wk
+      // All-cause: ~40% lower (deaths 30.8% vs 49.1%). CVD: ~63% lower sudden cardiac death
+      // Mechanism: improved endothelial function, lower BP, reduced sympathetic tone
+      // Observational, one population (Finnish men), likely residual confounding — treat as speculative
+      // Exact adjusted HRs need verification against paper Table 2 (noted)
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'low', source: ['laukkanen2015'],
@@ -1258,6 +1446,12 @@ const HEALTH_MODEL = {
       kind: 'toggle',
       default: false,
       hint: 'Creatine monohydrate supplementation.',
+      // avgerinos2018 systematic review of RCTs: creatine improves short-term memory + reasoning
+      // Effect clearer in vegetarians (lower baseline creatine), older adults, and stressed individuals
+      // Other cognitive domains unclear — evidence strongest for tasks requiring speed of processing
+      //
+      // Finding: vegetarians/low-meat-eaters benefit most — meat eaters already get dietary creatine
+      // No mortality/CVD/cancer signal — we only score cognition
       effects: [
         {
           output: 'cognition', type: 'toggle', points: 0.5,
@@ -1274,6 +1468,14 @@ const HEALTH_MODEL = {
       kind: 'toggle',
       default: false,
       //hint: 'A lot of people take these hoping for the benefits of eating fish. The best trial says they don\'t work.',
+      // manson2019omega3 (VITAL RCT, n=26k, 5.3y): omega-3 supplements are essentially NULL
+      // All-cause mortality: HR 1.02 (0.90-1.15) — slightly MORE deaths in the omega-3 group
+      // CVD events: HR 0.92 (0.80-1.06) — CI includes 1.0; MI signal (HR 0.72) failed multiplicity correction
+      // Cancer: HR 1.03 (0.93-1.13) — null. Cognition: no credible evidence from well-controlled trials
+      // Happiness: no evidence in healthy adults
+      //
+      // The fish → health pathway is about eating fish (replacing meat, whole-food matrix), not isolated omega-3
+      // Observational benefits of omega-3 rich diets do not replicate in supplement RCTs — important negative
       effects: [
         {
           output: 'mortality', type: 'toggle', evidence: 'high', source: ['manson2019omega3'],
@@ -1315,6 +1517,16 @@ const HEALTH_MODEL = {
         { value: 'supplement', label: 'I supplement' },
       ],
 //      hint: 'Best guess of your 25(OH)D level if you haven\'t measured it.',
+      // schottker2014 pooled cohorts: bottom vs top quintile → RR 1.57 for all-cause mortality
+      // BUT VITAL RCT (26k, 2000 IU/day) found supplements did NOT reduce cancer, CVD or mortality (HR 0.99)
+      // Deficiency likely marks poor health (sun exposure, outdoor activity, diet quality) rather than causing it
+      //
+      // zhang2024vitd meta (23 studies, 525k): deficiency → RR 1.42 dementia, 1.57 Alzheimer's
+      // Optimal 25(OH)D ~77.5-100 nmol/L; supplementation RCTs show mixed/null results
+      //
+      // Cancer (manson2019 VITAL): cancer death HR 0.83 (0.67-1.02) — suggestive but not significant
+      // Cancer incidence null (1.03). CVD: observational 45% higher risk deficient vs sufficient, but
+      // supplements null (0.97). The observational vs RCT gap means causality is unresolved.
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'moderate', source: ['schottker2014'],
@@ -1358,6 +1570,13 @@ const HEALTH_MODEL = {
       kind: 'toggle',
       default: false,
       hint: 'Common in menstruating women, vegetarians, endurance athletes.',
+      // houston2018 RCT meta: correcting non-anaemic iron deficiency REDUCES fatigue (SMD −0.38)
+      // No effect on measured physical capacity — the benefit is subjective energy, not performance
+      //
+      // falkingham2010 RCT meta (14 studies): iron supplementation improved attention + concentration
+      // irrespective of baseline iron status (SMD 0.59, 0.29-0.90)
+      // In anaemic participants, IQ improved 2.5 points. No effect on memory or psychomotor skills.
+      // Evidence clearest in children and women; understudied in men — generalisability unknown
       effects: [
         {
           output: 'happiness', type: 'toggle', points: -0.4,
@@ -1380,6 +1599,10 @@ const HEALTH_MODEL = {
       unit: 'sessions/week',
       min: 0, max: 7, step: 1, default: 0,
       hint: 'Sudoku, crosswords, brain-training apps.',
+      // edwards2017 ACTIVE trial: speed-of-processing training cut 10-year dementia risk ~29%
+      // but gains are mostly DOMAIN-SPECIFIC — you get better at the trained task
+      // Broad "brain boost" from crosswords/sudoku is unproven (near transfer only)
+      // Effect size is small and uncertain — hence low evidence rating
       effects: [
         {
           output: 'cognition', type: 'steps', evidence: 'low', source: ['edwards2017'],
@@ -1402,6 +1625,13 @@ const HEALTH_MODEL = {
       unit: 'µg/m³',
       min: 2, max: 30, step: 1, default: 8,
       hint: 'Look it up by zip code/city. US mean ≈ 8, EPA standard 12, WHO guideline 5.',
+      // di2017 Medicare open cohort (61M people, 460M person-years): +7.3% all-cause mortality
+      // per +10 µg/m³ PM2.5 — and +13.6% even below the 12 µg/m³ US standard (no safe floor)
+      // CVD: +10% per +10 µg/m³ — primary mechanism through inflammation, oxidative stress,
+      // plaque progression. Evidence is exceptionally robust (largest-ever air pollution cohort)
+      //
+      // Finding: above 12 µg/m³ exceeds US standard; below 5 reaches WHO guideline
+      // Levers: HEPA purifiers, masks, avoiding high-traffic routes — modest but real mitigation
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 10, ref: 8, minDose: 3, capAt: 30,
@@ -1426,6 +1656,21 @@ const HEALTH_MODEL = {
       unit: 'hours/day',
       min: 0, max: 10, step: 0.5, default: 1.5,
       hint: 'Time spent outside between ~9 am and 5 pm — walking, gardening, sitting in the park. This is about both daylight health effects (circadian rhythm, vitamin D) AND UV effects (skin cancer risk). US average ≈ 1–2 h/day.',
+      // adventist2025 (AHS-2, 83k): time outdoors shows reverse-J association with all-cause mortality
+      // 2h HR 0.90, 3h HR 0.88, 5h HR 0.90 — benefit persists without attenuation
+      // CVD: 0.87-0.86 at 3-5h. Cancer: modest net benefit or neutrality at all levels
+      //
+      // stevenson2024 UK Biobank: higher UV → lower all-cause + CVD mortality
+      // Sun-BEEM 2026: medium UV HR 0.89, high UV HR 0.84 vs low
+      // CVD benefit (NO-mediated BP reduction) stronger than all-cause
+      //
+      // lindqvist2014 Swedish women: sun avoiders had ~2× mortality vs highest exposure — striking
+      //
+      // maartense2024 meta (30 studies): light exposure → SM effect on wellbeing (d=0.46)
+      // Sunlight stimulates serotonin, beta-endorphin, vitamin D; bright-light therapy d=0.48 for depression
+      //
+      // Cancer trade-off (findings): skin cancer incidence rises but NOT skin cancer MORTALITY in temperate
+      // climates — non-skin cancer mortality benefits of UV appear to outweigh skin cancer mortality
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: ['adventist2025', 'stevenson2024'],
@@ -1493,6 +1738,14 @@ const HEALTH_MODEL = {
       min: 20, max: 60, step: 1, default: 33,
       gatedBy: 'vo2maxOn',
       //hint: 'When enabled, this REPLACES the cardio estimate — measured fitness predicts mortality better than reported activity.',
+      // kodama2009 meta (33 studies): RR 0.87 per 1-MET (3.5 ml/kg/min) higher fitness — calibrated to
+      // US average ~33 ml/kg/min. CVD: RR 0.85 per 1-MET — slightly stronger than all-cause
+      // cardiorespiratory fitness is a direct measure of cardiovascular health
+      //
+      // mandsager2018 corroboration: elite vs low fitness HR 0.20 — ~80% lower adjusted mortality
+      // No observed upper limit of benefit (finding). Fitness is one of the strongest modifiable
+      // mortality markers. When enabled, REPLACES the cardio estimate (supersession rule) —
+      // measured fitness is the better predictor, never stack both.
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 3.5, ref: 33, capAt: 56,
@@ -1528,6 +1781,11 @@ const HEALTH_MODEL = {
       min: 5, max: 55, step: 1, default: 35,
       gatedBy: 'bodyFatOn',
       //hint: 'When enabled, this REPLACES the BMI estimate.',
+      // jayedi2022 dose-response meta (35 cohorts, 923k): J-shaped, lowest all-cause risk near 25%
+      // CVD effect steeper than all-cause above the nadir — visceral adiposity driving hypertension,
+      // diabetes and inflammatory pathways. Sex-specific ideal ranges differ; our steps are unisex
+      // Calibrated: US average ~35% body fat = 1.0×. When enabled, REPLACES the BMI estimate —
+      // measured body fat % is the better adiposity signal (supersession rule).
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: ['jayedi2022'],
@@ -1571,6 +1829,12 @@ const HEALTH_MODEL = {
       min: 10, max: 70, step: 1, default: 30,
       gatedBy: 'gripOn',
       hint: 'Best of a few squeezes, dominant hand. Rough averages: ~40 kg men, ~25 kg women.',
+      // leong2015 PURE study (17 countries, 140k): HR 1.16 per 5kg LOWER grip for all-cause mortality
+      // CVD: HR 1.19 per 5kg LOWER — even stronger than all-cause
+      // Grip predicted mortality more strongly than systolic blood pressure — remarkable for a simple test
+      // However, it's a MARKER of overall strength, not necessarily a modifiable lever (overlaps
+      // strength-training input). Whether improving grip itself helps is untested.
+      // Finding: grip predicted death but NOT falls or fractures in PURE — a mortality marker not injury marker
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 5, ref: 30, minDose: 15, capAt: 60,
@@ -1606,6 +1870,12 @@ const HEALTH_MODEL = {
       min: 40, max: 110, step: 1, default: 72,
       gatedBy: 'rhrOn',
       hint: 'Typical adult average ≈ 60–80 bpm.',
+      // aune2017rhr dose-response meta (87 studies): +17% all-cause mortality per +10 bpm
+      // CVD: +15% per +10 bpm — best-established association, reflects direct HR-myocardial O2 demand
+      // Cancer: +14% per +10 bpm — mechanism less clear, may reflect sympathetic activation
+      // Calibrated: US average 72 bpm = 1.0×
+      // RHR partly proxies cardiorespiratory fitness — overlaps cardio/VO2max inputs (overlap noted)
+      // but the association survived activity adjustment in most studies
       effects: [
         {
           output: 'mortality', type: 'perUnit', per: 10, ref: 72, minDose: 45, capAt: 100,
@@ -1630,6 +1900,11 @@ const HEALTH_MODEL = {
   ],
 
   // Derived input: BMI computed from heightCm/weightKg, then this effect applies.
+  // diangelantonio2016 individual-participant meta (239 studies, never-smokers): J-shaped mortality curve
+  // Nadir BMI 20-25 for all-cause; CVD follows same J but with broader nadir (22-27) and steeper above 30
+  // CVD above 30 driven by hypertension, dyslipidaemia and diabetes — direct adiposity effects
+  // BMI ignores muscle mass and fat distribution — a crude proxy. When bodyFatOn is enabled,
+  // measured body fat % replaces BMI (supersession rule: body fat is the better adiposity signal)
   bmi: {
     label: 'BMI (derived)',
     evidence: 'high',
