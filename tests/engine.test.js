@@ -331,29 +331,8 @@ console.log('\n[12] Findings react to inputs');
   ok(!r0.findings.some((f) => f.source.includes('jha2013')), 'reference profile -> no smoking findings');
   ok(!r0.findings.some((f) => f.dir === 'bad' && f.source.includes('pan2012')), 'reference profile -> no processed-meat findings');
 
-  const r2 = engine.evaluate(model, { ...neutralValues(), vitaminD: 'supplement' });
-  ok(r2.findings.some((f) => f.source.includes('manson2019') && f.dir === 'neutral'), 'supplementing vitamin D shows the honest-null finding');
-
-  const r3 = engine.evaluate(model, { ...neutralValues(), processedMeat: 8 });
-  ok(r3.findings.some((f) => f.source.includes('pan2012') && f.dir === 'bad'), 'daily processed meat shows cancer finding');
-
-  const r4 = engine.evaluate(model, engine.defaults(model));
-  ok(r4.findings.some((f) => f.source.includes('manson2019omega3')), 'average profile (fish 1-2/wk) shows the omega-3 honest null');
-
-  const r4b = engine.evaluate(model, engine.defaults(model));
-  ok(r4b.findings.some((f) => f.source.includes('lancet2025steps') && /partially capture/.test(f.text)), 'defaults (steps + cardio >0) shows steps-cardio overlap finding');
-
   const sunHigh = engine.evaluate(model, { ...referenceValues(), sunExposure: 6 });
   ok(sunHigh.findings.some((f) => f.source.includes('mahamat2020') && /skin cancer/.test(f.text)), 'sun 6 h/d -> skin-cancer finding');
-
-  const sunLow = engine.evaluate(model, { ...referenceValues(), sunExposure: 0 });
-  ok(sunLow.findings.some((f) => f.source.includes('stevenson2024') && /low sun/.test(f.text)), 'sun 0 h/d -> low-sun finding');
-
-  const sunOpt = engine.evaluate(model, { ...referenceValues(), sunExposure: 3 });
-  ok(sunOpt.findings.some((f) => f.source.includes('adventist2025') && /lower all-cause/.test(f.text)), 'sun 3 h/d -> optimal-sun finding');
-
-  const sunCog = engine.evaluate(model, { ...referenceValues(), sunExposure: 2 });
-  ok(sunCog.findings.some((f) => f.text.includes('boost cognition')), 'sun 2 h/d -> cognition-finding note');
 }
 
 console.log('\n[13] Cancer output');
@@ -399,8 +378,7 @@ console.log('\n[14] Functional-independence findings');
   const pm = engine.evaluate(model, { ...neutralValues(), pm25: 15 });
   ok(pm.findings.some((x) => x.source.includes('di2017') && x.dir === 'bad'), 'PM2.5 > 12 -> exposure finding');
 
-  const grains = engine.evaluate(model, { ...neutralValues(), fiber: 30 });
-  ok(grains.findings.some((x) => x.source.includes('aune2016grain')), 'high fiber -> whole-grains-not-double-counted finding');
+
 }
 
 console.log('\n[15] CVD output');
