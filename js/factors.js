@@ -614,6 +614,7 @@ const HEALTH_MODEL = {
       // Mappiness app (31k): momentary happiness +3.9/100 when drinking, little overspill to overall life
       //
       // gbd2016 (finding): alcohol is Group 1 carcinogen — cancer risk rises with every level
+      // todo: implement GBD2016 findings into model
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'high', source: ['wood2018'],
@@ -640,7 +641,7 @@ const HEALTH_MODEL = {
             { max: Infinity, points: -0.3 },
           ],
           note: 'BCS70 (10k people, FE): alcohol problems → lower life satisfaction (−0.18 on 0–10 scale); Mappiness app (31k): momentary happiness higher when drinking (+3.9/100) but little overspill. Copenhagen midlife cohort: abstainers and heavy drinkers both had lower life satisfaction than moderate drinkers.',
-        },
+				},
         {
           output: 'cvd', type: 'steps', evidence: 'high', source: ['wood2018'],
           steps: [
@@ -1417,6 +1418,7 @@ const HEALTH_MODEL = {
       // Mechanism: improved endothelial function, lower BP, reduced sympathetic tone
       // Observational, one population (Finnish men), likely residual confounding — treat as speculative
       // Exact adjusted HRs need verification against paper Table 2 (noted)
+      // Note: definitely needs some adjustment and further research into the source paper. Surely there are some confounding variables here.
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'low', source: ['laukkanen2015'],
@@ -1945,220 +1947,121 @@ const HEALTH_MODEL = {
    */
   findings: [
     {
-      when: (v) => v.smoking === 'current', dir: 'bad', input: 'Smoking', source: ['jha2013'],
-      text: 'markedly increased risk of lung cancer, COPD and vascular disease — most of the excess mortality in smokers comes from these causes',
-    },
-    {
-      when: (v) => v.smoking === 'current', dir: 'bad', input: 'Smoking', source: ['thun2013'],
-      text: 'current smokers have ~25× the lung-cancer death rate of never-smokers (and ~23× the COPD death rate) in contemporary US cohorts',
+      when: (v) => v.smoking === 'current', dir: 'bad', input: 'Smoking', source: ['thun2013', 'jha2013'],
+      text: 'Current smokers have ~25× the lung-cancer death rate of never-smokers (and ~23× the COPD death rate). Significant increase in risk of COPD and vascular disease, also icnreasing mortality.',
     },
     {
       when: (v) => v.strength < 1, dir: 'bad', input: 'Strength', source: ['sherrington2019'],
-      text: 'no strength/balance training → more falls later in life: exercise cuts fall rates ~23% and fall-related fractures ~27% in adults 60+ (high-certainty Cochrane evidence)',
+      text: 'No strength/balance training → up to 25% more falls later in life.',
     },
     {
       when: (v) => v.strength < 1 && v.sex === 'female', dir: 'bad', input: 'Strength', source: ['howe2011'],
-      text: 'increased chance of osteoporosis for inactive lifestyles: in postmenopausal women, resistance training preserves bone density (femoral neck +1%, spine +3% vs controls) — disuse accelerates bone loss',
-    },
-    {
-      when: (v) => v.strength < 1 && v.sex !== 'female', dir: 'bad', input: 'Strength', source: ['howe2011'],
-      text: 'increased chance of osteoporosis for inactive lifestyles: mechanical loading is what keeps bone — without resistance exercise, bone density declines with age',
-    },
-    {
-      when: (v) => v.cardio >= 150 && v.sex === 'female', dir: 'good', input: 'Cardio', source: ['rong2016'],
-      text: 'leisure-time physical activity was associated with ~7% lower hip-fracture risk per activity increment in older women',
-    },
-    {
-      when: (v) => v.gripOn, dir: 'neutral', input: 'Grip', source: ['leong2015'],
-      text: 'honest null: grip strength predicted death but NOT falls or fractures in PURE — a mortality marker, not an injury marker',
-    },
-    {
-      when: (v) => v.alcohol > 14, dir: 'bad', input: 'Alcohol', source: ['gbd2016'],
-      text: 'alcohol is a Group 1 carcinogen: cancer risk rises with every level of consumption, and ~19–27% of alcohol-attributable deaths after 50 are cancers',
-    },
-    {
-      when: (v) => v.smoking === 'former', dir: 'good', input: 'Smoking', source: ['jha2013'],
-      text: 'quitting before ~40 avoids about 90% of the excess mortality of continued smoking',
-    },
-    {
-      when: (v) => v.cardio >= 150, dir: 'good', input: 'Cardio', source: ['arem2015'],
-      text: 'similar dose–response for cardiovascular and cancer mortality, not just all-cause',
-    },
-    {
-      when: (v) => v.vo2maxOn && v.vo2max >= 42, dir: 'good', input: 'Fitness', source: ['mandsager2018'],
-      text: 'elite-fitness patients had ~80% lower adjusted mortality than low-fitness ones — fitness is one of the strongest modifiable mortality markers, with no observed upper limit of benefit',
-    },
-    {
-      when: (v) => v.alcohol > 14, dir: 'bad', input: 'Alcohol', source: ['wood2018'],
-      text: 'higher risk of stroke (HR ≈ 1.14 per 100 g/week), heart failure and fatal hypertensive disease',
-    },
-    {
-      when: (v) => v.alcohol > 0 && v.alcohol <= 14, dir: 'neutral', input: 'Alcohol', source: ['wood2018'],
-      text: 'light-to-moderate intake was associated with slightly lower myocardial infarction risk (HR 0.94 per 100 g/week) — but no net all-cause benefit above ~7 drinks/week',
-    },
-    {
-      when: (v) => v.coffee >= 3, dir: 'good', input: 'Coffee', source: ['poole2017'],
-      text: 'associated with lower cardiovascular mortality (RR 0.81 at 3–4 cups/day)',
-    },
-    {
-      when: (v) => v.coffee >= 5 && v.sex === 'female', dir: 'bad', input: 'Coffee', source: ['poole2017'],
-      text: 'high intake was associated with increased fracture risk in women (not men)',
-    },
-    {
-      when: (v) => v.sauna >= 4, dir: 'good', input: 'Sauna', source: ['laukkanen2015'],
-      text: '4–7 sessions/week was associated with ~63% lower sudden cardiac death risk in Finnish men',
+      text: 'Increased chance of osteoporosis. Resistance training preserves bone density, lack of training rapidly accelerates bone loss, especially in postmenopausal women.',
     },
     {
       when: (v) => v.strength >= 1, dir: 'good', input: 'Strength', source: ['momma2022'],
-      text: 'associated with lower type-2 diabetes risk (L-shaped, strongest up to ~60 min/week)',
+      text: 'Associated with lower type-2 diabetes risk',
     },
     {
-      when: (v) => v.fruitVeg >= 5, dir: 'good', input: 'Fruit & veg', source: ['wang2014'],
-      text: 'lower cardiovascular mortality (HR ≈ 0.96 per serving/day); no clear cancer-mortality effect',
+      when: (v) => v.cardio >= 150 && v.sex === 'female', dir: 'good', input: 'Cardio', source: ['rong2016'],
+      text: 'leisure-time physical activity was associated with ~7% lower hip-fracture risk in older women',
     },
     {
-      when: (v) => v.social <= 1, dir: 'bad', input: 'Social', source: ['holtlunstad2010'],
-      text: 'weak social ties carry a mortality risk comparable to well-established behavioural risk factors',
+      when: (v) => v.gripOn, dir: 'neutral', input: 'Grip', source: ['leong2015'],
+      text: 'Grip strength is a surprisingly accurate indicator of health, but likely a proxy for overall strength.',
+    },
+    {
+      when: (v) => v.alcohol > 14, dir: 'bad', input: 'Alcohol', source: ['wood2018'],
+      text: 'Higher risk of stroke (~14% per 100 g/week), heart failure and fatal hypertensive disease',
+    },
+    {
+      when: (v) => v.alcohol > 0 && v.alcohol <= 14, dir: 'neutral', input: 'Alcohol', source: ['wood2018'],
+      text: 'light-to-moderate intake was associated with slightly lower myocardial infarction risk (~6% per 100 g/week), but no net all-cause benefit above ~7 drinks/week',
+    },
+    {
+      when: (v) => v.coffee >= 5 && v.sex === 'female', dir: 'bad', input: 'Coffee', source: ['poole2017'],
+      text: 'high intake was associated with increased fracture risk in women',
     },
     {
       when: (v) => v.magnesium >= 400, dir: 'good', input: 'Magnesium', source: ['fang2016'],
-      text: 'higher dietary magnesium associated with lower heart-failure (RR 0.78 per 100 mg/day) and type-2 diabetes risk (RR 0.81)',
+      text: 'Higher dietary magnesium associated with lower heart-failure (~22% per 100 mg/day) and type-2 diabetes risk (~19%)',
     },
     {
       when: (v) => v.cannabis === 'regular', dir: 'bad', input: 'Cannabis', source: ['moore2007'],
-      text: 'regular use is associated with roughly doubled odds of psychotic outcomes (dose-dependent); evidence for depression/anxiety is weaker',
+      text: 'Regular use is associated with roughly doubled odds of psychotic outcomes (dose-dependent). Evidence for depression/anxiety is weaker',
     },
     {
-      when: (v) => v.cannabis !== 'never', dir: 'neutral', input: 'Cannabis', source: ['sidney1997'],
-      text: 'no clear all-cause mortality increase in long-term cohorts — but "no mortality signal" is not the same as safe',
-    },
-    {
-      when: (v) => v.vitaminD === 'supplement', dir: 'neutral', input: 'Vitamin D', source: ['manson2019'],
-      text: 'VITAL RCT (26k people): 2000 IU/day did not reduce cancer, cardiovascular events or mortality in generally healthy adults',
-    },
-    {
-      when: (v) => v.snus === 'yes', dir: 'bad', input: 'Snus', source: ['byhamre2021'],
-      text: 'pooled Swedish cohorts: ~28% higher all-cause and ~27% higher cardiovascular mortality — safer than smoking, not safe',
-    },
-    {
-      when: (v) => v.occupationalPA >= 6 && v.sex === 'male', dir: 'bad', input: 'Occupational PA', source: ['coenen2018'],
-      text: 'the "physical activity paradox": heavy occupational activity tracked ~18% higher mortality in men — work strain and leisure exercise are not interchangeable',
+      when: (v) => v.cannabis !== 'regular', dir: 'neutral', input: 'Cannabis', source: ['sidney1997'],
+      text: 'No clear all-cause mortality increase in long-term, but "no mortality signal" is not the same as safe',
     },
     {
       when: (v) => v.cognitiveTraining >= 1, dir: 'good', input: 'Brain training', source: ['edwards2017'],
-      text: 'speed-of-processing training cut 10-year dementia risk ~29% in the ACTIVE trial — but gains are mostly domain-specific (you get better at the task itself)',
+      text: 'Speed-of-processing training cut 10-year dementia risk ~29%, but gains are mostly domain-specific (you get better at the task itself)',
     },
     {
       when: (v) => v.ironDeficiency, dir: 'neutral', input: 'Iron', source: ['houston2018'],
-      text: 'correcting non-anaemic iron deficiency reduced fatigue in RCTs (SMD −0.38) without improving measured physical capacity',
+      text: 'Correcting iron deficiency reduced fatigue without improving measured physical capacity',
     },
     {
       when: (v) => v.stress >= 8, dir: 'bad', input: 'Stress', source: ['russ2012'],
-      text: 'distress this severe tracks mortality even after adjusting for somatic illness, behaviour and socioeconomic factors',
+      text: 'Severe stress tracks mortality even after adjusting for somatic illness, behaviour and socioeconomic factors',
     },
     {
-      when: (v) => v.creatine && v.fruitVeg <= 2, dir: 'neutral', input: 'Creatine', source: ['avgerinos2018'],
-      text: 'the cognitive effect is clearest in vegetarians and older/stressed individuals — meat eaters already get dietary creatine',
-    },
-    {
-      when: (v) => v.processedMeat >= 7, dir: 'bad', input: 'Processed meat', source: ['pan2012'],
-      text: 'each daily serving of processed meat tracked ~16% higher cancer mortality; IARC classifies processed meat as carcinogenic to humans (Group 1)',
+      when: (v) => v.creatine , dir: 'neutral', input: 'Creatine', source: ['avgerinos2018'],
+      text: 'The cognitive effect is clearest in vegetarians and older/stressed individuals. Meat eaters already get dietary creatine',
     },
     {
       when: (v) => v.processedMeat >= 3, dir: 'good', input: 'Processed meat', source: ['pan2012'],
-      text: 'swapping 1 daily serving of red meat for fish, poultry, nuts or legumes was associated with 7–19% lower mortality',
+      text: 'Swapping 1 daily serving of red meat for fish, poultry, nuts or legumes was associated with 7–19% lower mortality',
     },
     {
-      when: (v) => v.ssb >= 7, dir: 'bad', input: 'Sugary drinks', source: ['malik2019'],
-      text: 'driven mostly by cardiovascular mortality (HR 1.31 at ≥2/day); artificially sweetened drinks showed no clear association',
-    },
-    {
-      when: (v) => v.fish !== 'none', dir: 'neutral', input: 'Fish', source: ['manson2019omega3'],
-      text: 'omega-3 SUPPLEMENTS did not reduce major cardiovascular events, cancer or mortality in the VITAL RCT (a −28% heart-attack signal was secondary) — eating fish and taking pills are not the same experiment',
+      when: (v) => v.ssb >= 7, dir: 'neutral', input: 'Sugary drinks', source: ['malik2019'],
+      text: 'Artificially sweetened drinks did not show the same negative effects as sugar-sweetened drinks',
     },
     {
       when: (v) => v.omega3 === true, dir: 'neutral', input: 'Omega-3 supplements', source: ['manson2019omega3'],
-      text: 'The VITAL RCT (26k people, 5.3 years) found that omega-3 supplements had no effect on mortality (HR 1.02, 0.90–1.15), cardiovascular events (HR 0.92, 0.80–1.06), or cancer (HR 1.03, 0.93–1.13) in generally healthy adults — all CIs include 1.0. The small benefits seen with eating fish do not replicate in a pill; the fish benefit appears to be about replacing meat, not about omega-3.',
-    },
-    {
-      when: (v) => v.fish === 'lots' && v.processedMeat >= 3, dir: 'good', input: 'Fish', source: ['pan2012'],
-      text: 'part of the fish benefit is likely substitution — fish on the plate often means processed meat off it',
+      text: 'The small benefits seen with eating fish do not replicate in a pill. The fish benefit appears to be about replacing meat, not about omega-3.',
     },
     {
       when: (v) => v.sitting >= 10 && v.cardio < 150, dir: 'bad', input: 'Sitting', source: ['biswas2015'],
-      text: 'sedentary time hits hardest when leisure activity is low; its mortality association shrinks substantially in active people',
-    },
-    {
-      when: (v) => v.purpose <= 3, dir: 'bad', input: 'Purpose', source: ['cohen2016'],
-      text: 'a low sense of purpose tracks higher mortality in prospective cohorts — treat it as a signal worth taking seriously, not a diagnosis',
-    },
-    {
-      when: (v) => v.gripOn && v.grip <= 25, dir: 'bad', input: 'Grip', source: ['leong2015'],
-      text: 'in PURE, grip strength predicted all-cause mortality more strongly than systolic blood pressure did',
+      text: 'Sedentary (sitting) times mortality association shrinks substantially in active people',
     },
     {
       when: (v) => v.nuts >= 20, dir: 'good', input: 'Nuts', source: ['aune2016nuts'],
-      text: 'a handful a day was also associated with ~50% lower respiratory-disease and ~40% lower diabetes mortality',
-    },
-    {
-      when: (v) => v.fiber >= 25, dir: 'good', input: 'Fiber', source: ['aune2016grain'],
-      text: 'whole grains are likely part of your fiber benefit: RR 0.83 (0.77–0.90) per 3 servings/day — we don\'t count them separately to avoid double-counting',
+      text: 'A handful a day was also associated with ~50% lower respiratory-disease and ~40% lower diabetes mortality',
     },
     {
       when: (v) => v.sleepRegularity <= 3, dir: 'bad', input: 'Sleep regularity', source: ['windred2024'],
-      text: 'an irregular schedule predicted mortality more strongly than short sleep did in UK Biobank — a fixed wake time is a real lever, even before more hours',
+      text: 'An irregular schedule predicts mortality more strongly than short sleep did.',
     },
     {
       when: (v) => v.pm25 > 12, dir: 'bad', input: 'Air pollution', source: ['di2017'],
       text: 'above the US annual standard (12 µg/m³); WHO\'s guideline is 5 — HEPA purifiers, masks and route/location choices measurably reduce exposure',
     },
     {
-      when: (v) => v.pm25 <= 5, dir: 'good', input: 'Air pollution', source: ['di2017'],
-      text: 'at or below the WHO guideline for PM2.5 — but mortality risk keeps falling with every µg/m³, there\'s no clear safe floor',
+      when: (v) => v.screenTime >= 6, dir: 'bad', input: 'Screen time', source: ['stamatakis2011', 'celis2018'],
+      text: 'Screen-based entertainment ≥4 h/day tracked 1.5× all-cause mortality and 2.3× cardiovascular events, but seems to be because of the sitting and low fitness, which we count in those sliders rather than twice here',
     },
-    {
-      when: (v) => v.screenTime >= 6, dir: 'bad', input: 'Screen time', source: ['stamatakis2011'],
-      text: 'screen-based entertainment ≥4 h/day tracked 1.5× all-cause mortality and 2.3× cardiovascular events in a Scottish cohort — that physical pathway is sitting and low fitness, which we count in those sliders rather than twice here',
-    },
-    {
-      when: (v) => v.screenTime >= 4 && (v.cardio >= 150 || (v.vo2maxOn && v.vo2max >= 35)), dir: 'good', input: 'Screen time', source: ['celis2018'],
-      text: 'UK Biobank (390k people): the screen-time–mortality association (HR 1.31 per 2 h/day in the least strong/fit) was null in people with high grip strength, fitness or activity (HR 1.04, NS) — the harm is largely the sitting, and fitness attenuates it',
-    },
+
     {
       when: (v) => v.screenTime >= 5 && v.sleep < 7, dir: 'bad', input: 'Screen time', source: ['hale2015'],
-      text: 'screens near bedtime displace and delay sleep — 90% of studies in a 67-study review found shorter or later sleep; if your sleep slider is set honestly, this is already counted there',
+      text: 'Screens near bedtime displace and delay sleep. The effects of poor sleep are counted with the sleep input',
     },
     {
-      when: (v) => v.screenTime <= 1, dir: 'neutral', input: 'Screen time', source: ['orben2019'],
-      text: 'context: across 355k adolescents, digital-technology use explained at most 0.4% of wellbeing variation — at low-to-moderate use the measurable association is tiny either way',
-    },
-    {
-      when: (v) => v.screenTime >= 3 && v.screenTime < 6, dir: 'neutral', input: 'Screen time', source: ['allcott2020'],
-      text: 'in a randomized experiment, deactivating Facebook for 4 weeks improved subjective wellbeing — and reduced factual news knowledge; lower use persisted after the experiment',
+      when: (v) => v.screenTime >= 3 && v.screenTime < 6, dir: 'neutral', input: 'Screen time', source: ['allcott2020', 'orben2019'],
+      text: 'Deactivating Facebook for 4 weeks improved subjective wellbeing — and reduced factual news knowledge. Lower use persisted after the experiment.',
     },
     {
       when: (v) => v.screenTime >= 7, dir: 'bad', input: 'Screen time', source: ['twenge2018'],
-      text: 'in a US national sample, 7+ vs 1 h/day screen time tracked 2.4× diagnosed depression and 2.3× diagnosed anxiety in adolescents (cross-sectional — causality unclear)',
+      text: '7+ vs 1 h/day screen time tracks 2.4× diagnosed depression and 2.3× diagnosed anxiety in adolescents (whether screens are the cause is unclear)',
     },
     {
-      when: (v) => v.steps > 2000 && v.cardio > 0, dir: 'neutral', input: 'Steps', source: ['lancet2025steps'],
-      text: 'Daily step count and self-reported cardio (MVPA min/week) partially capture the same physical activity — walking for exercise counts in both. Their effects are NOT additive: the true combined benefit lies between each estimate. Step count captures total daily movement (including light activity like errands) that the cardio slider misses.',
+      when: (v) => v.sunExposure >= 3, dir: 'bad', input: 'Sun exposure', source: ['mahamat2020', 'stevenson2024', 'lindqvist2014', 'adventist2025'],
+      text: 'High sun exposure increases skin cancer incidence, but the other benefits of the sun make it decrease mortality overall. It also boosts vitamin D and circadian entrainment, which may boost cognition',
     },
     {
-      when: (v) => v.sunExposure >= 5, dir: 'bad', input: 'Sun exposure', source: ['mahamat2020', 'stevenson2024'],
-      text: 'high sun exposure increases skin cancer incidence (melanoma and keratinocyte cancers; Mahamat-Saleh 2020). However, UK Biobank studies (Stevenson 2024, Sun-BEEM 2026) find no clear increase in skin cancer MORTALITY — the CVD and non-skin cancer mortality benefits of UV appear to outweigh skin cancer mortality risk in temperate climates.',
-    },
-    {
-      when: (v) => v.sunExposure <= 0.5, dir: 'bad', input: 'Sun exposure', source: ['lindqvist2014', 'stevenson2024'],
-      text: 'very low sun exposure is associated with substantially higher all-cause mortality — Lindqvist 2014 found a ~2× mortality rate among Swedish women who actively avoided sun vs the highest exposure group. AHS-2 confirms elevated risk at <0.5 h/day. Too little sun misses vitamin D, nitric oxide and circadian benefits.',
-    },
-    {
-      when: (v) => v.sunExposure >= 1 && v.sunExposure <= 5, dir: 'good', input: 'Sun exposure', source: ['stevenson2024', 'adventist2025'],
-      text: 'moderate to high sun exposure (1–5 h/day) is associated with lower all-cause and CVD mortality in the Adventist Health Study 2 and UK Biobank (Stevenson 2024). Benefit persists without attenuation at higher levels. Mechanisms include vitamin D synthesis, nitric-oxide-mediated blood pressure reduction, and circadian entrainment.',
-    },
-    {
-      when: (v) => v.sunExposure >= 0.5, dir: 'good', input: 'Sun exposure', source: ['stevenson2024'],
-      text: 'Sun exposure boosts vitamin D and circadian entrainment, which may boost cognition. However, direct evidence for cognitive benefits from sun exposure specifically is limited — the cognition output does not include a sun contribution.',
+      when: (v) => v.sunExposure <= 1, dir: 'bad', input: 'Sun exposure', source: ['lindqvist2014', 'stevenson2024'],
+      text: 'Too little sun also misses vitamin D, nitric oxide and circadian benefits.',
     },
   ],
 
