@@ -188,10 +188,10 @@
       </div>
       </div>
       <hr class="output-divider">
-      <!-- <div class="output-card findings-card" id="out-findings">
+      <div class="output-card findings-card" id="out-findings">
         <h3>More findings</h3>
         <ul class="findings" id="findings-list"></ul>
-      </div> -->`;
+      </div>`;
     for (const output of model.outputs) {
       const card = host.querySelector('#out-' + output.id);
       const blurb = card && card.querySelector('.output-blurb');
@@ -239,7 +239,7 @@
     updateContrib('cvd', result.contributions.cvd, 'hr');
     updateContrib('cognition', result.contributions.cognition, 'points');
     updateContrib('happiness', result.contributions.happiness, 'points');
-    // updateFindings(result.findings);
+    updateFindings(result.findings);
     updateGates();
   }
 

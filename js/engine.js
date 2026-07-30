@@ -398,6 +398,7 @@
     const push = (s) => { if (s && !order.includes(s)) order.push(s); };
     const pushAll = (keys) => { if (keys) (Array.isArray(keys) ? keys : [keys]).forEach(push); };
     for (const input of model.inputs) for (const e of input.effects) pushAll(e.source);
+    for (const f of model.findings) pushAll(f.source);
     pushAll(model.bmi.source);
     pushAll(model.baseline.source);
     const map = {};

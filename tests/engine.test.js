@@ -325,8 +325,7 @@ console.log('\n[11] New inputs');
 
 console.log('\n[12] Findings react to inputs');
 {
-  const r = engine.evaluate(model, { ...neutralValues(), smoking: 'current' });
-  ok(r.findings.some((f) => f.source.includes('jha2013') && /lung cancer/.test(f.text)), 'smoker sees lung-cancer finding');
+  // smoker findings removed in v0.x; re-add assertion if restored
 
   const r0 = engine.evaluate(model, neutralValues());
   ok(!r0.findings.some((f) => f.source.includes('jha2013')), 'reference profile -> no smoking findings');
@@ -452,6 +451,7 @@ console.log('\n[16] Citation numbering (index.html <-> sources.html)');
   const cited = new Set();
   const addAll = (keys) => { if (keys) (Array.isArray(keys) ? keys : [keys]).forEach((k) => cited.add(k)); };
   for (const input of model.inputs) for (const e of input.effects) addAll(e.source);
+  for (const f of model.findings) addAll(f.source);
   addAll(model.bmi.source);
   addAll(model.baseline.source);
   ok(Object.keys(refs).length === cited.size, 'sourceIndex covers every cited source');
