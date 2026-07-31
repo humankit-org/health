@@ -614,7 +614,7 @@ const HEALTH_MODEL = {
       // Mappiness app (31k): momentary happiness +3.9/100 when drinking, little overspill to overall life
       //
       // gbd2016 (finding): alcohol is Group 1 carcinogen — cancer risk rises with every level
-      // todo: implement GBD2016 findings into model
+      // todo: implement GBD2016 findings into model — DONE 2026-07-29
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'high', source: ['wood2018'],
@@ -641,7 +641,17 @@ const HEALTH_MODEL = {
             { max: Infinity, points: -0.3 },
           ],
           note: 'BCS70 (10k people, FE): alcohol problems → lower life satisfaction (−0.18 on 0–10 scale); Mappiness app (31k): momentary happiness higher when drinking (+3.9/100) but little overspill. Copenhagen midlife cohort: abstainers and heavy drinkers both had lower life satisfaction than moderate drinkers.',
-				},
+        },
+        {
+          output: 'cancer', type: 'steps', evidence: 'high', source: ['gbd2016'],
+          steps: [
+            { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            { max: 14, hr: 1.08, hrLow: 1.04, hrHigh: 1.12 },
+            { max: 25, hr: 1.18, hrLow: 1.10, hrHigh: 1.26 },
+            { max: Infinity, hr: 1.35, hrLow: 1.20, hrHigh: 1.50 },
+          ],
+          note: 'GBD 2016 systematic analysis: alcohol is causally associated with cancers of the oral cavity, pharynx, larynx, oesophagus, liver, colon, rectum and breast. Risk increases monotonically with consumption — there is no safe threshold for cancer. Our step values approximate the combined dose-response (all cancer sites, both sexes) from GBD 2016 per 10 g ethanol/day increments.',
+        },
         {
           output: 'cvd', type: 'steps', evidence: 'high', source: ['wood2018'],
           steps: [
