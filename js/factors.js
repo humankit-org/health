@@ -24,8 +24,8 @@
 const HEALTH_MODEL = {
   meta: {
     name: 'HumanKit Health',
-    version: '0.1.1',
-    updated: '2026-07-29',
+    version: '0.1.2',
+    updated: '2026-07-31',
   },
 
   constants: {
@@ -725,6 +725,59 @@ const HEALTH_MODEL = {
             current: { hr: 2.50, hrLow: 2.10, hrHigh: 3.00 },
           },
           note: 'Jha 2013: CVD mortality is the largest single contributor to excess deaths from smoking — 2.5× vs never-smokers. Quitting before 40 avoids ~90% of the CVD excess, same as for all-cause.',
+        },
+      ],
+    },
+    {
+      id: 'vaping',
+      group: 'substances',
+      label: 'Vaping (e-cigarettes)',
+      kind: 'segmented',
+      default: 'never',
+      options: [
+        { value: 'never', label: 'Never' },
+        { value: 'current', label: 'Current' },
+      ],
+      hint: 'No dose–response data exists, so just "do you vape?" — most adult vapers are ex-smokers or dual users.',
+      // Evidence, verified against primary sources 2026-07-31:
+      //
+      // MORTALITY: the only national cohort (NHIS 2014–2018, n=145,390, median 3.5 y FU)
+      // SUPPRESSED the exclusive-vaping estimate — 480 never-smoker vapers, too few deaths.
+      // No honest HR exists, so we show "no data yet" on the mortality card. Dual use
+      // (smoke + vape) HR 2.44 (1.90–3.13) vs never/never and ≈ exclusive smoking
+      // (1.06, 0.83–1.37); complete switchers (vape + former smoker) HR 0.64 (0.41–0.99)
+      // vs continued smoking — the dual-use message lives in a finding.
+      //
+      // CVD: PATH cohort (n=24,027, 2013–2019): exclusive vapers vs nonusers — any CVD
+      // HR 1.00 (0.69–1.45); MI/HF/stroke 1.35 (0.75–2.42) on just 15 events. Two
+      // cross-sectional studies also null. We score the "any CVD" point estimate.
+      //
+      // CANCER: 39-study review: no significant incident/prevalent cancer in never-smoker
+      // vapers; biomarker evidence (DNA damage, genotoxicity) is mostly acute-exposure.
+      //
+      // COGNITION: scoping review — acute effects minimal; self-reported memory,
+      // concentration and decision-making impairments in smokers AND never-smokers.
+      //
+      // HAPPINESS: UKHLS n=19,706: initiation → worse general mental health (d=0.28),
+      // social dysfunction & anhedonia (b=0.36, 0.18–0.54), loss of confidence (b=0.24).
+      effects: [
+        {
+          output: 'cvd', type: 'byOption', evidence: 'low', source: ['berlowitz2022'],
+          byOption: {
+            never: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
+            current: { hr: 1.00, hrLow: 0.69, hrHigh: 1.45 },
+          },
+          note: 'PATH cohort (24k US adults, 2013–2019): exclusive e-cigarette users had CVD incidence not different from nonusers (any CVD HR 1.00, 0.69–1.45). MI/HF/stroke point estimate 1.35 but rests on 15 events (0.75–2.42). Incidence used as a proxy for CVD mortality; follow-up ≤4 y.',
+        },
+        {
+          output: 'cognition', type: 'byOption', evidence: 'low', source: ['novak2024'],
+          byOption: { never: { points: 0 }, current: { points: -0.1 } },
+          note: 'Scoping review (7 experimental, 4 cross-sectional): acute cognitive effects in smokers minimal; self-reported impairments in memory, concentration and decision-making reported in both smokers and never-smokers. Long-term effects unclear.',
+        },
+        {
+          output: 'happiness', type: 'byOption', evidence: 'low', source: ['kang2024'],
+          byOption: { never: { points: 0 }, current: { points: -0.15 } },
+          note: 'UKHLS (n=19,706, waves 9–10): e-cigarette initiation predicted worse general mental health (Cohen\'s d=0.28), social dysfunction & anhedonia (b=0.36, 0.18–0.54) and loss of confidence (b=0.24); no signal for depression/anxiety. One study, residual confounding plausible.',
         },
       ],
     },
@@ -1959,6 +2012,10 @@ const HEALTH_MODEL = {
    */
   findings: [
     {
+      when: (v) => v.smoking === 'current' && v.vaping === 'current', dir: 'bad', input: 'Vaping', source: ['xie2024'],
+      text: 'Dual use of cigarettes + e-cigarettes gives ~6% increased mortality. Switching from smoking to e-cigarettes only reduced mortality by ~35% vs continued smoking.',
+    },
+    {
       when: (v) => v.smoking === 'current', dir: 'bad', input: 'Smoking', source: ['thun2013', 'jha2013'],
       text: 'Current smokers have ~25× the lung-cancer death rate of never-smokers (and ~23× the COPD death rate). Significant increase in risk of COPD and vascular disease, also icnreasing mortality.',
     },
@@ -2140,6 +2197,44 @@ const HEALTH_MODEL = {
       journal: 'New England Journal of Medicine, 368(4):341–350',
       url: 'https://doi.org/10.1056/NEJMsa1211128',
       pmid: '23343063',
+    },
+    xie2024: {
+      authors: 'Xie W, Berlowitz JB, Raquib R, Harlow AF, Benjamin EJ, Bhatnagar A, Stokes AC',
+      year: 2024,
+      title: 'Association of cigarette and electronic cigarette use patterns with all-cause mortality: a national cohort study of 145,390 US adults',
+      journal: 'Preventive Medicine, 182:107943',
+      url: 'https://doi.org/10.1016/j.ypmed.2024.107943',
+      pmid: '38552720',
+    },
+    berlowitz2022: {
+      authors: 'Berlowitz JB, Xie W, Harlow AF, Hamburg NM, Blaha MJ, Bhatnagar A, Benjamin EJ, Stokes AC',
+      year: 2022,
+      title: 'E-cigarette use and risk of cardiovascular disease: a longitudinal analysis of the PATH Study, 2013-2019',
+      journal: 'Circulation, 145(20):1557–1559',
+      url: 'https://doi.org/10.1161/CIRCULATIONAHA.121.057369',
+      pmid: '35514292',
+    },
+    kundu2025: {
+      authors: 'Kundu A, Sachdeva K, Feore A, Sanchez S, Sutton M, Seth S, Schwartz R, Chaiton M',
+      year: 2025,
+      title: 'Evidence update on the cancer risk of vaping e-cigarettes: a systematic review',
+      journal: 'Tobacco Induced Diseases',
+      url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11773639/',
+    },
+    novak2024: {
+      authors: 'Novak ML, Wang GY',
+      year: 2024,
+      title: 'The effect of e-cigarettes on cognitive function: a scoping review',
+      journal: 'Psychopharmacology',
+      url: 'https://doi.org/10.1007/s00213-024-06607-8',
+      pmid: '38724716',
+    },
+    kang2024: {
+      authors: 'Kang W, Malvaso A',
+      year: 2024,
+      title: 'Understanding the longitudinal associations between e-cigarette use and general mental health, social dysfunction and anhedonia, depression and anxiety, and loss of confidence in a sample from the UK: A linear mixed effect examination',
+      journal: 'Journal of Affective Disorders, 346:200–205',
+      url: 'https://doi.org/10.1016/j.jad.2023.11.013',
     },
     diangelantonio2016: {
       authors: 'Global BMI Mortality Collaboration (Di Angelantonio E, et al.)',

@@ -32,6 +32,7 @@ function referenceValues() {
     fiber: 0, fruitVeg: 2.6, processedMeat: 1.5, ssb: 4.9, fish: 'none', nuts: 0,
     alcohol: 0, coffee: 0, magnesium: 250,
     sleep: 7.5, stress: 3.5, social: 5, purpose: 5,
+    vaping: 'never', smoking: 'never', // no-effect reference level
     occupationalPA: 0,
     sunExposure: 0.5, // HR 1.0 step (reference level)
     heightCm: 170, weightKg: 68, // BMI ~23.5 -> HR 1.0 band
