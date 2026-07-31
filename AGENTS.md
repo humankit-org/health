@@ -54,7 +54,9 @@ and CI bounds where published. The reference list on sources.html and the
 per-estimate citations on index.html are generated from this file, so sources
 can never drift away from the numbers. Citation numbers come from
 `engine.sourceIndex(model)` — both pages use it, and every `[n]` on the main
-page deep-links to `sources.html#ref-n`. To change a number: edit it + its
+page deep-links to `sources.html#ref-n`. The topic chips on sources.html are
+derived by `engine.sourceTags(model)` (same walk, so a source's subjects can
+never drift from its citations). To change a number: edit it + its
 note/source in the same commit, then run the tests (they audit data
 integrity: sorted steps, bracketing CIs, existing sources).
 

@@ -235,6 +235,10 @@ input[type="range"] {
 .chip-ref { color: inherit; text-decoration: none; opacity: 0.75; }
 .chip-ref:hover { opacity: 1; text-decoration: underline; }
 
+/* topic chips on the sources page: which inputs/subjects a source drives */
+.ref-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
+.chip.topic { background: #ecefed; color: var(--ink-soft); cursor: default; font-weight: 500; }
+
 /* ------------------------------------------------------------- outputs */
 
 #outputs {

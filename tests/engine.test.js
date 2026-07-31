@@ -436,6 +436,18 @@ console.log('\n[16] Citation numbering (index.html <-> sources.html)');
   ok(Object.keys(refs).length === cited.size, 'sourceIndex covers every cited source');
   const nums = Object.values(refs).sort((a, b) => a - b);
   ok(nums.every((n, i) => n === i + 1), 'citation numbers contiguous from 1');
+
+  const tags = engine.sourceTags(model);
+  ok(Object.keys(tags).length === Object.keys(refs).length, 'sourceTags covers exactly the cited sources');
+  for (const key of Object.keys(refs)) {
+    ok(Array.isArray(tags[key]) && tags[key].length >= 1 && tags[key].every((t) => t && t.trim()), `every source has a non-empty topic chip (${key})`);
+    ok(new Set(tags[key]).size === tags[key].length, `no duplicate topic chips per source (${key})`);
+  }
+  ok(tags.jha2013.includes('Smoking'), 'jha2013 chips: Smoking');
+  ok(tags.houston2018.includes('Untreated iron deficiency') && !tags.houston2018.includes('Iron'), 'houston2018 chips: input label folds in the shorter finding label');
+  ok(tags.momma2022.includes('Strength training') && !tags.momma2022.includes('Strength'), 'momma2022 chips: input label folds in the shorter finding label');
+  ok(tags.diangelantonio2016.includes('BMI'), 'diangelantonio2016 chips: BMI (derived)');
+  ok(tags.nchs2023.includes('Life expectancy baseline'), 'nchs2023 chips: life expectancy baseline');
 }
 
 console.log(failures === 0 ? '\nAll tests passed.' : `\n${failures} test(s) FAILED.`);

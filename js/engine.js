@@ -406,5 +406,47 @@
     return map;
   }
 
-  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, evaluateRaw, averageEval, evaluateFindings, defaults, sourceIndex };
+  // Map every cited source key to the subject labels that cite it (input
+  // labels, finding subjects, the derived BMI effect, the life-expectancy
+  // baseline). Same walk as sourceIndex, so the chips on sources.html can
+  // never drift from actual usage: add an input/effect citing a source and
+  // its chip appears automatically.
+  function sourceTags(model) {
+    const tags = {};
+    const add = (keys, label) => {
+      if (!keys || !label) return;
+      (Array.isArray(keys) ? keys : [keys]).forEach((k) => {
+        if (!tags[k]) tags[k] = [];
+        if (!tags[k].includes(label)) tags[k].push(label);
+      });
+    };
+    // Short chip form of an input label: drop parentheticals, e.g.
+    // "Cardio (moderate-equivalent)" -> "Cardio".
+    const shortLabel = (s) => {
+      const stripped = s.replace(/\(.*?\)/g, '').trim();
+      return stripped || s;
+    };
+    // A finding's subject label (e.g. "Strength", "Iron") is often just a
+    // short form of the input label (e.g. "Strength training"); fold it in
+    // rather than showing two chips for the same subject.
+    const covered = (labels, label) => labels.some((l) => {
+      const a = l.toLowerCase(), b = label.toLowerCase();
+      return a.includes(b) || b.includes(a);
+    });
+    for (const input of model.inputs) {
+      const label = shortLabel(input.label);
+      for (const e of input.effects) add(e.source, label);
+    }
+    for (const f of model.findings) {
+      for (const key of Array.isArray(f.source) ? f.source : [f.source]) {
+        if (tags[key] && covered(tags[key], f.input)) continue;
+        add(key, f.input);
+      }
+    }
+    add(model.bmi.source, shortLabel(model.bmi.label));
+    add(model.baseline.source, 'Life expectancy baseline');
+    return tags;
+  }
+
+  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, evaluateRaw, averageEval, evaluateFindings, defaults, sourceIndex, sourceTags };
 });
