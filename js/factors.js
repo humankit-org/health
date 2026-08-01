@@ -65,7 +65,11 @@ const HEALTH_MODEL = {
   },
 
   baseline: {
-    // US life expectancy at birth, 2023. VERIFY against the NCHS report below.
+    // US life expectancy at birth, 2023 (final data). Verified 2026-07-31
+    // against NCHS Data Brief No. 521 (Murphy et al., Dec 2024, DOI
+    // 10.15620/cdc/170564): total 78.4, female 81.1, male 75.8. Final 2024
+    // data (Data Brief 548, Jan 2026) is 79.0 / 81.4 / 76.5 — not adopted
+    // (2023 is the model's stated anchor).
     lifeExpectancy: { female: 81.1, male: 75.8, unspecified: 78.4 },
     source: ['nchs2023'],
   },
@@ -335,29 +339,27 @@ const HEALTH_MODEL = {
       unit: 'hours/day',
       min: 0, max: 10, step: 0.5, default: 0.5,
       hint: 'Heavy physical work (construction, nursing, warehouse…). Not the same as leisure exercise!',
-      // coenen2018 meta-analysis: 194k workers, the "physical activity paradox"
-      // High occupational activity → HR 1.18 all-cause in MEN (women HR 0.90, NS)
-      // CVD mortality same pattern: HR 1.15 in men for high vs low
-      // Mechanism: sustained elevated BP, incomplete recovery, chronic inflammation
-      // Leisure activity benefits DO NOT transfer to heavy work — posture, duration, recovery all differ
+      // coenen2018 meta-analysis (17 studies, 193,696 workers): the "physical activity paradox"
+      // High vs low occupational activity -> all-cause mortality HR 1.18 in MEN (1.05-1.34, I2=76%);
+      // women HR 0.90 (0.80-1.01) - authors report no association (tendency toward lower risk).
+      // ALL-CAUSE ONLY: the paper has no CVD analysis. OPA->CVD evidence is a published NULL
+      // (cillekens2022, 23 studies, 655,892 workers: men HR 1.00, 0.87-1.15; women 0.95, 0.82-1.09;
+      // IHD mortality 1.15, 0.88-1.49, NS) - so the CVD card lists OPA as no-data.
+      // Middle step is OUR interpolation: the meta-analysis is binary (low vs high), no intermediate
+      // category is published; CI widened to the high-exposure CI. Sex-specific: steps apply the
+      // male estimate to all sexes (women's pooled estimate was inverse).
+      // Evidence is contested: fully adjusted cohorts (dalene2021, 437k Norwegians) found men in
+      // active occupations lived LONGER; Coenen pooled mostly crudely adjusted studies, so
+      // healthy-worker selection may drive the higher risk (see finding card).
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: ['coenen2018'],
           steps: [
             { max: 2, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 6, hr: 1.10, hrLow: 1.03, hrHigh: 1.20 },
+            { max: 6, hr: 1.10, hrLow: 1.05, hrHigh: 1.34 },
             { max: Infinity, hr: 1.18, hrLow: 1.05, hrHigh: 1.34 },
           ],
-          note: 'The "physical activity paradox": meta-analysis (194k workers) found HIGH occupational activity → HR 1.18 in MEN (women: HR 0.90, NS). Middle step interpolated. Leisure activity benefits don\'t transfer to heavy work.',
-        },
-        {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['coenen2018'],
-          steps: [
-            { max: 2, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 6, hr: 1.08, hrLow: 1.01, hrHigh: 1.18 },
-            { max: Infinity, hr: 1.15, hrLow: 1.03, hrHigh: 1.30 },
-          ],
-          note: 'Same meta-analysis: CVD mortality showed a similar pattern in men — higher risk with heavy occupational activity, driven by elevated blood pressure and incomplete recovery.',
+					note: 'The "physical activity paradox": meta-analysis (17 studies, 193,696 workers) found HIGH occupational activity → all-cause mortality HR 1.18 (1.05–1.34) in MEN; women HR 0.90 (0.80–1.01) — authors report no association for women. Middle step is our interpolation (paper only reports low vs high; CI widened to the high-exposure CI). Steps apply the male estimate to all sexes. Leisure activity benefits don\'t transfer to heavy work. Caveat: evidence is contested — fully adjusted cohorts found the opposite (see finding card).',
         },
       ],
     },
@@ -681,7 +683,10 @@ const HEALTH_MODEL = {
       // CVD mortality is the LARGEST contributor to excess deaths — 2.5× vs never-smokers
       //
       // thun2013 50-year trends: lung-cancer DEATH rate ~25× never-smokers in contemporary US cohorts
-      // All-cancer mortality for current smokers is approximate — replace with Carter 2015 site-specific figures
+      // jha2013 Table 2 (NHIS-linked US cohort, 25–79 y, current vs never): all-cancer mortality
+      //   HR 3.2 (2.6–3.9) women / 3.8 (3.1–4.8) men; lung cancer alone HR 17.8 (11.4–27.8) / 14.6 (9.1–23.4)
+      //   We use the unisex midpoint 3.5 with a CI spanning both sex-specific intervals.
+      // carter2015 has site-specific RRs for former smokers (esp. lung) — see note below
       //
       // anstey2007 meta (19 studies, 26k): current vs never RR 1.79 Alzheimer's, 1.78 vascular dementia
       // Faster yearly MMSE decline β=−0.13; former smokers not at elevated dementia risk
@@ -709,13 +714,13 @@ const HEALTH_MODEL = {
           note: 'HRS cross-lagged panel: smoking predicted lower life satisfaction (β=−0.25), optimism, positive affect, and purpose 4 years later. Bidirectional — higher PWB also predicted reduced likelihood of smoking. Ex-smokers do not show net SWB loss in most studies.',
         },
         {
-          output: 'cancer', type: 'byOption', evidence: 'moderate', source: ['thun2013'],
+          output: 'cancer', type: 'byOption', evidence: 'moderate', source: ['jha2013'],
           byOption: {
             never: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             former: { hr: 1.40, hrLow: 1.20, hrHigh: 1.60 },
-            current: { hr: 3.00, hrLow: 2.50, hrHigh: 3.50 },
+            current: { hr: 3.50, hrLow: 2.60, hrHigh: 4.80 },
           },
-          note: 'Approximate all-cancer mortality for current smokers. The striking verified number is organ-specific: lung-cancer DEATH ~25× never-smokers in contemporary US cohorts (Thun 2013). Replace with Carter 2015 site-specific figures in a later pass.',
+          note: 'Jha 2013 Table 2 (US nationally representative, current vs never smokers): all-cancer mortality HR 3.2 (2.6–3.9) in women and 3.8 (3.1–4.8) in men; lung cancer alone HR 17.8 (11.4–27.8) women / 14.6 (9.1–23.4) men. We use the unisex midpoint 3.5 with a CI spanning both sex-specific intervals. "Former" is an approximation — it depends heavily on quit age and dose; Carter 2015 has site-specific figures (e.g. lung) for former smokers.',
         },
         {
           output: 'cvd', type: 'byOption', evidence: 'high', source: ['jha2013'],
@@ -790,44 +795,47 @@ const HEALTH_MODEL = {
       unit: 'cups/day',
       min: 0, max: 6, step: 1, default: 2,
       hint: 'Decaf also counts.',
-      // poole2017 umbrella review: largest all-cause reduction at 3-4 cups/day (RR 0.83, 0.79-0.88)
-      // CVD mortality strongest of all outcomes: RR 0.81 (0.72-0.90) at 3-4 cups — consistent across cohorts
-      // Cancer incidence: 18% lower at high vs low (RR 0.82, 0.74-0.89)
+      // poole2017 umbrella review (BMJ 359:j5024): largest all-cause reduction at 3-4 cups/day
+      // (RR 0.83, 0.79-0.88) — our 3-4 cup step matches the published estimate EXACTLY
+      // CVD mortality strongest of all outcomes: RR 0.81 (0.72-0.90) at 3-4 cups — exact match
+      // Cancer incidence: 18% lower at high vs low (RR 0.82, 0.74-0.89) — exact match
+      // 1-2 and 5+ steps: not published as categories; they approximate the Grosso 2016
+      // non-linear dose-response curve (curve ~0.90 at 2 cups; 7 cups = 0.90, 0.85-0.96)
       // Cognition: lower Alzheimer's and cognitive decline in prospective studies (moderate evidence)
       // Depression: inverse dose-response association (RR ~0.85 at 3-4 cups) — observational, confounded
       //
       // Finding: CVD mortality benefit at 3+ cups; increased fracture risk in women at 5+ cups (poole2017)
-      // Overall pattern: robust inverse association, U-shaped at very high intakes (5+ cups slightly attenuated)
+      // Overall pattern: non-linear, largest benefit at 3-4 cups, slightly attenuated at 5+ cups
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['poole2017'],
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['poole2017', 'grosso2016'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 2, hr: 0.90, hrLow: 0.86, hrHigh: 0.95 },
             { max: 4, hr: 0.83, hrLow: 0.79, hrHigh: 0.88 },
             { max: Infinity, hr: 0.88, hrLow: 0.82, hrHigh: 0.95 },
           ],
-          note: 'Umbrella review: largest all-cause risk reduction at 3–4 cups/day (RR 0.83, 0.79–0.88). The 1–2 and 5+ steps are interpolated/U-shaped approximations — verify against the paper.',
+          note: 'Umbrella review: largest all-cause risk reduction at 3–4 cups/day (RR 0.83, 0.79–0.88) — exact published estimate. The 1–2 and 5+ steps approximate the non-linear dose-response curve (Grosso 2016): ~0.90 at 2 cups, and the published 7-cup estimate is 0.90 (0.85–0.96).',
         },
         {
-          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['poole2017'],
+          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['poole2017', 'grosso2016'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 2, hr: 0.92, hrLow: 0.85, hrHigh: 1.00 },
             { max: 4, hr: 0.82, hrLow: 0.74, hrHigh: 0.89 },
             { max: Infinity, hr: 0.85, hrLow: 0.76, hrHigh: 0.95 },
           ],
-          note: 'Same umbrella review, incident cancer: 18% lower at high vs low consumption (0.82, 0.74–0.89). 1–2 and 5+ steps interpolated.',
+          note: 'Same umbrella review, incident cancer: 18% lower at high vs low consumption (0.82, 0.74–0.89) — exact published estimate. 1–2 and 5+ steps interpolated from the high-vs-low pattern (no published cancer dose-response categories).',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['poole2017'],
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['poole2017', 'grosso2016'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 2, hr: 0.88, hrLow: 0.80, hrHigh: 0.96 },
             { max: 4, hr: 0.81, hrLow: 0.72, hrHigh: 0.90 },
             { max: Infinity, hr: 0.85, hrLow: 0.74, hrHigh: 0.96 },
           ],
-          note: 'Same umbrella review, CVD mortality: RR 0.81 (0.72–0.90) at 3–4 cups/day — the strongest of all outcomes in the review. 1–2 and 5+ steps interpolated.',
+          note: 'Same umbrella review, CVD mortality: RR 0.81 (0.72–0.90) at 3–4 cups/day — exact published estimate, the strongest outcome in the review. 1–2 and 5+ steps approximate the Grosso 2016 non-linear CVD curve (slightly less steep than all-cause).',
         },
         {
           output: 'cognition', type: 'steps', evidence: 'moderate', source: ['poole2017'],
@@ -1369,7 +1377,7 @@ const HEALTH_MODEL = {
       kind: 'slider',
       unit: 'hours/day',
       min: 0, max: 12, step: 0.5, default: 5,
-      hint: 'TV, social media, doomscrolling, gaming. Not work screens. US average ≈ 4–6 h/day (TV ~3 h + social media ~2 h).',
+      hint: 'TV, social media, doomscrolling, gaming. Not work screens. US average ≈ 5 h/day (Nielsen: ~3–4 h TV incl. streaming; GWI/DataReportal Digital 2025: ~2 h social media; some second-screen overlap).',
       // hunt2018 RCT: limiting social media to ~30 min/day reduced loneliness and depression
       // allcott2020: 4-week Facebook deactivation improved subjective wellbeing (RCT)
       // zhai2015 meta: RR 1.22 depression for prolonged computer/internet use
@@ -1383,7 +1391,7 @@ const HEALTH_MODEL = {
       // hale2015: screens near bedtime displace sleep — already counted in sleep slider if set honestly
       effects: [
         {
-          output: 'happiness', type: 'steps', evidence: 'low', source: ['hunt2018'],
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['hunt2018', 'nielsenGauge2024', 'datareportal2025'],
           steps: [
             { max: 1, points: 0 },
             { max: 3, points: -0.05 },
@@ -1391,7 +1399,7 @@ const HEALTH_MODEL = {
             { max: 7, points: -0.30 },
             { max: Infinity, points: -0.45 },
           ],
-          note: 'Direction is consistent across designs: an RCT limiting social media to ~30 min/day reduced loneliness and depression (Hunt 2018); 4-week Facebook deactivation improved subjective wellbeing (Allcott 2020); meta-analysis RR 1.22 depression for prolonged computer/internet use (Zhai 2015). But population associations are tiny (≤0.4% of wellbeing variance, Orben 2019), non-users ≈ low users (Twenge 2018), and reverse causality is plausible — points are deliberately small. The mortality/CVD pathways of screen time run through sitting and low fitness and are NOT double-counted here (see findings; Stamatakis 2011, Celis-Morales 2018).',
+          note: 'Direction is consistent across designs: an RCT limiting social media to ~30 min/day reduced loneliness and depression (Hunt 2018); 4-week Facebook deactivation improved subjective wellbeing (Allcott 2020); meta-analysis RR 1.22 depression for prolonged computer/internet use (Zhai 2015). But population associations are tiny (≤0.4% of wellbeing variance, Orben 2019), non-users ≈ low users (Twenge 2018), and reverse causality is plausible — points are deliberately small. The mortality/CVD pathways of screen time run through sitting and low fitness and are NOT double-counted here (see findings; Stamatakis 2011, Celis-Morales 2018). Input default = 5 h/day, the approximate US recreational-screen average: ~3–4 h/day TV incl. streaming (Nielsen, 2024–25; 3.5 h/day for 18–34, 6.5 h/day for 65+) plus ~2 h/day social media (GWI, via DataReportal Digital 2025), with some overlap from second-screening.',
         },
       ],
     },
@@ -1476,30 +1484,30 @@ const HEALTH_MODEL = {
       unit: 'sessions/week',
       min: 0, max: 7, step: 1, default: 0,
       //hint: 'Finnish-style sauna.',
-      // laukkanen2015 single Finnish cohort (2315 men, mean f/up 21y): 4-7 vs 1 session/wk
-      // All-cause: ~40% lower (deaths 30.8% vs 49.1%). CVD: ~63% lower sudden cardiac death
+      // laukkanen2015 single Finnish cohort (2315 men, median f/up 20.7y), KIHD:
+      // 4-7 vs 1 session/wk: all-cause HR 0.60 (0.46-0.80); fatal CVD HR 0.50 (0.33-0.77)
+      // 2-3 vs 1: all-cause 0.76 (0.66-0.88); fatal CVD 0.73 (0.59-0.89)  [verified vs Table 2]
+      // Reference is 1 session/wk (Finnish cultural baseline); 0 sessions is an assumption
       // Mechanism: improved endothelial function, lower BP, reduced sympathetic tone
       // Observational, one population (Finnish men), likely residual confounding — treat as speculative
-      // Exact adjusted HRs need verification against paper Table 2 (noted)
-      // Note: definitely needs some adjustment and further research into the source paper. Surely there are some confounding variables here.
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'low', source: ['laukkanen2015'],
           steps: [
             { max: 1, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 3, hr: 0.75, hrLow: 0.64, hrHigh: 0.90 },
-            { max: Infinity, hr: 0.60, hrLow: 0.45, hrHigh: 0.81 },
+            { max: 3, hr: 0.76, hrLow: 0.66, hrHigh: 0.88 },
+            { max: Infinity, hr: 0.60, hrLow: 0.46, hrHigh: 0.80 },
           ],
-          note: 'Single Finnish cohort of 2315 men: 4–7 vs 1 session/wk → ~40% lower all-cause mortality (unadjusted deaths 30.8% vs 49.1%). Observational, one population, likely residual confounding — treat as speculative. Exact adjusted all-cause HRs to be verified against paper Table 2.',
+          note: 'Single Finnish cohort of 2315 middle-aged men (KIHD), median follow-up 20.7 y: multivariable-adjusted all-cause HR 0.76 (0.66–0.88) for 2–3 sessions/wk and 0.60 (0.46–0.80) for 4–7 vs 1 session/wk (P trend < .001; adjusted for age, BMI, BP, cholesterol, smoking, alcohol, PA, SES). Reference is 1 session/wk — the 0-session step (HR 1.00) is an assumption outside the study\'s range. Observational, one population, residual confounding — treat as speculative.',
         },
         {
           output: 'cvd', type: 'steps', evidence: 'low', source: ['laukkanen2015'],
           steps: [
             { max: 1, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 3, hr: 0.72, hrLow: 0.58, hrHigh: 0.88 },
-            { max: Infinity, hr: 0.48, hrLow: 0.31, hrHigh: 0.68 },
+            { max: 3, hr: 0.73, hrLow: 0.59, hrHigh: 0.89 },
+            { max: Infinity, hr: 0.50, hrLow: 0.33, hrHigh: 0.77 },
           ],
-          note: 'Same cohort — the CVD-specific signal was even stronger: 4–7 sessions/wk associated with ~63% lower sudden cardiac death and ~50% lower fatal CVD. The effect is attributed to improved endothelial function, lower BP and reduced sympathetic tone.',
+          note: 'Same cohort — fatal CVD HR 0.73 (0.59–0.89) for 2–3 and 0.50 (0.33–0.77) for 4–7 sessions/wk vs 1; sudden cardiac death even stronger (0.37, 0.18–0.75). Session duration showed no all-cause association (P trend ≈ 0.9) — frequency is the lever. Effect attributed to improved endothelial function, lower BP and reduced sympathetic tone.',
         },
       ],
     },
@@ -1846,11 +1854,16 @@ const HEALTH_MODEL = {
       min: 5, max: 55, step: 1, default: 35,
       gatedBy: 'bodyFatOn',
       //hint: 'When enabled, this REPLACES the BMI estimate.',
-      // jayedi2022 dose-response meta (35 cohorts, 923k): J-shaped, lowest all-cause risk near 25%
-      // CVD effect steeper than all-cause above the nadir — visceral adiposity driving hypertension,
-      // diabetes and inflammatory pathways. Sex-specific ideal ranges differ; our steps are unisex
-      // Calibrated: US average ~35% body fat = 1.0×. When enabled, REPLACES the BMI estimate —
-      // measured body fat % is the better adiposity signal (supersession rule).
+      // jayedi2022 dose-response meta-analysis (35 cohorts, 923,295 people, 68,389 deaths):
+      // ALL-CAUSE mortality only — the paper reports no CVD analysis (verified against abstract/full
+      // text access; CVD body-fat curves in our older data were removed as unsourced).
+      // Published facts: J-shaped, nadir ≈25% body fat, P nonlinearity <0.001; in general adult
+      // populations HR 1.11 (1.02–1.20) per +10% body fat (11 studies).
+      // Our steps are hand-fitted to that curve: nadir band 19–28%, right arm ≈ +11% per +10%
+      // (matches the published increment), left arm modest elevation; anchored US avg ~35% = 1.0×.
+      // Sex-specific ideal ranges differ; our steps are unisex approximations.
+      // When enabled, REPLACES the BMI estimate — measured body fat % is the better adiposity
+      // signal (supersession rule). CVD card shows body fat as no-data (no honest source found).
       effects: [
         {
           output: 'mortality', type: 'steps', evidence: 'moderate', source: ['jayedi2022'],
@@ -1860,17 +1873,7 @@ const HEALTH_MODEL = {
             { max: 38, hr: 1.0000, hrLow: 0.9189, hrHigh: 1.0811 },
             { max: Infinity, hr: 1.1081, hrLow: 0.9369, hrHigh: 1.2973 },
           ],
-          note: 'Dose-response meta-analysis (35 cohorts, 923k people): J-shaped, lowest risk near 25%. Calibrated: US average ~35% body fat = 1.0×. Sex-specific ideal ranges differ; our steps are unisex approximations.',
-        },
-        {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['jayedi2022'],
-          steps: [
-            { max: 18, hr: 0.9739, hrLow: 0.8870, hrHigh: 1.0870 },
-            { max: 28, hr: 0.8696, hrLow: 0.8696, hrHigh: 0.8696 },
-            { max: 38, hr: 1.0000, hrLow: 0.9130, hrHigh: 1.0870 },
-            { max: Infinity, hr: 1.1130, hrLow: 0.9391, hrHigh: 1.3043 },
-          ],
-          note: 'Same meta-analysis — CVD-specific effect of body fat is steeper than all-cause above the nadir. Calibrated: US average ~35% body fat = 1.0×. Visceral adiposity driving hypertension, diabetes and inflammatory pathways.',
+          note: 'Dose-response meta-analysis (35 cohorts, 923,295 people; 68,389 deaths): J-shaped, lowest risk ≈25% body fat, P nonlinearity <0.001; HR 1.11 (1.02–1.20) per +10% body fat in general adult populations. Our steps are hand-fitted to that curve and anchored so US average ~35% = 1.0×. Sex-specific ideal ranges differ; steps are unisex approximations. All-cause only — this paper reports no CVD effect, so the CVD card lists body fat as no-data.',
         },
       ],
     },
@@ -2104,6 +2107,10 @@ const HEALTH_MODEL = {
       text: 'above the US annual standard (12 µg/m³); WHO\'s guideline is 5 — HEPA purifiers, masks and route/location choices measurably reduce exposure',
     },
     {
+      when: (v) => v.occupationalPA >= 2, dir: 'neutral', input: 'Physical activity at work', source: ['dalene2021'],
+      text: 'The "physical activity paradox" is contested: after full adjustment for socioeconomic and health factors, Norwegian men in active occupations lived 0.4–1.7 years LONGER (Dalene 2021). The Coenen 2018 meta-analysis pooled mostly crudely adjusted studies — healthy-worker selection may drive its higher-risk finding. Our effect uses Coenen (sex-specific), and this uncertainty is part of why the estimate is moderate evidence.',
+    },
+    {
       when: (v) => v.screenTime >= 6, dir: 'bad', input: 'Screen time', source: ['stamatakis2011', 'celis2018'],
       text: 'Screen-based entertainment ≥4 h/day tracked 1.5× all-cause mortality and 2.3× cardiovascular events, but seems to be because of the sitting and low fitness, which we count in those sliders rather than twice here',
     },
@@ -2317,11 +2324,11 @@ const HEALTH_MODEL = {
       pmid: '21282661',
     },
     nchs2023: {
-      authors: 'National Center for Health Statistics (CDC)',
+      authors: 'Murphy SL, Kochanek KD, Xu JQ, Arias E. (National Center for Health Statistics)',
       year: 2024,
-      title: 'Deaths: Final Data for 2023 — life expectancy at birth 78.4 (male 75.8, female 81.1)',
-      journal: 'National Vital Statistics Reports. VERIFY exact figures against the published report.',
-      url: 'https://www.cdc.gov/nchs/fastats/life-expectancy.htm',
+      title: 'Mortality in the United States, 2023 — life expectancy at birth 78.4 (male 75.8, female 81.1)',
+      journal: 'NCHS Data Brief, no 521. Hyattsville, MD: National Center for Health Statistics. December 2024. DOI: 10.15620/cdc/170564',
+      url: 'https://stacks.cdc.gov/view/cdc/170564',
       pmid: null,
     },
     kodama2009: {
@@ -2387,6 +2394,30 @@ const HEALTH_MODEL = {
       journal: 'British Journal of Sports Medicine, 52(20):1320–1326',
       url: 'https://doi.org/10.1136/bjsports-2017-098540',
       pmid: '29760168',
+    },
+    grosso2016: {
+      authors: 'Grosso G, Micek A, Godos J, et al.',
+      year: 2016,
+      title: 'Coffee consumption and risk of all-cause, cardiovascular, and cancer mortality in smokers and non-smokers: a dose-response meta-analysis',
+      journal: 'European Journal of Epidemiology, 31(12):1191–1205',
+      url: 'https://doi.org/10.1007/s10654-016-0202-2',
+      pmid: '27699514',
+    },
+    cillekens2022: {
+      authors: 'Cillekens B, Huysmans MA, Holtermann A, et al.',
+      year: 2022,
+      title: 'Physical activity at work may not be health enhancing. A systematic review with meta-analysis on the association between occupational physical activity and cardiovascular disease mortality covering 23 studies with 655,892 participants',
+      journal: 'Scandinavian Journal of Work, Environment & Health, 48(2):86–98',
+      url: 'https://doi.org/10.5271/sjweh.3993',
+      pmid: '34656067',
+    },
+    dalene2021: {
+      authors: 'Dalene KE, Tarp J, Selmer RM, et al.',
+      year: 2021,
+      title: 'Occupational physical activity and longevity in working men and women in Norway: a prospective cohort study',
+      journal: 'The Lancet Public Health, 6(6):e386–e395',
+      url: 'https://doi.org/10.1016/S2468-2667(21)00032-3',
+      pmid: '33932334',
     },
     moore2007: {
       authors: 'Moore TH, Zammit S, Lingford-Hughes A, et al.',
@@ -2627,6 +2658,22 @@ const HEALTH_MODEL = {
       journal: 'Sleep Medicine Reviews, 21:50–58',
       url: 'https://doi.org/10.1016/j.smrv.2014.07.007',
       pmid: '25193149',
+    },
+    nielsenGauge2024: {
+      authors: 'Nielsen',
+      year: 2024,
+      title: 'The Gauge (TV usage): US adults average roughly 3–4 h/day of TV viewing across broadcast, cable and streaming (≈3.5 h/day for ages 18–34, ≈6.5 h/day for 65+)',
+      journal: 'Nielsen media measurement data, 2024–2025',
+      url: 'https://www.nielsen.com/data-center/the-gauge/',
+      pmid: null,
+    },
+    datareportal2025: {
+      authors: 'Kemp S',
+      year: 2025,
+      title: 'Digital 2025: United States of America (GWI survey data: ~2 h/day on social media; global average 2 h 21 min/day)',
+      journal: 'DataReportal / Kepios',
+      url: 'https://datareportal.com/reports/digital-2025-united-states-of-america',
+      pmid: null,
     },
     orben2019: {
       authors: 'Orben A, Przybylski AK',

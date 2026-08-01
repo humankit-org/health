@@ -8,6 +8,10 @@
 
 const model = require('../js/factors.js');
 const engine = require('../js/engine.js');
+// Phase-2 plain model: the same data with the joint models and overlap pairs
+// stripped — used wherever a test exercises a SINGLE factor's marginal math
+// (the shipped clusters are tested in §[17]/§[18]/§[19]/§[21]).
+const plainModel = { ...model, jointModels: [], overlaps: [] };
 
 let failures = 0;
 function ok(cond, msg) {
@@ -76,11 +80,11 @@ console.log('\n[2] Single-factor effects');
   const r1 = engine.evaluate(model, { ...neutralValues(), cardio: 150 });
   approx(r1.mortality.hr, 0.69, 1e-9, 'cardio 150 min/wk -> HR 0.69 (arem2015)');
 
-  const r2 = engine.evaluate(model, { ...neutralValues(), fiber: 40 });
-  approx(r2.mortality.hr, Math.pow(0.9, 3), 1e-9, 'fiber 40 g/d capped at 30 g -> HR 0.9^3');
+  const r2 = engine.evaluate(plainModel, { ...neutralValues(), fiber: 40 });
+  approx(r2.mortality.hr, Math.pow(0.9, 3), 1e-9, 'fiber 40 g/d capped at 30 g -> HR 0.9^3 (marginal; the diet score cluster supersedes it when live)');
 
-  const r3 = engine.evaluate(model, { ...neutralValues(), fruitVeg: 10 });
-  approx(r3.mortality.hr, Math.pow(0.95, 2.4), 1e-9, 'fruit/veg capped at 5 servings (calibrated to 2.6 avg)');
+  const r3 = engine.evaluate(plainModel, { ...neutralValues(), fruitVeg: 10 });
+  approx(r3.mortality.hr, Math.pow(0.95, 2.4), 1e-9, 'fruit/veg capped at 5 servings (calibrated to 2.6 avg, marginal)');
 
   const r4 = engine.evaluate(model, { ...neutralValues(), alcohol: 30 });
   approx(r4.mortality.hr, 1.56, 1e-9, 'alcohol >25 drinks/wk -> HR 1.56 (wood2018)');
@@ -226,8 +230,8 @@ console.log('\n[11] New inputs');
   const r8 = engine.evaluate(model, { ...neutralValues(), ssb: 14 });
   approx(r8.mortality.hr, 1.1415, 1e-9, 'SSB 14/wk -> HR 1.1415 (calibrated to 4.9 avg)');
 
-  const r9 = engine.evaluate(model, { ...neutralValues(), fish: 'lots' });
-  approx(r9.mortality.hr, 0.95, 1e-9, 'fish 3+/wk -> HR 0.95 (kwok2019, li2020)');
+  const r9 = engine.evaluate(plainModel, { ...neutralValues(), fish: 'lots' });
+  approx(r9.mortality.hr, 0.95, 1e-9, 'fish 3+/wk -> HR 0.95 (kwok2019, li2020, marginal)');
 
   const r10 = engine.evaluate(model, { ...neutralValues(), sitting: 13 });
   approx(r10.mortality.hr, 1.24, 1e-9, 'sitting 13 h/d -> HR 1.24 (biswas2015)');
@@ -241,14 +245,14 @@ console.log('\n[11] New inputs');
   const r13 = engine.evaluate(model, { ...neutralValues(), gripOn: false, grip: 15 });
   approx(r13.mortality.hr, 1.0, 1e-9, 'grip ignored while its toggle is off');
 
-  const r14 = engine.evaluate(model, { ...neutralValues(), nuts: 30 });
-  approx(r14.mortality.hr, Math.pow(0.78, 30 / 28), 1e-9, 'nuts 30 g/d -> 0.78^(30/28) (aune2016nuts)');
-  const base14 = engine.evaluateRaw(model, neutralValues());
-  approx(engine.evaluateRaw(model, { ...neutralValues(), nuts: 30 }).hrCancer / base14.hrCancer,
+  const r14 = engine.evaluate(plainModel, { ...neutralValues(), nuts: 30 });
+  approx(r14.mortality.hr, Math.pow(0.78, 30 / 28), 1e-9, 'nuts 30 g/d -> 0.78^(30/28) (aune2016nuts, marginal)');
+  const base14 = engine.evaluateRaw(plainModel, neutralValues());
+  approx(engine.evaluateRaw(plainModel, { ...neutralValues(), nuts: 30 }).hrCancer / base14.hrCancer,
     Math.pow(0.85, 30 / 28), 1e-9, 'nuts 30 g/d -> cancer 0.85^(30/28)');
 
-  const r15 = engine.evaluate(model, { ...neutralValues(), nuts: 50 });
-  approx(r15.mortality.hr, Math.pow(0.78, 35 / 28), 1e-9, 'nuts capped at 35 g');
+  const r15 = engine.evaluate(plainModel, { ...neutralValues(), nuts: 50 });
+  approx(r15.mortality.hr, Math.pow(0.78, 35 / 28), 1e-9, 'nuts capped at 35 g (marginal)');
 
   const r16 = engine.evaluate(model, { ...neutralValues(), rhrOn: false, rhr: 90 });
   approx(r16.mortality.hr, 1.0, 1e-9, 'resting HR ignored while its toggle is off');
@@ -348,7 +352,7 @@ console.log('\n[13] Cancer output');
   approx(pm.hrCancer / base.hrCancer, Math.pow(1.16, (8 - 1.5) / 7), 1e-9, 'processed meat 8/wk -> cancer HR 1.16^((8-1.5)/7) (pan2012)');
 
   const sm = engine.evaluateRaw(model, { ...neutralValues(), smoking: 'current' });
-  approx(sm.hrCancer / base.hrCancer, 3.0, 1e-9, 'current smoker -> cancer HR 3.0 (thun2013)');
+  approx(sm.hrCancer / base.hrCancer, 3.5, 1e-9, 'current smoker -> cancer HR 3.5 unisex midpoint (jha2013 Table 2: 3.2 women / 3.8 men)');
 
   const fv = engine.evaluateRaw(model, { ...neutralValues(), fruitVeg: 8 });
   approx(fv.hrCancer / base.hrCancer, 1.0, 1e-9, 'fruit & veg: honest null on cancer (wang2014)');
@@ -401,7 +405,7 @@ console.log('\n[15] CVD output');
   approx(nuts.hrCvd / base.hrCvd, Math.pow(0.79, 30 / 28), 1e-9, 'nuts 30 g/d -> cvd 0.79^(30/28) (aune2016nuts)');
 
   const sauna = engine.evaluateRaw(model, { ...neutralValues(), sauna: 5 });
-  approx(sauna.hrCvd / base.hrCvd, 0.48, 1e-9, 'sauna 5/wk -> cvd HR 0.48 (laukkanen2015)');
+  approx(sauna.hrCvd / base.hrCvd, 0.50, 1e-9, 'sauna 5/wk -> cvd HR 0.50 (laukkanen2015)');
 
   const vo2 = engine.evaluateRaw(model, { ...neutralValues(), vo2maxOn: true, vo2max: 42 });
   approx(vo2.hrCvd / base.hrCvd, Math.pow(0.85, (42 - 33) / 3.5), 1e-9, 'vo2max 42 -> cvd 0.85^(9/3.5) (kodama2009)');
@@ -433,6 +437,8 @@ console.log('\n[16] Citation numbering (index.html <-> sources.html)');
   for (const f of model.findings) addAll(f.source);
   addAll(model.bmi.source);
   addAll(model.baseline.source);
+  for (const jm of model.jointModels) addAll(jm.source);
+  for (const o of model.overlaps) addAll(o.source);
   ok(Object.keys(refs).length === cited.size, 'sourceIndex covers every cited source');
   const nums = Object.values(refs).sort((a, b) => a - b);
   ok(nums.every((n, i) => n === i + 1), 'citation numbers contiguous from 1');
@@ -448,6 +454,409 @@ console.log('\n[16] Citation numbering (index.html <-> sources.html)');
   ok(tags.momma2022.includes('Strength training') && !tags.momma2022.includes('Strength'), 'momma2022 chips: input label folds in the shorter finding label');
   ok(tags.diangelantonio2016.includes('BMI'), 'diangelantonio2016 chips: BMI (derived)');
   ok(tags.nchs2023.includes('Life expectancy baseline'), 'nchs2023 chips: life expectancy baseline');
+}
+
+console.log('\n[17] Cluster dispatch (Phase 2 machinery; synthetic lookups + shipped diet cluster)');
+{
+  ok(Array.isArray(model.jointModels) && model.jointModels.length === 1 && model.jointModels[0].id === 'dietScore', 'shipped jointModels: diet score cluster');
+  ok(Array.isArray(model.perLeverOnly) && model.perLeverOnly.length === 0, 'perLeverOnly empty in the shipped model');
+  const shippedTot = engine.clusterTotals(model, engine.defaults(model));
+  ok(shippedTot.length === 1 && shippedTot[0].id === 'dietScore', 'clusterTotals at defaults: diet cluster present');
+  ok(Math.abs(shippedTot[0].score - 3.023) < 0.01 && Math.abs(shippedTot[0].outputs.mortality.hr - 0.7536) < 1e-4, 'defaults: diet score ~3.02 -> hr 0.7536');
+
+  // Synthetic joint models exercise the machinery without touching the data.
+  const M = { ...plainModel };
+  M.jointModels = [
+    {
+      id: 'dietScore', cluster: 'diet', members: ['fiber', 'nuts'],
+      model: 'score', evidence: 'moderate',
+      outputs: {
+        mortality: {
+          components: [{ input: 'fiber', max: 40, weight: 1 }, { input: 'nuts', max: 35, weight: 1 }],
+          gradient: [
+            { max: 0.5, hr: 1.0, hrLow: 0.9, hrHigh: 1.1 },
+            { max: 1.0, hr: 0.94, hrLow: 0.88, hrHigh: 1.0 },
+            { max: 1.5, hr: 0.88, hrLow: 0.8, hrHigh: 0.96 },
+            { max: 2.0, hr: 0.82, hrLow: 0.72, hrHigh: 0.92 },
+          ],
+        },
+      },
+    },
+    {
+      id: 'ekelundTable', cluster: 'movement', members: ['cardio', 'steps', 'sitting'],
+      model: 'table', evidence: 'high',
+      outputs: {
+        mortality: {
+          axes: [
+            { id: 'pa', label: 'PA', unit: 'MET-min/wk', inputs: ['cardio', 'steps'], coeffs: [4, 0.035], bands: [{ max: 500, label: 'Q1' }, { max: 1000, label: 'Q2' }, { max: 1500, label: 'Q3' }, { max: 9999, label: 'Q4' }] },
+            { id: 'sit', label: 'Sitting', unit: 'h/day', inputs: ['sitting'], coeffs: [1], bands: [{ max: 4, label: 'Q1' }, { max: 7, label: 'Q2' }, { max: 10, label: 'Q3' }, { max: 99, label: 'Q4' }] },
+          ],
+          grid: [
+            [{ hr: 1.23, hrLow: 1.10, hrHigh: 1.37 }, { hr: 1.16, hrLow: 1.03, hrHigh: 1.29 }, { hr: 1.05, hrLow: 0.93, hrHigh: 1.18 }, { hr: 0.92, hrLow: 0.81, hrHigh: 1.03 }],
+            [{ hr: 1.10, hrLow: 0.98, hrHigh: 1.23 }, { hr: 1.03, hrLow: 0.92, hrHigh: 1.16 }, { hr: 0.95, hrLow: 0.84, hrHigh: 1.06 }, { hr: 0.84, hrLow: 0.74, hrHigh: 0.95 }],
+            [{ hr: 0.99, hrLow: 0.88, hrHigh: 1.11 }, { hr: 0.93, hrLow: 0.83, hrHigh: 1.04 }, { hr: 0.86, hrLow: 0.76, hrHigh: 0.97 }, { hr: 0.77, hrLow: 0.68, hrHigh: 0.87 }],
+            [{ hr: 0.86, hrLow: 0.77, hrHigh: 0.97 }, { hr: 0.80, hrLow: 0.71, hrHigh: 0.90 }, { hr: 0.74, hrLow: 0.65, hrHigh: 0.83 }, { hr: 0.66, hrLow: 0.58, hrHigh: 0.76 }],
+          ],
+          interpolate: true,
+        },
+      },
+    },
+  ];
+  M.perLeverOnly = [{ cluster: 'psychosocial', members: ['stress', 'social', 'purpose'] }];
+
+  // Score model: full values -> score 2.0 -> last gradient step; partial credit.
+  const v = { ...engine.defaults(M), fiber: 40, nuts: 35, cardio: 150, steps: 6000, sitting: 8 };
+  const tot = engine.clusterTotals(M, v);
+  ok(tot.length === 2, 'two synthetic joint models active');
+  const diet = tot.find((t) => t.id === 'dietScore');
+  ok(diet && diet.outputs.mortality.hr === 0.82, 'score lookup: score 2.0 -> hr 0.82');
+  ok(diet && diet.credit.fiber === 1 && diet.credit.nuts === 1, 'score partial credit 1.0 at max');
+
+  // Table model: bilinear interpolation between band cutoffs.
+  // PA = 150*4 + 6000*0.035 = 810 (Q2), sitting 8 (Q3) -> ~0.948.
+  const eke = tot.find((t) => t.id === 'ekelundTable');
+  ok(eke && Math.abs(eke.outputs.mortality.hr - 0.948) < 0.005, 'table bilinear interpolation (PA 810, sit 8 -> ~0.948)');
+
+  // Exact cutoff and above-cutoff clamping.
+  const v3 = { ...engine.defaults(M), cardio: 375, steps: 0, sitting: 4 };
+  const t3 = engine.clusterTotals(M, v3).find((t) => t.id === 'ekelundTable');
+  ok(t3 && t3.outputs.mortality.hr === 0.99, 'exact cutoff -> nearest cell 0.99');
+  const v4 = { ...engine.defaults(M), cardio: 10000, steps: 50000, sitting: 50 };
+  const t4 = engine.clusterTotals(M, v4).find((t) => t.id === 'ekelundTable');
+  ok(t4 && t4.outputs.mortality.hr === 0.66, 'above all cutoffs clamps to edge cell 0.66');
+
+  // Outputs without joint coverage fall back to the marginal product.
+  const baseCancer = engine.evaluateRaw(model, v).hrCancer;
+  const jmCancer = engine.evaluateRaw(M, v).hrCancer;
+  ok(Math.abs(baseCancer - jmCancer) < 1e-12, 'cancer output falls back to marginal product');
+
+  // Record tags: cluster, viaJoint, partialCredit, perLever.
+  const r = engine.evaluateRaw(M, v);
+  const cardioRec = r.contributions.mortality.find((c) => c.inputId === 'cardio');
+  ok(cardioRec && cardioRec.cluster === 'movement' && cardioRec.viaJoint === 'ekelundTable', 'cardio record tagged cluster+viaJoint');
+  const nutRec = r.contributions.mortality.find((c) => c.inputId === 'nuts');
+  ok(nutRec && nutRec.partialCredit === 1, 'nuts record has partialCredit');
+
+  // perLever-only: moving those inputs changes NOTHING in the totals.
+  const r2 = engine.evaluateRaw(M, { ...engine.defaults(M), stress: 1, social: 7, purpose: 10 });
+  const r2b = engine.evaluateRaw(M, { ...engine.defaults(M), stress: 10, social: 0, purpose: 1 });
+  ok(Math.abs(r2.hr - r2b.hr) < 1e-12, 'perLever inputs excluded from the product');
+  ok(Math.abs(r2.hrLow - r2b.hrLow) < 1e-12, 'perLever inputs add no uncertainty');
+  const stressRec = r2.contributions.mortality.find((c) => c.inputId === 'stress');
+  ok(stressRec && stressRec.perLever === true && stressRec.cluster === 'psychosocial', 'stress record flagged perLever+cluster');
+
+  // The joint total replaces the members' quadrature sigma (its own widened CI).
+  const w = model.constants.uncertaintyWiden.moderate;
+  const wLo = Math.exp(Math.log(0.82) + (Math.log(0.72) - Math.log(0.82)) * w);
+  const wHi = Math.exp(Math.log(0.82) + (Math.log(0.92) - Math.log(0.82)) * w);
+  const s = (Math.log(wHi) - Math.log(wLo)) / (2 * 1.96);
+  ok(Math.abs(r.hrLow - r.hr * Math.exp(-1.96 * Math.sqrt(s * s))) < 1e-6 || r.hrLow < r.hr, 'joint total sigma enters the bounds');
+}
+
+console.log('\n[18] Overlap blend + covariance (Phase 2 machinery; synthetic pairs + shipped pairs)');
+{
+  ok(Array.isArray(model.overlaps) && model.overlaps.length === 3, 'shipped overlaps: 3 diet-cluster pairs');
+  ok(model.overlaps.every((o) => o.b === 'dietScore'), 'shipped pairs all face the diet score cluster');
+  ok(engine.activeOverlaps(plainModel, engine.defaults(plainModel)).length === 0, 'activeOverlaps [] without overlaps');
+
+  const PAIR = { a: 'rhr', b: 'cardio', kind: 'shared-pathway', tier: 'moderate', note: 'test pair', source: 'aune2017rhr' };
+  const v = { ...engine.defaults(plainModel), rhrOn: true, rhr: 90, cardio: 150 };
+  const hrAt = (m, values) => engine.evaluateRaw(m, values).hr;
+  const hrRhr = engine.evalEffect(model.inputs.find((i) => i.id === 'rhr').effects.find((e) => e.output === 'mortality'), 90).hr;
+  const hrCardio = engine.evalEffect(model.inputs.find((i) => i.id === 'cardio').effects.find((e) => e.output === 'mortality'), 150).hr;
+  const weakId = Math.abs(Math.log(hrRhr)) <= Math.abs(Math.log(hrCardio)) ? 'rhr' : 'cardio';
+  const strongId = weakId === 'rhr' ? 'cardio' : 'rhr';
+  const hrWeaker = weakId === 'rhr' ? hrRhr : hrCardio;
+
+  // ρ=0 and rhoU=0 reproduces today's math exactly (central AND bounds).
+  const M0 = { ...plainModel, overlaps: [{ ...PAIR, rho: 0, rhoU: 0 }] };
+  const r0 = engine.evaluateRaw(M0, v);
+  const rPlain = engine.evaluateRaw(plainModel, v);
+  ok(Math.abs(r0.hr - rPlain.hr) < 1e-12 && Math.abs(r0.hrLow - rPlain.hrLow) < 1e-12, 'rho=0 -> identical math');
+
+  // ρ=1: weaker collapses to 1.0 -> combined equals the stronger alone.
+  const M1 = { ...plainModel, overlaps: [{ ...PAIR, rho: 1, rhoU: 1 }] };
+  const r1 = engine.evaluateRaw(M1, v);
+  const expected1 = rPlain.hr / hrWeaker;
+  ok(Math.abs(r1.hr - expected1) < 1e-9, 'rho=1 -> combined equals stronger alone');
+  const weakerRec = r1.contributions.mortality.find((c) => c.inputId === weakId);
+  ok(weakerRec.overlapBlend && weakerRec.overlapBlend.rho === 1 && Math.abs(weakerRec.hr - 1.0) < 1e-12, 'weaker collapsed to 1.0 and tagged overlapBlend');
+  const strongerRec = r1.contributions.mortality.find((c) => c.inputId === strongId);
+  ok(!strongerRec.overlapBlend, 'stronger member untouched');
+
+  // ρ=0.5: weaker discounted in log space; stronger keeps its value.
+  const M3 = { ...plainModel, overlaps: [{ ...PAIR, rho: 0.5, rhoU: 0.5 }] };
+  const r3 = engine.evaluateRaw(M3, v);
+  const w3 = r3.contributions.mortality.find((c) => c.inputId === weakId);
+  ok(Math.abs(w3.hr - Math.exp(Math.log(hrWeaker) * 0.5)) < 1e-9, 'weaker discounted by rho=0.5 in log space');
+
+  // Covariance widens the bounds; rhoU does not move the central estimate.
+  const r2 = engine.evaluateRaw(M3, v);
+  const noCov = engine.evaluateRaw({ ...plainModel, overlaps: [{ ...PAIR, rho: 0.5, rhoU: 0 }] }, v);
+  ok(r2.hrLow <= noCov.hrLow && r2.hrHigh >= noCov.hrHigh, 'covariance widens bounds');
+  ok(Math.abs(r2.hr - noCov.hr) < 1e-12, 'rhoU does not move the central estimate');
+
+  // Inactive pair (one member at HR 1.0) blends nothing.
+  const vInactive = { ...engine.defaults(plainModel), rhrOn: true, rhr: 72, cardio: 150 };
+  const rIn = engine.evaluateRaw(M3, vInactive);
+  ok(!rIn.contributions.mortality.find((c) => c.inputId === 'rhr').overlapBlend, 'inactive member -> no blend');
+  ok(engine.activeOverlaps(M3, vInactive).every((e) => !e.active), 'activeOverlaps marks the pair inactive');
+
+  // Points blend: weaker |points| discounted (meditation vs stress, happiness).
+  const pStress = engine.evalEffect(model.inputs.find((i) => i.id === 'stress').effects.find((e) => e.output === 'happiness'), 1).points || 0;
+  const pMed = engine.evalEffect(model.inputs.find((i) => i.id === 'meditation').effects.find((e) => e.output === 'happiness'), 7).points || 0;
+  const M4 = { ...plainModel, overlaps: [{ a: 'meditation', b: 'stress', rho: 0.28, rhoU: 0.13, kind: 'shared-pathway', tier: 'moderate', note: 'test pair', source: 'munjal2025' }] };
+  const r4 = engine.evaluateRaw(M4, { ...engine.defaults(M4), meditation: 7, stress: 1 });
+  const recMed = r4.contributions.happiness.find((c) => c.inputId === 'meditation');
+  const recStress = r4.contributions.happiness.find((c) => c.inputId === 'stress');
+  const weakP = Math.abs(pMed) <= Math.abs(pStress) ? recMed : recStress;
+  ok(weakP.overlapBlend && Math.abs(Math.abs(weakP.points) - Math.min(Math.abs(pMed), Math.abs(pStress)) * 0.72) < 1e-9, 'points blend discounts weaker by rho');
+}
+
+console.log('\n[19] Bounds endpoints + activeJoint (Phase 2 — assumption-space ranges)');
+{
+  const v = { ...engine.defaults(plainModel), rhrOn: true, rhr: 90, cardio: 150 };
+  const rPlain = engine.evaluateRaw(plainModel, v);
+  const bPlain = rPlain.bounds.mortality;
+  ok(Math.abs(bPlain.independence.hr - rPlain.hr) < 1e-12 && Math.abs(bPlain.redundancy.hr - rPlain.hr) < 1e-12, 'no structures -> both endpoints equal the plain product');
+  ok(engine.activeJoint(plainModel, v).length === 0, 'activeJoint [] without joint models');
+
+  // Pair group: independence = full product, redundancy = strongest alone.
+  const M = { ...plainModel, overlaps: [{ a: 'rhr', b: 'cardio', rho: 0.5, rhoU: 0.5, kind: 'shared-pathway', tier: 'moderate', note: 'test pair', source: 'aune2017rhr' }] };
+  const rb = engine.evaluateRaw(M, v).bounds.mortality;
+  const hrRhr = engine.evalEffect(model.inputs.find((i) => i.id === 'rhr').effects.find((e) => e.output === 'mortality'), 90).hr;
+  const hrCardio = engine.evalEffect(model.inputs.find((i) => i.id === 'cardio').effects.find((e) => e.output === 'mortality'), 150).hr;
+  const strongest = Math.abs(Math.log(hrRhr)) >= Math.abs(Math.log(hrCardio)) ? hrRhr : hrCardio;
+  const expectedRed = strongest * (rPlain.hr / (hrRhr * hrCardio));
+  ok(Math.abs(rb.independence.hr - rPlain.hr) < 1e-12, 'independence = full marginal product');
+  ok(Math.abs(rb.redundancy.hr - expectedRed) < 1e-9, 'redundancy = strongest active effect per group');
+  const point = engine.evaluateRaw(M, v).hr;
+  ok(point >= Math.min(rb.independence.hr, rb.redundancy.hr) - 1e-12 && point <= Math.max(rb.independence.hr, rb.redundancy.hr) + 1e-12, 'point estimate between the endpoints (mixed-direction pair)');
+
+  // Joint model group: redundancy uses the published joint total; independence keeps the members' marginal product.
+  const J = { ...plainModel };
+  J.jointModels = [{
+    id: 'ekelundTable', cluster: 'movement', members: ['cardio', 'steps', 'sitting'],
+    model: 'table', evidence: 'high',
+    outputs: {
+      mortality: {
+        axes: [
+          { id: 'pa', label: 'PA', unit: 'MET-min/wk', inputs: ['cardio', 'steps'], coeffs: [4, 0.035], bands: [{ max: 500, label: 'Q1' }, { max: 1000, label: 'Q2' }, { max: 1500, label: 'Q3' }, { max: 9999, label: 'Q4' }] },
+          { id: 'sit', label: 'Sitting', unit: 'h/day', inputs: ['sitting'], coeffs: [1], bands: [{ max: 4, label: 'Q1' }, { max: 7, label: 'Q2' }, { max: 10, label: 'Q3' }, { max: 99, label: 'Q4' }] },
+        ],
+        grid: [
+          [{ hr: 1.23, hrLow: 1.10, hrHigh: 1.37 }, { hr: 1.16, hrLow: 1.03, hrHigh: 1.29 }, { hr: 1.05, hrLow: 0.93, hrHigh: 1.18 }, { hr: 0.92, hrLow: 0.81, hrHigh: 1.03 }],
+          [{ hr: 1.10, hrLow: 0.98, hrHigh: 1.23 }, { hr: 1.03, hrLow: 0.92, hrHigh: 1.16 }, { hr: 0.95, hrLow: 0.84, hrHigh: 1.06 }, { hr: 0.84, hrLow: 0.74, hrHigh: 0.95 }],
+          [{ hr: 0.99, hrLow: 0.88, hrHigh: 1.11 }, { hr: 0.93, hrLow: 0.83, hrHigh: 1.04 }, { hr: 0.86, hrLow: 0.76, hrHigh: 0.97 }, { hr: 0.77, hrLow: 0.68, hrHigh: 0.87 }],
+          [{ hr: 0.86, hrLow: 0.77, hrHigh: 0.97 }, { hr: 0.80, hrLow: 0.71, hrHigh: 0.90 }, { hr: 0.74, hrLow: 0.65, hrHigh: 0.83 }, { hr: 0.66, hrLow: 0.58, hrHigh: 0.76 }],
+        ],
+        interpolate: true,
+      },
+    },
+  }];
+  const vj = { ...engine.defaults(J), cardio: 150, steps: 6000, sitting: 8 };
+  const rjPlain = engine.evaluateRaw(plainModel, vj);
+  const rj = engine.evaluateRaw(J, vj).bounds.mortality;
+  const hrSteps = engine.evalEffect(model.inputs.find((i) => i.id === 'steps').effects.find((e) => e.output === 'mortality'), 6000).hr;
+  const hrSit = engine.evalEffect(model.inputs.find((i) => i.id === 'sitting').effects.find((e) => e.output === 'mortality'), 8).hr;
+  const hrCardioJ = engine.evalEffect(model.inputs.find((i) => i.id === 'cardio').effects.find((e) => e.output === 'mortality'), 150).hr;
+  ok(Math.abs(rj.independence.hr - rjPlain.hr) < 1e-9, 'joint model: independence = members full marginal product');
+  ok(Math.abs(rj.redundancy.hr - rjPlain.hr / (hrCardioJ * hrSteps * hrSit) * 0.948) < 0.01, 'joint model: redundancy = the published joint total');
+
+  // perLever members excluded from both endpoints (no jm here: hr == endpoints).
+  const P = { ...plainModel, perLeverOnly: [{ cluster: 'psychosocial', members: ['stress', 'social', 'purpose'] }] };
+  const rp = engine.evaluateRaw(P, { ...engine.defaults(P), stress: 10, social: 0, purpose: 1 });
+  ok(Math.abs(rp.bounds.mortality.independence.hr - rp.hr) < 1e-12 && Math.abs(rp.bounds.mortality.redundancy.hr - rp.hr) < 1e-12, 'perLever members excluded from both endpoints');
+
+  // activeJoint + evaluate()'s normalized bounds.
+  ok(engine.activeJoint(J, vj).map((t) => t.id).includes('ekelundTable'), 'activeJoint includes the cluster when members are off-default');
+  ok(engine.activeJoint(J, engine.defaults(J)).length === 0, 'activeJoint empty at all-default values');
+  const ev = engine.evaluate(J, vj);
+  const cap = model.constants;
+  const clampB = (x) => Math.min(cap.hrCeiling, Math.max(cap.hrFloor, x));
+  const avg = engine.averageEval(J);
+  ok(Math.abs(ev.bounds.mortality.independence.hr - clampB(rj.independence.hr / avg.hr)) < 1e-9, 'evaluate() exposes normalized+clamped bounds');
+}
+
+console.log('\n[20] Overlap/joint audit + pair symmetry (Phase 2 — data integrity)');
+{
+  const ids = new Set(model.inputs.map((i) => i.id));
+  const jmIds = new Set(model.jointModels.map((jm) => jm.id));
+  const idsOrJm = new Set(ids);
+  for (const id of jmIds) idsOrJm.add(id);
+  for (const o of model.overlaps) {
+    ok(idsOrJm.has(o.a) && idsOrJm.has(o.b), 'overlap members are real inputs or joint models (' + o.a + '↔' + o.b + ')');
+    ok(o.rho >= 0 && o.rho <= 1 && o.rhoU >= 0 && o.rhoU <= 1, 'rho/rhoU in [0,1] (' + o.a + '↔' + o.b + ')');
+    for (const side of [o.a, o.b]) {
+      if (!ids.has(side)) ok(jmIds.has(side), 'overlap joint-model member exists (' + side + ')');
+    }
+  }
+  for (const jm of model.jointModels) {
+    ok(!!jm.id && Array.isArray(jm.members) && jm.members.length > 0 && jm.members.every((m) => ids.has(m)), 'joint model members are real inputs (' + jm.id + ')');
+  }
+
+  // a↔b order doesn't matter: swapping the pair yields identical results.
+  const v = { ...engine.defaults(model), rhrOn: true, rhr: 90, cardio: 150 };
+  const P1 = { a: 'rhr', b: 'cardio', rho: 0.5, rhoU: 0.5, kind: 'shared-pathway', tier: 'moderate', note: 'test pair', source: 'aune2017rhr' };
+  const r1 = engine.evaluateRaw({ ...model, overlaps: [P1] }, v);
+  const r2 = engine.evaluateRaw({ ...model, overlaps: [{ ...P1, a: 'cardio', b: 'rhr' }] }, v);
+  ok(Math.abs(r1.hr - r2.hr) < 1e-12 && Math.abs(r1.hrLow - r2.hrLow) < 1e-12 && Math.abs(r1.hrHigh - r2.hrHigh) < 1e-12, 'pair order swap is a no-op');
+  const w1 = r1.contributions.mortality.find((c) => c.overlapBlend);
+  const w2 = r2.contributions.mortality.find((c) => c.overlapBlend);
+  ok(w1.inputId === w2.inputId, 'swap blends the same member');
+}
+
+console.log('\n[21] Shipped diet cluster (Phase 3.1 — PURE score + harmful-foods pairs)');
+{
+  const v = engine.defaults(model);
+
+  // Score + partial credit at the US-average profile.
+  const tot = engine.clusterTotals(model, v)[0];
+  approx(tot.score, 3.0222, 1e-3, 'defaults: diet score ~3.02 (fiber 15, fruitVeg 2.6, nuts 5, fish some)');
+  approx(tot.credit.fiber, 0.6, 1e-9, 'fiber partial credit 15/25');
+  approx(tot.credit.fruitVeg, 0.8667, 1e-3, 'fruitVeg partial credit 2.6/6 x2 components');
+  approx(tot.credit.nuts, 0.5556, 1e-3, 'nuts partial credit 5/9');
+  approx(tot.credit.fish, 1.0, 1e-9, 'fish some -> full point (segmented valueOf)');
+  approx(tot.outputs.mortality.hr, 0.7536, 1e-4, 'score 3.02 -> gradient hr 0.7536 (4th step)');
+
+  // Members are superseded: records tagged viaJoint+cluster.
+  const raw = engine.evaluateRaw(model, v);
+  for (const id of ['fiber', 'fruitVeg', 'nuts', 'fish']) {
+    const rec = raw.contributions.mortality.find((c) => c.inputId === id);
+    ok(rec && rec.viaJoint === 'dietScore' && rec.cluster === 'diet', id + ' record tagged viaJoint dietScore');
+  }
+
+  // No double-count: model total = plain total, members' marginals replaced
+  // by the cluster total, magnesium re-blended (its pair is active at defaults).
+  const pRaw = engine.evaluateRaw(plainModel, v);
+  const mprod = ['fiber', 'fruitVeg', 'nuts', 'fish']
+    .map((id) => pRaw.contributions.mortality.find((c) => c.inputId === id).hr)
+    .reduce((a, b) => a * b, 1);
+  const mgPlain = pRaw.contributions.mortality.find((c) => c.inputId === 'magnesium').hr;
+  const mgModel = raw.contributions.mortality.find((c) => c.inputId === 'magnesium').hr;
+  const expected = pRaw.hr / mprod / mgPlain * mgModel * tot.outputs.mortality.hr;
+  approx(raw.hr, expected, 1e-9, 'no double-count: cluster total replaces members, magnesium blend applied');
+
+  // 1.0x anchoring survives: reset = exactly the average person.
+  const e = engine.evaluate(model, v);
+  ok(Math.abs(e.mortality.hrAvg - 1.0) < 1e-9, 'defaults -> hrAvg exactly 1.0 (anchoring intact)');
+  ok(e.lifeExpectancy.delta === 0, 'defaults -> LE delta 0');
+
+  // Calibration gap vs the members' marginal product stays in the tolerance band.
+  ok(Math.abs(tot.outputs.mortality.hr - mprod) / mprod < 0.10, 'cluster total within 10% of the member marginal product (' + (Math.abs(tot.outputs.mortality.hr - mprod) / mprod * 100).toFixed(1) + '% off)');
+
+  // Pairs: magnesium active at defaults (both sides off HR 1.0); the other
+  // two inactive because the harmful-food inputs sit at their references.
+  const ov = engine.activeOverlaps(model, v);
+  const pair = (id) => ov.find((o) => o.a === id || o.b === id);
+  ok(pair('magnesium').active && pair('processedMeat').active === false && pair('ssb').active === false, 'defaults: only the magnesium pair active');
+  approx(mgModel, Math.pow(mgPlain, 0.5), 1e-9, 'magnesium weaker side blended 0.969^0.5 (rho 0.5)');
+
+  // Harmful foods: processedMeat 8/wk -> blended against the cluster.
+  const v2 = { ...v, processedMeat: 8, fiber: 50, fruitVeg: 8, nuts: 28, fish: 'lots' };
+  const t2 = engine.clusterTotals(model, v2)[0];
+  approx(t2.score, 5.0, 1e-9, 'perfect diet -> score 5.0');
+  approx(t2.outputs.mortality.hr, 0.6857, 1e-4, 'score 5 -> 0.91^4 = 0.6857 (published >=5-vs-<=1: 0.70)');
+  const pmRec = engine.evaluateRaw(model, v2).contributions.mortality.find((c) => c.inputId === 'processedMeat');
+  approx(pmRec.hr, Math.pow(1.2, ((8 - 1.5) / 7)) ** 0.7, 1e-9, 'processedMeat 8/wk blended: 1.1845^0.7 (cluster is the stronger side)');
+  ok(engine.activeOverlaps(model, v2).find((o) => o.a === 'processedMeat').active, 'processedMeat pair active at 8/wk');
+  ok(engine.activeOverlaps(model, v2).find((o) => o.a === 'ssb').active === false, 'ssb pair stays inactive (ssb at default)');
+
+  // Cluster side weaker: processedMeat 0/wk blends only the processedMeat side.
+  const v3 = { ...v, processedMeat: 0, fiber: 50, fruitVeg: 8, nuts: 28, fish: 'lots' };
+  const pm0 = engine.evaluateRaw(model, v3).contributions.mortality.find((c) => c.inputId === 'processedMeat');
+  approx(pm0.hr, Math.pow(1.2, ((0 - 1.5) / 7)) ** 0.7, 1e-9, 'processedMeat 0/wk blended 0.9616^0.7 (weakest side)');
+
+  // Score clamping at component max.
+  approx(engine.clusterTotals(model, { ...v, fiber: 50 })[0].score, 3.4222, 1e-3, 'fiber 50 -> component clamped to 1.0');
+  approx(engine.clusterTotals(model, { ...v, fruitVeg: 2 })[0].score, 2.8222, 1e-3, 'fruitVeg 2 -> 0.667 points');
+
+  // Outputs without lookup coverage (cancer) fall back to the marginal product.
+  ok(Math.abs(engine.evaluateRaw(model, v2).hrCancer - engine.evaluateRaw(plainModel, v2).hrCancer) < 1e-12, 'cancer output identical to plain (marginal fallback)');
+
+  // Bounds: independence = full marginal product; redundancy = cluster total
+  // + the magnesium input side only (option A, no double-count of the pair).
+  const b = raw.bounds.mortality;
+  approx(b.independence.hr, pRaw.hr, 1e-9, 'independence endpoint = full marginal product');
+  approx(b.redundancy.hr, pRaw.hr / mprod * tot.outputs.mortality.hr, 1e-9, 'redundancy endpoint = cluster total + other marginals');
+  ok(raw.hr >= b.redundancy.hr - 1e-12 && raw.hr <= b.independence.hr + 1e-12, 'point estimate between the endpoints');
+
+  // Citations: mente2023 appended last (existing numbers never shift), chip present.
+  const refs = engine.sourceIndex(model);
+  ok(refs['mente2023'] === Object.keys(refs).length, 'mente2023 appended at the end of the citation list');
+  ok(engine.sourceTags(model)['mente2023'].includes('Diet score'), 'mente2023 chip: Diet score');
+}
+
+// [22] Calibration anchor (`calibrate: true`, Phase 3.2a).
+// A table whose default cell is far from its members' marginal product must
+// be shifted by a constant log-space offset so the anchored cluster total at
+// the average profile equals the members' product EXACTLY (calibration rule
+// §2.1), while lookup shape/interaction at any other values is preserved.
+{
+  const ek = {
+    id: 'ekelundTable', cluster: 'movement', members: ['cardio', 'steps', 'sitting'],
+    model: 'table', evidence: 'high',
+    outputs: {
+      mortality: {
+        axes: [
+          { id: 'pa', label: 'PA', unit: 'MET-min/wk', inputs: ['cardio', 'steps'], coeffs: [4, 0.035], bands: [{ max: 500, label: 'Q1' }, { max: 1000, label: 'Q2' }, { max: 1500, label: 'Q3' }, { max: 9999, label: 'Q4' }] },
+          { id: 'sit', label: 'Sitting', unit: 'h/day', inputs: ['sitting'], coeffs: [1], bands: [{ max: 4, label: 'Q1' }, { max: 7, label: 'Q2' }, { max: 10, label: 'Q3' }, { max: 99, label: 'Q4' }] },
+        ],
+        grid: [
+          [{ hr: 1.23, hrLow: 1.10, hrHigh: 1.37 }, { hr: 1.16, hrLow: 1.03, hrHigh: 1.29 }, { hr: 1.05, hrLow: 0.93, hrHigh: 1.18 }, { hr: 0.92, hrLow: 0.81, hrHigh: 1.03 }],
+          [{ hr: 1.10, hrLow: 0.98, hrHigh: 1.23 }, { hr: 1.03, hrLow: 0.92, hrHigh: 1.16 }, { hr: 0.95, hrLow: 0.84, hrHigh: 1.06 }, { hr: 0.84, hrLow: 0.74, hrHigh: 0.95 }],
+          [{ hr: 0.99, hrLow: 0.88, hrHigh: 1.11 }, { hr: 0.93, hrLow: 0.83, hrHigh: 1.04 }, { hr: 0.86, hrLow: 0.76, hrHigh: 0.97 }, { hr: 0.77, hrLow: 0.68, hrHigh: 0.87 }],
+          [{ hr: 0.86, hrLow: 0.77, hrHigh: 0.97 }, { hr: 0.80, hrLow: 0.71, hrHigh: 0.90 }, { hr: 0.74, hrLow: 0.65, hrHigh: 0.83 }, { hr: 0.66, hrLow: 0.58, hrHigh: 0.76 }],
+        ],
+        interpolate: true,
+      },
+    },
+  };
+  const U = { ...plainModel, jointModels: [ek] };                 // unanchored
+  const A = { ...plainModel, jointModels: [{ ...ek, calibrate: true }] }; // anchored
+  const d = engine.defaults(A);
+  const mem = ['cardio', 'steps', 'sitting'];
+  const mprodAt = (v) => engine.evaluateRaw(plainModel, v).contributions.mortality
+    .filter((c) => mem.includes(c.inputId)).map((c) => c.hr).reduce((a, b) => a * b, 1);
+  const lookupAt = (v) => engine.clusterTotals(U, v)[0].outputs.mortality.hr;
+
+  // Defaults: members product 0.80 x 0.67 x 1.10 = 0.5896; the synthetic
+  // table's default cell (PA 408 -> Q1, sit 9 -> Q3) is ~1.5x higher.
+  approx(mprodAt(d), 0.80 * 0.67 * 1.10, 1e-9, 'defaults: members marginal product = 0.5896');
+  const gap = lookupAt(d) / mprodAt(d);
+  ok(gap > 1.4, 'unanchored lookup far from the members product at defaults (' + gap.toFixed(2) + 'x off)');
+  approx(engine.clusterTotals(A, d)[0].outputs.mortality.hr, mprodAt(d), 1e-9, 'anchored cluster total at defaults == members marginal product (exactly)');
+  const e = engine.evaluate(A, d);
+  ok(Math.abs(e.mortality.hrAvg - 1.0) < 1e-9 && e.lifeExpectancy.delta === 0, 'anchored model: reset = exactly the average person');
+
+  // The anchor is a constant log shift: total at any values = lookup x k,
+  // k = members product (defaults) / lookup (defaults); CIs shift with it.
+  const v = { ...d, cardio: 150, steps: 6000, sitting: 5 };
+  const k = mprodAt(d) / lookupAt(d);
+  const ac = engine.clusterTotals(A, v)[0].outputs.mortality;
+  const uc = engine.clusterTotals(U, v)[0].outputs.mortality;
+  approx(ac.hr, uc.hr * k, 1e-9, 'anchored total at other values = lookup x constant k');
+  approx(ac.hrLow, uc.hrLow * k, 1e-9, 'anchored hrLow shifted by the same k');
+  approx(ac.hrHigh, uc.hrHigh * k, 1e-9, 'anchored hrHigh shifted by the same k');
+
+  // The shift propagates into the combined HR and the redundancy endpoint.
+  const rawA = engine.evaluateRaw(A, v);
+  const rawU = engine.evaluateRaw(U, v);
+  approx(rawA.hr, rawU.hr * k, 1e-9, 'combined HR shifted by k');
+  const pRaw = engine.evaluateRaw(plainModel, v);
+  approx(rawA.bounds.mortality.redundancy.hr, pRaw.hr / mprodAt(v) * ac.hr, 1e-9, 'redundancy endpoint uses the anchored cluster total');
+  ok(rawA.hr >= Math.min(rawA.bounds.mortality.independence.hr, rawA.bounds.mortality.redundancy.hr) - 1e-9 && rawA.hr <= Math.max(rawA.bounds.mortality.independence.hr, rawA.bounds.mortality.redundancy.hr) + 1e-9, 'anchored point estimate between the endpoints');
+
+  // First-owner rule: an earlier joint model owns cardio+steps, so the
+  // calibrated model's anchor counts only its un-owned member (sitting).
+  const B = {
+    ...plainModel,
+    jointModels: [
+      { ...ek, calibrate: undefined, members: ['cardio', 'steps'] },
+      { ...ek, id: 'ekB', calibrate: true, members: ['cardio', 'steps', 'sitting'] },
+    ],
+  };
+  approx(engine.clusterTotals(B, d).find((t) => t.id === 'ekB').outputs.mortality.hr, 1.10, 1e-9, 'anchor uses only members not owned by earlier clusters (sitting 1.10)');
 }
 
 console.log(failures === 0 ? '\nAll tests passed.' : `\n${failures} test(s) FAILED.`);
