@@ -136,11 +136,23 @@
     return node;
   }
 
-  // Axis value = sum of coeff_i * input_i (axis inputs are read-only).
-  function axisValue(axis, resolveValue) {
+  // Axis value: sum of coeff_i * input_i (axis inputs are read-only), or a
+  // data-driven `fn` for categorical axes (Duncan 2023's PA category) —
+  // fn(values, resolveValue) returns the axis value; all thresholds live in
+  // factors.js. Inputs that are gated off, or whose effect for the OUTPUT is
+  // superseded by an enabled advanced input, contribute 0 — so vo2maxOn
+  // retires the cardio slider from the Ekelund PA axis (PLAN 3.2 option A)
+  // and measured fitness never double-counts.
+  function axisValue(axis, resolveValue, values, model, output) {
+    if (axis.fn) return axis.fn(values, resolveValue);
+    const byId = model && model.inputs ? model.inputs : [];
     let v = 0;
     for (let i = 0; i < (axis.inputs || []).length; i++) {
-      const x = resolveValue(axis.inputs[i]);
+      const id = axis.inputs[i];
+      const input = byId.find((x) => x.id === id);
+      if (input && input.gatedBy && !values[input.gatedBy]) continue;
+      if (input && input.effects && input.effects.some((e) => e.output === output && e.supersededBy && values[e.supersededBy])) continue;
+      const x = resolveValue(id);
       if (typeof x !== 'number' || !isFinite(x)) continue;
       v += (axis.coeffs && axis.coeffs[i] !== undefined ? axis.coeffs[i] : 1) * x;
     }
@@ -151,34 +163,47 @@
     return Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * t);
   }
 
+  // Resolved grid for a 'table'/'cells' lookup: a data-driven selector may
+  // pick between per-mode grids (mayoCells 3.3 — the BMI and body-fat rows
+  // are separate published tables, one grid per adiposity mode). The
+  // selector must read the same gates as the axis fn that picked the mode,
+  // so the grid always matches the axis bands.
+  function gridForLookup(lookup, resolveValue, values) {
+    if (typeof lookup.gridForAxis === 'function') return lookup.gridForAxis(resolveValue, values);
+    return lookup.grid;
+  }
+
   // 'table'/'cells' lookup: axes -> band indices -> grid cell. With
   // interpolate: true, bilinear on log HR between adjacent band cutoffs
-  // (2 axes; values outside every cutoff clamp to the edge cell).
-  function gridTotal(jm, lookup, resolveValue) {
+  // (2 axes; values outside every cutoff clamp to the edge cell). With
+  // `lookup.ratio` (PLAN 3.2d), the result is divided by the referent cell
+  // on `ratio.axis` (see ratioTotal).
+  function gridTotal(jm, lookup, resolveValue, values, model, output) {
+    const grid = gridForLookup(lookup, resolveValue, values);
+    if (!grid) return null;
     const axes = lookup.axes || [];
-    const values = axes.map((ax) => axisValue(ax, resolveValue));
+    const axisVals = axes.map((ax) => axisValue(ax, resolveValue, values, model, output));
     const indices = axes.map((ax, i) => {
-      const idx = bandIndex(ax.bands, values[i]);
+      const idx = bandIndex(ax.bands, axisVals[i]);
       return idx < 0 ? Math.max(0, ax.bands.length - 1) : idx;
     });
+    let out;
     if (lookup.interpolate && axes.length === 2) {
       const a0 = axes[0], a1 = axes[1];
       const i0 = indices[0], i1 = indices[1];
-      const inCell0 = i0 > 0 && values[0] <= a0.bands[i0].max;
-      const inCell1 = i1 > 0 && values[1] <= a1.bands[i1].max;
-      const has0 = inCell0 && a0.bands[i0].max > a0.bands[i0 - 1].max;
-      const has1 = inCell1 && a1.bands[i1].max > a1.bands[i1 - 1].max;
+      const has0 = i0 > 0 && axisVals[0] <= a0.bands[i0].max && a0.bands[i0].max > a0.bands[i0 - 1].max;
+      const has1 = i1 > 0 && axisVals[1] <= a1.bands[i1].max && a1.bands[i1].max > a1.bands[i1 - 1].max;
       const d0 = has0 ? a0.bands[i0].max - a0.bands[i0 - 1].max : 0;
       const d1 = has1 ? a1.bands[i1].max - a1.bands[i1 - 1].max : 0;
-      const t0 = has0 ? (values[0] - a0.bands[i0 - 1].max) / d0 : 0;
-      const t1 = has1 ? (values[1] - a1.bands[i1 - 1].max) / d1 : 0;
+      const t0 = has0 ? (axisVals[0] - a0.bands[i0 - 1].max) / d0 : 0;
+      const t1 = has1 ? (axisVals[1] - a1.bands[i1 - 1].max) / d1 : 0;
       const r0 = has0 ? i0 - 1 : i0;
       const c0 = has1 ? i1 - 1 : i1;
       const field = (f) => {
-        const e00 = indexGrid(lookup.grid, [r0, c0]);
-        const e10 = indexGrid(lookup.grid, [r0 + (has0 ? 1 : 0), c0]);
-        const e01 = indexGrid(lookup.grid, [r0, c0 + (has1 ? 1 : 0)]);
-        const e11 = indexGrid(lookup.grid, [r0 + (has0 ? 1 : 0), c0 + (has1 ? 1 : 0)]);
+        const e00 = indexGrid(grid, [r0, c0]);
+        const e10 = indexGrid(grid, [r0 + (has0 ? 1 : 0), c0]);
+        const e01 = indexGrid(grid, [r0, c0 + (has1 ? 1 : 0)]);
+        const e11 = indexGrid(grid, [r0 + (has0 ? 1 : 0), c0 + (has1 ? 1 : 0)]);
         if (!e00 || !e10 || !e01 || !e11 || e00[f] == null || e10[f] == null || e01[f] == null || e11[f] == null) return null;
         return lerpLog(lerpLog(e00[f], e10[f], t0), lerpLog(e01[f], e11[f], t0), t1);
       };
@@ -186,16 +211,44 @@
       const hrLow = field('hrLow');
       const hrHigh = field('hrHigh');
       if (hr === null) return null;
-      return { hr, hrLow: hrLow === null ? hr : hrLow, hrHigh: hrHigh === null ? hr : hrHigh, axisValues: values };
+      out = { hr, hrLow: hrLow === null ? hr : hrLow, hrHigh: hrHigh === null ? hr : hrHigh, axisValues: axisVals };
+    } else {
+      const cell = indexGrid(grid, indices);
+      if (!cell || cell.hr === undefined) return null;
+      out = {
+        hr: cell.hr,
+        hrLow: cell.hrLow !== undefined ? cell.hrLow : cell.hr,
+        hrHigh: cell.hrHigh !== undefined ? cell.hrHigh : cell.hr,
+        axisValues: axisVals,
+      };
     }
-    const cell = indexGrid(lookup.grid, indices);
-    if (!cell || cell.hr === undefined) return null;
-    return {
-      hr: cell.hr,
-      hrLow: cell.hrLow !== undefined ? cell.hrLow : cell.hr,
-      hrHigh: cell.hrHigh !== undefined ? cell.hrHigh : cell.hr,
-      axisValues: values,
-    };
+    if (lookup.ratio) return ratioTotal(lookup, indices, out, grid);
+    return out;
+  }
+
+  // 'ratio' table mode (PLAN 3.2d, Duncan 2023): total = cell(PA, sleep) /
+  // cell(PA, referentBand). The table contributes only the referent axis's
+  // main effect interacted with the other axis; the other axis's row main
+  // effect is divided away because a sibling cluster owns it (Ekelund/Momma
+  // own PA; Duncan owns sleep). At the referent band the ratio is exactly
+  // 1.0, so no calibration offset is needed. CI = quadrature of the two
+  // cells' log-space sigmas; the engine's single evidence-wide at the
+  // cluster level is equivalent to widening each cell's sigma first (both
+  // are linear in the widen factor).
+  function ratioTotal(lookup, indices, num, grid) {
+    const r = lookup.ratio;
+    const denIdx = indices.slice();
+    denIdx[r.axis] = r.referent;
+    const den = indexGrid(grid, denIdx);
+    if (!den || den.hr === undefined) return num;
+    const sigma = (e) => (e.hrLow !== undefined && e.hrHigh !== undefined
+      ? (Math.log(e.hrHigh) - Math.log(e.hrLow)) / (2 * 1.96)
+      : null);
+    const sn = sigma(num), sd = sigma(den);
+    const hr = num.hr / den.hr;
+    if (sn === null || sd === null) return { hr, hrLow: hr, hrHigh: hr, axisValues: num.axisValues };
+    const s = Math.sqrt(sn * sn + sd * sd);
+    return { hr, hrLow: hr * Math.exp(-1.96 * s), hrHigh: hr * Math.exp(1.96 * s), axisValues: num.axisValues };
   }
 
   // 'score' lookup: weighted per-input fractions -> gradient step. Each
@@ -249,12 +302,25 @@
       if (!jm.calibrate) continue;
       const offsets = {};
       for (const output of HR_OUTPUTS) {
-        const t = clusterTotalFor(jm, output, resolveDefault);
+        const t = clusterTotalFor(jm, output, resolveDefault, {}, model);
         if (!t) continue;
         let membersLog = 0;
         for (const m of mine) {
           const e = fx[m] && fx[m][output];
           if (e && e.logHr !== undefined) membersLog += e.logHr;
+          else if (m === 'bmi' && model.bmi) {
+            // Derived member (3.3): its marginal at DEFAULTS. bodyFat is
+            // gated off on the defaults profile, so the bmi marginal IS the
+            // whole members' product there (and for cancer there is no bmi
+            // marginal — product 1.0).
+            const steps = output === 'mortality'
+              ? model.bmi.steps
+              : (output === 'cvd' && model.bmi.cvd ? model.bmi.cvd.steps : null);
+            if (steps) {
+              const s = lookupSteps(steps, computeBmi(defaults(model)));
+              if (s) membersLog += Math.log(s.hr);
+            }
+          }
         }
         offsets[output] = membersLog - Math.log(t.hr);
       }
@@ -275,17 +341,25 @@
   // One joint model's total for one HR output; null when the model has no
   // coverage for that output (caller falls back to the marginal product).
   // A top-level `lookup` alone is shorthand for `outputs: { mortality: lookup }`.
-  function clusterTotalFor(jm, output, resolveValue) {
+  function clusterTotalFor(jm, output, resolveValue, values, model) {
     const lookup = jm.outputs ? jm.outputs[output] : (output === 'mortality' ? jm.lookup : null);
     if (!lookup) return null;
-    return jm.model === 'score' ? scoreTotal(jm, lookup, resolveValue) : gridTotal(jm, lookup, resolveValue);
+    return jm.model === 'score' ? scoreTotal(jm, lookup, resolveValue) : gridTotal(jm, lookup, resolveValue, values, model, output);
   }
 
   function makeResolver(model, values) {
     const defaultById = {};
     for (const input of model.inputs) defaultById[input.id] = input.default;
     return (id) => {
-      if (id === 'bmi') return computeBmi(values); // derived; Phase 3.3 folds it in
+      if (id === 'bmi') {
+        // Derived input (3.3): joint-model axes may read it on ANY profile,
+        // including the calibration/average profiles that evaluate with {}
+        // — fall back to the default height/weight when the profile does
+        // not carry them.
+        const h = values.heightCm !== undefined ? values.heightCm : defaultById.heightCm;
+        const w = values.weightKg !== undefined ? values.weightKg : defaultById.weightKg;
+        return computeBmi({ heightCm: h, weightKg: w });
+      }
       return values[id] !== undefined ? values[id] : defaultById[id];
     };
   }
@@ -356,6 +430,16 @@
     return f ? f[output] : undefined;
   }
 
+  // First joint model whose members include `id` (mirrors the jmForInput
+  // first-owner rule for DERIVED members like 'bmi', which are not inputs
+  // and never appear in fx).
+  function clusterForMember(model, id) {
+    for (const jm of model.jointModels || []) {
+      if ((jm.members || []).includes(id)) return jm;
+    }
+    return undefined;
+  }
+
   // Precomputed per-output totals for every joint model (pure function of
   // the values). Shared by the overlap blend (cluster↔input pairs), the
   // covariance terms, and the accumulation replacement, so every use sees
@@ -368,7 +452,7 @@
     for (const jm of model.jointModels || []) {
       const perOutput = {};
       for (const output of HR_OUTPUTS) {
-        const t = clusterTotalFor(jm, output, resolveValue);
+        const t = clusterTotalFor(jm, output, resolveValue, values, model);
         if (!t) continue;
         const off = offsets ? (offsets.get(jm.id) || {})[output] : 0;
         const c = shifted(t, off);
@@ -492,11 +576,28 @@
           if (perLever.has(m)) continue;
           candidates.push({ eff: c, cluster: jmTotals.has(m) });
         }
-        if (candidates.length === 0) continue;
+        if (candidates.length === 0) {
+          if (!g.jm) continue; // dead pair group (both members gated off)
+          // Dead JM group (all members gated off or derived, e.g. mayoCells
+          // with bodyFat off and the derived bmi member): the cluster total
+          // may still exist (3.3) — count it, like evaluateRaw's pre-seeded
+          // jmAcc. The members' marginals are already excluded from the
+          // base product by groupOf.
+          const t = jmTotals.get(g.jm.id) && jmTotals.get(g.jm.id)[output];
+          if (t) {
+            red.hr *= t.hr;
+            red.sigma2 += t.sigma2;
+          }
+          continue;
+        }
         if (g.key.startsWith('pair:') && candidates.length < 2) {
           // Pair with only one active member: not a conflation group here —
-          // its member multiplies like an unclustered input.
+          // its member multiplies like an unclustered input. A lone CLUSTER
+          // side is already counted by the cluster's own group (e.g. rhr
+          // gated off leaves ekelundTable alone — 3.2) and must not be
+          // re-added.
           for (const c of candidates) {
+            if (c.cluster) continue;
             red.hr *= c.eff.hr;
             red.sigma2 += c.eff.sigma2;
           }
@@ -533,23 +634,35 @@
     }
 
     // Derived BMI effect (same rule as evaluateRaw: replaced by measured
-    // body fat % when enabled; unclustered — enters both endpoints).
+    // body fat % when enabled; and by the owning cluster's lookup total in
+    // the REDUNDANCY endpoint when the cluster covers the output — 3.3).
+    // The independence endpoint always keeps the marginal product.
     const bmi = computeBmi(values);
     const isOn = (key) => !!values[key];
     if (bmi !== null && model.bmi && !(model.bmi.supersededBy && isOn(model.bmi.supersededBy))) {
+      const bmiOwner = clusterForMember(model, 'bmi');
+      const bmiCovered = (output) => {
+        if (!bmiOwner) return false;
+        const t = jmTotals.get(bmiOwner.id);
+        return !!(t && t[output]);
+      };
       const step = lookupSteps(model.bmi.steps, bmi);
       const w = widen[model.bmi.evidence] !== undefined ? widen[model.bmi.evidence] : 1;
       out.mortality.ind.hr *= step.hr;
       out.mortality.ind.sigma2 += sigma2(step.hr, step.hrLow, step.hrHigh, w);
-      out.mortality.red.hr *= step.hr;
-      out.mortality.red.sigma2 += sigma2(step.hr, step.hrLow, step.hrHigh, w);
+      if (!bmiCovered('mortality')) {
+        out.mortality.red.hr *= step.hr;
+        out.mortality.red.sigma2 += sigma2(step.hr, step.hrLow, step.hrHigh, w);
+      }
       if (model.bmi.cvd) {
         const cs = lookupSteps(model.bmi.cvd.steps, bmi);
         const cw = widen[model.bmi.cvd.evidence] !== undefined ? widen[model.bmi.cvd.evidence] : 1;
         out.cvd.ind.hr *= cs.hr;
         out.cvd.ind.sigma2 += sigma2(cs.hr, cs.hrLow, cs.hrHigh, cw);
-        out.cvd.red.hr *= cs.hr;
-        out.cvd.red.sigma2 += sigma2(cs.hr, cs.hrLow, cs.hrHigh, cw);
+        if (!bmiCovered('cvd')) {
+          out.cvd.red.hr *= cs.hr;
+          out.cvd.red.sigma2 += sigma2(cs.hr, cs.hrLow, cs.hrHigh, cw);
+        }
       }
     }
 
@@ -574,12 +687,12 @@
   function evaluateRaw(model, values) {
     const { fx, contributions } = evalEffects(model, values);
     const widen = model.constants.uncertaintyWiden || { high: 1, moderate: 1, low: 1 };
-    let hr = 1;
-    let hrCancer = 1;
-    let hrCvd = 1;
-    let sumSigma2 = 0;       // mortality, combined in quadrature (log space)
-    let sumSigma2Cancer = 0; // cancer, same
-    let sumSigma2Cvd = 0;    // cvd, same
+    // One accumulator per HR output (mortality/cancer/cvd all share the same
+    // accumulate path — marginal product, quadrature sigma, joint-model
+    // replacement, covariance, BMI derived effect; cognition/happiness are
+    // point sums and never enter these).
+    const totals = {};
+    for (const o of HR_OUTPUTS) totals[o] = { hr: 1, sigma2: 0 };
     const points = { cognition: 0, happiness: 0 };
 
     const isOn = (key) => !!values[key];
@@ -600,7 +713,12 @@
       perLeverKeys.add(entry.cluster);
       for (const m of entry.members || []) perLeverOf.set(m, entry.cluster);
     }
-    const jmAcc = new Map(); // jm.id -> { mortality: {prod, sigma2}, cancer: {...}, cvd: {...} }
+    const jmAcc = new Map(); // jm.id -> output -> {prod, sigma2}
+    // Seed EVERY joint model so a cluster whose members are all gated off —
+    // or derived-only (mayoCells' bmi is not an input and never reaches the
+    // accumulation loop) — still contributes its lookup total where the
+    // lookup covers the output.
+    for (const jm of model.jointModels || []) jmAcc.set(jm.id, {});
     const resolveValue = makeResolver(model, values);
 
     // Overlap blend (discounts the weaker active member of each pair in log
@@ -633,46 +751,19 @@
           record.points = out.points; // blended
           record.pointsDelta = out.points - out.rdPoints;
         }
-        if (output === 'mortality') {
-          if (!perLeverCluster) {
-            if (jm) {
-              let acc = jmAcc.get(jm.id);
-              if (!acc) { acc = {}; jmAcc.set(jm.id, acc); }
-              const o = acc.mortality || (acc.mortality = { prod: 1, sigma2: 0 });
-              o.prod *= out.hr;
-              o.sigma2 += out.sigma2;
-            } else {
-              hr *= out.hr;
-              sumSigma2 += out.sigma2;
-            }
+        const acc = totals[output];
+        if (acc && !perLeverCluster) {
+          if (jm) {
+            let jacc = jmAcc.get(jm.id);
+            if (!jacc) { jacc = {}; jmAcc.set(jm.id, jacc); }
+            const o = jacc[output] || (jacc[output] = { prod: 1, sigma2: 0 });
+            o.prod *= out.hr;
+            o.sigma2 += out.sigma2;
+          } else {
+            acc.hr *= out.hr;
+            acc.sigma2 += out.sigma2;
           }
-        } else if (output === 'cancer') {
-          if (!perLeverCluster) {
-            if (jm) {
-              let acc = jmAcc.get(jm.id);
-              if (!acc) { acc = {}; jmAcc.set(jm.id, acc); }
-              const o = acc.cancer || (acc.cancer = { prod: 1, sigma2: 0 });
-              o.prod *= out.hr;
-              o.sigma2 += out.sigma2;
-            } else {
-              hrCancer *= out.hr;
-              sumSigma2Cancer += out.sigma2;
-            }
-          }
-        } else if (output === 'cvd') {
-          if (!perLeverCluster) {
-            if (jm) {
-              let acc = jmAcc.get(jm.id);
-              if (!acc) { acc = {}; jmAcc.set(jm.id, acc); }
-              const o = acc.cvd || (acc.cvd = { prod: 1, sigma2: 0 });
-              o.prod *= out.hr;
-              o.sigma2 += out.sigma2;
-            } else {
-              hrCvd *= out.hr;
-              sumSigma2Cvd += out.sigma2;
-            }
-          }
-        } else {
+        } else if (!acc) {
           points[output] += out.points || 0;
         }
       }
@@ -687,39 +778,49 @@
         const b = effectSide(fx, jmTotals, entry.b, output);
         if (!a || !b) continue;
         const cov = 2 * entry.rhoU * Math.sqrt(a.sigma2) * Math.sqrt(b.sigma2);
-        if (output === 'mortality') sumSigma2 += cov;
-        else if (output === 'cancer') sumSigma2Cancer += cov;
-        else sumSigma2Cvd += cov;
+        const acc = totals[output];
+        if (acc) acc.sigma2 += cov;
       }
     }
 
-    // Derived BMI effect (replaced by measured body fat % when enabled).
+    // Derived BMI effect (replaced by measured body fat % when enabled; and
+    // by the OWNING joint model's lookup when it covers the output — the
+    // cluster total then carries the adiposity risk and the bmi marginal
+    // retires on that output, first-owner rule 3.3).
     const bmi = computeBmi(values);
+    const bmiOwner = clusterForMember(model, 'bmi');
+    const bmiCovered = (output) => {
+      if (!bmiOwner) return false;
+      const t = jmTotals.get(bmiOwner.id);
+      return !!(t && t[output]);
+    };
     if (bmi !== null && model.bmi && !superseded(model.bmi.supersededBy)) {
-      const step = lookupSteps(model.bmi.steps, bmi);
-      const bmiDefault = computeBmi(defaults(model));
-      const stepDefault = lookupSteps(model.bmi.steps, bmiDefault);
-      const w = widen[model.bmi.evidence] !== undefined ? widen[model.bmi.evidence] : 1;
-      hr *= step.hr;
-      sumSigma2 += sigma2(step.hr, step.hrLow, step.hrHigh, w);
-      contributions.mortality.push({
-        inputId: 'bmi',
-        label: 'BMI ' + bmi.toFixed(1),
-        value: bmi,
-        evidence: model.bmi.evidence,
-        source: model.bmi.source,
-        note: model.bmi.note,
-        hr: step.hr, hrLow: step.hrLow, hrHigh: step.hrHigh,
-        hrDelta: step.hr / stepDefault.hr, // vs average
-      });
+      if (!bmiCovered('mortality')) {
+        const step = lookupSteps(model.bmi.steps, bmi);
+        const bmiDefault = computeBmi(defaults(model));
+        const stepDefault = lookupSteps(model.bmi.steps, bmiDefault);
+        const w = widen[model.bmi.evidence] !== undefined ? widen[model.bmi.evidence] : 1;
+        totals.mortality.hr *= step.hr;
+        totals.mortality.sigma2 += sigma2(step.hr, step.hrLow, step.hrHigh, w);
+        contributions.mortality.push({
+          inputId: 'bmi',
+          label: 'BMI ' + bmi.toFixed(1),
+          value: bmi,
+          evidence: model.bmi.evidence,
+          source: model.bmi.source,
+          note: model.bmi.note,
+          hr: step.hr, hrLow: step.hrLow, hrHigh: step.hrHigh,
+          hrDelta: step.hr / stepDefault.hr, // vs average
+        });
+      }
 
       // BMI CVD effect.
-      if (model.bmi.cvd) {
+      if (model.bmi.cvd && !bmiCovered('cvd')) {
         const cvdStep = lookupSteps(model.bmi.cvd.steps, bmi);
-        const cvdStepDefault = lookupSteps(model.bmi.cvd.steps, bmiDefault);
+        const cvdStepDefault = lookupSteps(model.bmi.cvd.steps, computeBmi(defaults(model)));
         const cvdW = widen[model.bmi.cvd.evidence] !== undefined ? widen[model.bmi.cvd.evidence] : 1;
-        hrCvd *= cvdStep.hr;
-        sumSigma2Cvd += sigma2(cvdStep.hr, cvdStep.hrLow, cvdStep.hrHigh, cvdW);
+        totals.cvd.hr *= cvdStep.hr;
+        totals.cvd.sigma2 += sigma2(cvdStep.hr, cvdStep.hrLow, cvdStep.hrHigh, cvdW);
         contributions.cvd.push({
           inputId: 'bmi',
           label: 'BMI ' + bmi.toFixed(1),
@@ -742,26 +843,31 @@
     for (const [jmId, acc] of jmAcc) {
       const jm = jmById.get(jmId);
       const meta = { outputs: {}, credit: null };
-      for (const output of ['mortality', 'cancer', 'cvd']) {
-        const o = acc[output];
-        if (!o) continue;
+      for (const output of HR_OUTPUTS) {
         const t = jmTotals.get(jmId) && jmTotals.get(jmId)[output];
-        if (t) {
-          const blend = jmBlend.get(jmId) && jmBlend.get(jmId)[output];
-          o.prod = blend ? blend.hr : t.hr;
-          o.sigma2 = t.sigma2;
-          meta.outputs[output] = jm.id;
-          if (t.credit) meta.credit = t.credit;
-        }
+        if (!t) continue;
+        // Seed an empty accumulator when no member contributed (all gated
+        // off, or a derived-only member like mayoCells' bmi) so the lookup
+        // total still replaces the members' product.
+        const o = acc[output] || (acc[output] = { prod: 1, sigma2: 0 });
+        const blend = jmBlend.get(jmId) && jmBlend.get(jmId)[output];
+        o.prod = blend ? blend.hr : t.hr;
+        o.sigma2 = t.sigma2;
+        meta.outputs[output] = jm.id;
+        if (t.credit) meta.credit = t.credit;
       }
       jmMeta.set(jmId, meta);
     }
 
     for (const [jmId, acc] of jmAcc) {
       if (perLeverKeys.has(jmById.get(jmId).cluster)) continue;
-      if (acc.mortality) { hr *= acc.mortality.prod; sumSigma2 += acc.mortality.sigma2; }
-      if (acc.cancer) { hrCancer *= acc.cancer.prod; sumSigma2Cancer += acc.cancer.sigma2; }
-      if (acc.cvd) { hrCvd *= acc.cvd.prod; sumSigma2Cvd += acc.cvd.sigma2; }
+      for (const output of HR_OUTPUTS) {
+        const o = acc[output];
+        if (o) {
+          totals[output].hr *= o.prod;
+          totals[output].sigma2 += o.sigma2;
+        }
+      }
     }
 
     // Attribution tags on HR records: viaJoint = this input's marginal was
@@ -781,22 +887,23 @@
     mark(contributions.cancer, 'cancer');
     mark(contributions.cvd, 'cvd');
 
-    const totalSigma = Math.sqrt(sumSigma2);
-    const hrLow = hr * Math.exp(-1.96 * totalSigma);
-    const hrHigh = hr * Math.exp(1.96 * totalSigma);
-
-    const totalSigmaCancer = Math.sqrt(sumSigma2Cancer);
-    const hrCancerLow = hrCancer * Math.exp(-1.96 * totalSigmaCancer);
-    const hrCancerHigh = hrCancer * Math.exp(1.96 * totalSigmaCancer);
-
-    const totalSigmaCvd = Math.sqrt(sumSigma2Cvd);
-    const hrCvdLow = hrCvd * Math.exp(-1.96 * totalSigmaCvd);
-    const hrCvdHigh = hrCvd * Math.exp(1.96 * totalSigmaCvd);
+    // Bounds around each HR total (log-space, 95%).
+    const withBounds = (t) => {
+      const sigma = Math.sqrt(t.sigma2);
+      return {
+        hr: t.hr,
+        hrLow: t.hr * Math.exp(-1.96 * sigma),
+        hrHigh: t.hr * Math.exp(1.96 * sigma),
+      };
+    };
+    const m = withBounds(totals.mortality);
+    const c = withBounds(totals.cancer);
+    const v = withBounds(totals.cvd);
 
     return {
-      hr, hrLow, hrHigh,
-      hrCancer, hrCancerLow, hrCancerHigh,
-      hrCvd, hrCvdLow, hrCvdHigh,
+      hr: m.hr, hrLow: m.hrLow, hrHigh: m.hrHigh,
+      hrCancer: c.hr, hrCancerLow: c.hrLow, hrCancerHigh: c.hrHigh,
+      hrCvd: v.hr, hrCvdLow: v.hrLow, hrCvdHigh: v.hrHigh,
       points, contributions, bmi, values,
       findings: evaluateFindings(model, values),
       bounds: boundsEndpoints(model, values),
@@ -850,22 +957,34 @@
     const hrAvgCvdHigh = hrAvgCvd * Math.exp(1.96 * sigmaCvd);
 
     // Which inputs have NO cancer-specific effect? Shown on the card so users
-    // see exactly what this output does and doesn't cover.
+    // see exactly what this output does and doesn't cover. Inputs whose
+    // joint model covers the output count as covered (3.3: bodyFat gains
+    // CVD + cancer data via the Mayo cells).
+    const clusterCovered = (output) => {
+      const s = new Set();
+      for (const jm of model.jointModels || []) {
+        if (!jm.outputs || !jm.outputs[output]) continue;
+        for (const m of jm.members || []) s.add(m);
+      }
+      return s;
+    };
+    const cancerClusterCovered = clusterCovered('cancer');
     const withCancer = new Set();
     for (const input of model.inputs) {
       for (const e of input.effects) if (e.output === 'cancer') withCancer.add(input.id);
     }
     const cancerNoData = model.inputs
-      .filter((i) => i.group !== 'you' && i.effects.length > 0 && !withCancer.has(i.id))
+      .filter((i) => i.group !== 'you' && i.effects.length > 0 && !withCancer.has(i.id) && !cancerClusterCovered.has(i.id))
       .map((i) => i.label);
 
     // Which inputs have NO CVD-specific effect?
+    const cvdClusterCovered = clusterCovered('cvd');
     const withCvd = new Set();
     for (const input of model.inputs) {
       for (const e of input.effects) if (e.output === 'cvd') withCvd.add(input.id);
     }
     const cvdNoData = model.inputs
-      .filter((i) => i.group !== 'you' && i.effects.length > 0 && !withCvd.has(i.id))
+      .filter((i) => i.group !== 'you' && i.effects.length > 0 && !withCvd.has(i.id) && !cvdClusterCovered.has(i.id))
       .map((i) => i.label);
 
     const years = clamp(hrToYears(model, hrAvg), -cap.yearsCapLoss, cap.yearsCapGain);
@@ -1049,7 +1168,7 @@
     for (const jm of model.jointModels || []) {
       const entry = { id: jm.id, cluster: jm.cluster, model: jm.model, outputs: {} };
       for (const output of ['mortality', 'cancer', 'cvd']) {
-        const t = clusterTotalFor(jm, output, resolveValue);
+        const t = clusterTotalFor(jm, output, resolveValue, values, model);
         if (!t) continue;
         const off = offsets ? (offsets.get(jm.id) || {})[output] : 0;
         const c = shifted(t, off);

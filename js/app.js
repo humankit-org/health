@@ -278,9 +278,16 @@
     const bmi = document.getElementById('bmi-readout');
     if (bmi && result.bmi) {
       const contrib = result.contributions.mortality.find((c) => c.inputId === 'bmi');
-      bmi.innerHTML = contrib
-        ? `→ BMI ${result.bmi.toFixed(1)} (mortality ${fmtPctFromHr(contrib.hrDelta)} ${refLink(contrib.source)})`
-        : `→ BMI ${result.bmi.toFixed(1)} (not used — measured body fat % supplied instead)`;
+      if (contrib) {
+        bmi.innerHTML = `→ BMI ${result.bmi.toFixed(1)} (mortality ${fmtPctFromHr(contrib.hrDelta)} ${refLink(contrib.source)})`;
+      } else if (state.bodyFatOn) {
+        bmi.innerHTML = `→ BMI ${result.bmi.toFixed(1)} (not used — measured body fat % supplied instead)`;
+      } else {
+        // The bmi marginal retires when the PA×adiposity cluster covers
+        // mortality (mayoCells) — the cluster total carries the weight
+        // effect together with activity.
+        bmi.innerHTML = `→ BMI ${result.bmi.toFixed(1)} (counted together with activity via the PA×adiposity cluster ${refLink('sanchezlastra2021')})`;
+      }
     }
   }
 
@@ -295,11 +302,13 @@
       for (const c of mine) {
         if (c.hrDelta !== undefined && Math.abs(c.hrDelta - 1) > 0.005) {
           const which = result.contributions.cancer.includes(c) ? 'cancer' : result.contributions.cvd.includes(c) ? 'cvd' : 'mortality';
-          chips.push(`<span class="chip ${c.hrDelta < 1 ? 'good' : 'bad'}" title="${c.note}">${which} ${fmtPctFromHr(c.hrDelta)} ${refLink(c.source)}</span>`);
+          const lever = c.perLever ? ' chip-lever' : '';
+          chips.push(`<span class="chip ${c.hrDelta < 1 ? 'good' : 'bad'}${lever}" title="${c.perLever ? 'Shown for this slider only — ' + c.note + ' It is NOT counted into the ' + which + ' total (the research can\'t separate it from the other factors on that card).' : c.note}">${which} ${fmtPctFromHr(c.hrDelta)} ${refLink(c.source)}${c.perLever ? ' <span class="chip-lever-tag" title="Not counted into the card total — shown per slider only.">(per slider)</span>' : ''}</span>`);
         }
         if (c.pointsDelta !== undefined && Math.abs(c.pointsDelta) > 0.001) {
           const out = result.contributions.cognition.includes(c) ? 'cognition' : 'happiness';
-          chips.push(`<span class="chip ${c.pointsDelta > 0 ? 'good' : 'bad'}" title="${c.note}">${out} ${fmtSigned(c.pointsDelta)} ${refLink(c.source)}</span>`);
+          const lever = c.perLever ? ' chip-lever' : '';
+          chips.push(`<span class="chip ${c.pointsDelta > 0 ? 'good' : 'bad'}${lever}" title="${c.perLever ? 'Shown for this slider only — ' + c.note + ' ' + 'Mind-output points still count into the ' + out + ' band.' : c.note}">${out} ${fmtSigned(c.pointsDelta)} ${refLink(c.source)}${c.perLever ? ' <span class="chip-lever-tag">(per slider)</span>' : ''}</span>`);
         }
       }
       host.innerHTML = chips.join('');
@@ -350,7 +359,7 @@
     );
     const cancerCoverage = document.getElementById('cancer-coverage');
     if (c.noData.length) {
-      //cancerCoverage.textContent = 'No cancer-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
+      cancerCoverage.textContent = 'No cancer-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
       cancerCoverage.style.display = '';
     } else {
       cancerCoverage.style.display = 'none';
@@ -366,7 +375,7 @@
     );
     const cvdCoverage = document.getElementById('cvd-coverage');
     if (c.noData.length) {
-      //cvdCoverage.textContent = 'No CVD-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
+      cvdCoverage.textContent = 'No CVD-specific data yet for: ' + c.noData.join(', ') + ' — those still count in all-cause mortality above.';
       cvdCoverage.style.display = '';
     } else {
       cvdCoverage.style.display = 'none';
@@ -401,11 +410,17 @@
     host.innerHTML = nonzero.map((c) => {
       const effect = field === 'hr' ? `mortality ${fmtPctFromHr(c.hrDelta)}` : fmtSigned(c.pointsDelta);
       const dir = field === 'hr' ? (c.hrDelta < 1 ? 'good' : 'bad') : (c.pointsDelta > 0 ? 'good' : 'bad');
+      const leverNote = c.perLever && field === 'hr'
+        ? `<span class="contrib-lever" title="The research can't separate this effect from the other factors on this card, so it is shown here individually and is NOT counted into the ${outputId} total.">per slider — not in the total</span>`
+        : c.perLever
+          ? `<span class="contrib-lever" title="Mind-output points from psychosocial sliders still count into this band; only their mortality/CVD effects are not attributed to a total.">psychosocial slider (points only)</span>`
+          : '';
       return `<li>
         <span class="contrib-effect ${dir}">${effect}</span>
         <span class="contrib-label">${c.label}</span>
         ${Array.isArray(c.source) ? c.source.map((key) => `<a class="contrib-ref" href="sources.html#ref-${refs[key]}" title="${c.note}">[${refs[key]}]</a>`).join(' ') : `<a class="contrib-ref" href="sources.html#ref-${refs[c.source]}" title="${c.note}">[${refs[c.source]}]</a>`}
         <span class="ev small" data-ev="${c.evidence}" title="${EVIDENCE_TITLE[c.evidence]}">${c.evidence}</span>
+        ${leverNote}
       </li>`;
     }).join('');
   }

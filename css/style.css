@@ -497,9 +497,23 @@ summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--ac
 .contrib-effect { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 4.5rem; }
 .contrib-effect.good { color: var(--good); }
 .contrib-effect.bad { color: var(--bad); }
-.contrib-label { flex: 1; }
 .contrib-ref { text-decoration: none; }
 .contrib-empty { color: var(--ink-soft); }
+
+/* per-lever-only contribution: the effect is real but is shown individually
+   and is NOT folded into the card total (psychosocial — see methodology). */
+.contrib-lever {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ink-soft);
+  cursor: help;
+  white-space: nowrap;
+}
+.chip.chip-lever { border: 1px dashed var(--accent); }
+.chip-lever-tag { font-size: 0.8em; opacity: 0.8; }
 
 /* -------------------------------------------------- methodology + refs */
 

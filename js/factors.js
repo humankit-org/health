@@ -24,8 +24,8 @@
 const HEALTH_MODEL = {
   meta: {
     name: 'HumanKit Health',
-    version: '0.1.2',
-    updated: '2026-07-31',
+    version: '0.1.11',
+    updated: '2026-08-01',
   },
 
   constants: {
@@ -175,7 +175,7 @@ const HEALTH_MODEL = {
       min: 0, max: 600, step: 15, default: 60,
       hint: 'Brisk walking, cycling, jogging… count vigorous minutes double.',
       // arem2015 pooled 661k people from 6 cohorts: dose-response across all outcomes (all-cause, CVD, cancer)
-      // HR 0.80 at 150 min/wk, 0.63 at 449, 0.61 at 749, 0.69 at 10x guideline (no harm even at extremes)
+      // HR 0.80 at 150 min/wk, 0.63 at 449, 0.61 at 749, 0.68 at 10x guideline (no harm even at extremes)
       // CVD mortality benefit (0.56 at 750+) is the dominant driver of all-cause reduction
       //
       // chekroud2018 cross-sectional 1.2M people: exercisers reported 43% fewer poor-mental-health days
@@ -186,7 +186,7 @@ const HEALTH_MODEL = {
       // rong2016: leisure-time PA → ~7% lower hip-fracture risk per activity increment in older women (finding)
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'high', source: ['arem2015'],
+          output: 'mortality', type: 'steps', evidence: 'high', source: ['arem2015', 'moore2012'],
           supersededBy: 'vo2maxOn', // measured fitness is the better predictor — use it instead when available
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
@@ -194,7 +194,7 @@ const HEALTH_MODEL = {
             { max: 299, hr: 0.69, hrLow: 0.67, hrHigh: 0.70 },
             { max: 449, hr: 0.63, hrLow: 0.62, hrHigh: 0.65 },
             { max: 749, hr: 0.61, hrLow: 0.59, hrHigh: 0.62 },
-            { max: Infinity, hr: 0.69, hrLow: 0.59, hrHigh: 0.78 },
+            { max: Infinity, hr: 0.68, hrLow: 0.59, hrHigh: 0.78 },
           ],
           note: 'HRs vs. no leisure-time activity, pooled from 661k people. 7.5 MET-h/wk ≈ 150 min moderate. No harm seen even at 10x the guideline minimum.',
         },
@@ -218,30 +218,30 @@ const HEALTH_MODEL = {
           note: 'RCT in 120 older adults: 1 year of aerobic exercise grew hippocampal volume ~2% and improved spatial memory.',
         },
         {
-          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['arem2015'],
+          output: 'cancer', type: 'steps', evidence: 'high', source: ['arem2015'],
           supersededBy: 'vo2maxOn',
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 149, hr: 0.80, hrLow: 0.78, hrHigh: 0.82 },
-            { max: 299, hr: 0.69, hrLow: 0.67, hrHigh: 0.70 },
-            { max: 449, hr: 0.63, hrLow: 0.62, hrHigh: 0.65 },
-            { max: 749, hr: 0.61, hrLow: 0.59, hrHigh: 0.62 },
-            { max: Infinity, hr: 0.69, hrLow: 0.59, hrHigh: 0.78 },
+            { max: 149, hr: 0.87, hrLow: 0.83, hrHigh: 0.90 },
+            { max: 299, hr: 0.79, hrLow: 0.75, hrHigh: 0.82 },
+            { max: 449, hr: 0.75, hrLow: 0.72, hrHigh: 0.79 },
+            { max: 749, hr: 0.74, hrLow: 0.71, hrHigh: 0.77 },
+            { max: Infinity, hr: 0.69, hrLow: 0.55, hrHigh: 0.87 },
           ],
-          note: 'Arem 2015 reports a similar dose–response for cancer mortality as for all-cause; we reuse those HRs (marked moderate evidence for the extrapolation).',
+          note: 'Arem 2015 Table 3, cancer mortality (same 661k pooled analysis): monotonic inverse dose–response across activity categories — 0.87 below the guideline minimum down to 0.69 at 75+ MET-h/wk vs none.',
         },
         {
           output: 'cvd', type: 'steps', evidence: 'high', source: ['arem2015'],
           supersededBy: 'vo2maxOn',
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 149, hr: 0.79, hrLow: 0.76, hrHigh: 0.82 },
-            { max: 299, hr: 0.67, hrLow: 0.64, hrHigh: 0.70 },
-            { max: 449, hr: 0.58, hrLow: 0.55, hrHigh: 0.61 },
-            { max: 749, hr: 0.56, hrLow: 0.52, hrHigh: 0.60 },
-            { max: Infinity, hr: 0.63, hrLow: 0.54, hrHigh: 0.72 },
+            { max: 149, hr: 0.80, hrLow: 0.77, hrHigh: 0.84 },
+            { max: 299, hr: 0.67, hrLow: 0.65, hrHigh: 0.70 },
+            { max: 449, hr: 0.59, hrLow: 0.57, hrHigh: 0.63 },
+            { max: 749, hr: 0.58, hrLow: 0.56, hrHigh: 0.61 },
+            { max: Infinity, hr: 0.71, hrLow: 0.56, hrHigh: 0.91 },
           ],
-          note: 'Arem 2015: CVD mortality shows a slightly stronger dose–response than all-cause — the same pooled analysis found CVD HR ~0.56 at high volumes (750+ min/wk). CVD benefit may be the dominant driver of the all-cause mortality reduction.',
+          note: 'Arem 2015 Table 3, CVD mortality: benefit reaches a threshold at 3–5x the guideline minimum (HR 0.58 at 22.5-<40 MET-h/wk) with no additional benefit above (0.61 and 0.71 at 40–75+ MET-h/wk). CVD benefit dominates the all-cause reduction at moderate volumes.',
         },
       ],
     },
@@ -253,10 +253,12 @@ const HEALTH_MODEL = {
       unit: 'sessions/week',
       min: 0, max: 5, step: 1, default: 1,
 			hint: 'Assume ~30 min per session.',
-      // momma2022 says 10-17% lower all-cause, cvd and cancer
-      // but no effect on colon, kidney, bladder or pancreatic cancer
-      // Optimal risk reduction at about 30-60 min of muscle strengthening activities
-      // but it was J-shaped
+      // momma2022 (VERIFIED 2026-08-01 vs the paper, PMC9209691): any vs no
+      // muscle strengthening -> all-cause 0.85 (0.79-0.93), CVD 0.83
+      // (0.73-0.93), cancer 0.88 (0.80-0.97); J-shaped dose-response with
+      // minima at ~40 min/wk (all-cause), ~60 (CVD), ~30 (cancer); RR <1.00
+      // up to ~130-140 min/week. GRADE very low for all outcomes.
+      // But no effect on colon, kidney, bladder or pancreatic cancer.
       //
       //
       // gordon2018 saw a moderate-sized mean effect delta of 0.66 reduction in depressive symptoms
@@ -282,14 +284,14 @@ const HEALTH_MODEL = {
       //
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['momma2022'],
+          output: 'mortality', type: 'steps', evidence: 'low', source: ['momma2022'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 1, hr: 0.92, hrLow: 0.88, hrHigh: 0.96 },
-            { max: 2, hr: 0.85, hrLow: 0.80, hrHigh: 0.90 },
-            { max: Infinity, hr: 0.88, hrLow: 0.82, hrHigh: 0.95 },
+            { max: 1, hr: 0.85, hrLow: 0.79, hrHigh: 0.93 },
+            { max: 2, hr: 0.83, hrLow: 0.79, hrHigh: 0.86 },
+            { max: Infinity, hr: 0.91, hrLow: 0.83, hrHigh: 1.00 },
           ],
-          note: 'Meta-analysis: 10–17% lower all-cause mortality, max benefit ~30–60 min/week; J-shaped (more is not clearly better). CI bounds approximate — verify against paper Fig. 2.',
+          note: 'Momma 2022 meta-analysis: any vs no muscle strengthening -> all-cause mortality RR 0.85 (0.79-0.93); non-linear dose-response minimum RR 0.83 (0.79-0.86) at ~40 min/week, RR <1.00 up to ~140 min/week (J-shaped - more is not clearly better). Bands: 1 session/wk = the two-group estimate; 2 sessions = the published non-linear minimum; 3+ = our interpolation (geometric midpoint of min->1.0) - exact values above ~60 min/week are not published. GRADE very low (I² 83%).',
         },
         {
           output: 'happiness', type: 'steps', evidence: 'moderate', source: ['gordon2018'],
@@ -308,24 +310,24 @@ const HEALTH_MODEL = {
           note: 'Meta-analysis of 18 RCTs: resistance training improved overall cognitive function in cognitively healthy older adults (SMD 0.54) and cognitively impaired (SMD 0.60), with benefits on short-term memory and executive function.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['momma2022'],
+          output: 'cvd', type: 'steps', evidence: 'low', source: ['momma2022'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 1, hr: 0.90, hrLow: 0.81, hrHigh: 0.99 },
-            { max: 2, hr: 0.82, hrLow: 0.72, hrHigh: 0.92 },
-            { max: Infinity, hr: 0.85, hrLow: 0.74, hrHigh: 0.97 },
+            { max: 1, hr: 0.83, hrLow: 0.73, hrHigh: 0.93 },
+            { max: 2, hr: 0.82, hrLow: 0.76, hrHigh: 0.90 },
+            { max: Infinity, hr: 0.91, hrLow: 0.82, hrHigh: 1.00 },
           ],
-          note: 'Meta-analysis: any vs no strength training → CVD mortality RR 0.90; J-shaped with maximum ~30–60 min/week. HRs approximate — non-linear curve from paper Fig. 4.',
+          note: 'Momma 2022: any vs no muscle strengthening -> CVD RR 0.83 (0.73-0.93); non-linear dose-response minimum RR 0.82 (0.76-0.90) at ~60 min/week, RR <1.00 up to ~130 min/week. 3+ session band = our interpolation (geometric midpoint of min->1.0); exact values above ~60 min/week are not published. GRADE very low.',
         },
         {
-          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['momma2022'],
+          output: 'cancer', type: 'steps', evidence: 'low', source: ['momma2022'],
           steps: [
             { max: 0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 1, hr: 0.87, hrLow: 0.76, hrHigh: 0.98 },
-            { max: 2, hr: 0.81, hrLow: 0.71, hrHigh: 0.93 },
-            { max: Infinity, hr: 0.85, hrLow: 0.74, hrHigh: 0.98 },
+            { max: 1, hr: 0.88, hrLow: 0.80, hrHigh: 0.97 },
+            { max: 2, hr: 0.91, hrLow: 0.85, hrHigh: 0.97 },
+            { max: Infinity, hr: 0.95, hrLow: 0.91, hrHigh: 1.00 },
           ],
-          note: 'Same meta-analysis: any vs no strength training → total cancer mortality RR 0.81 (0.71–0.93). J-shaped, strongest at ~30–60 min/week. Our step values approximate the non-linear pattern from paper Fig. 3.',
+          note: 'Momma 2022: any vs no muscle strengthening -> total cancer RR 0.88 (0.80-0.97) (two-group; analyses were mostly cancer mortality). Non-linear dose-response minimum RR 0.91 (0.85-0.97) at ~30 min/week, RR <1.00 up to ~130 min/week — the cancer curve peaks earliest, so 2+ sessions/week read slightly higher than the pooled "any" estimate. 3+ band = our interpolation (geometric midpoint of min->1.0). GRADE very low (I² 76%).',
         },
       ],
     },
@@ -359,7 +361,7 @@ const HEALTH_MODEL = {
             { max: 6, hr: 1.10, hrLow: 1.05, hrHigh: 1.34 },
             { max: Infinity, hr: 1.18, hrLow: 1.05, hrHigh: 1.34 },
           ],
-					note: 'The "physical activity paradox": meta-analysis (17 studies, 193,696 workers) found HIGH occupational activity → all-cause mortality HR 1.18 (1.05–1.34) in MEN; women HR 0.90 (0.80–1.01) — authors report no association for women. Middle step is our interpolation (paper only reports low vs high; CI widened to the high-exposure CI). Steps apply the male estimate to all sexes. Leisure activity benefits don\'t transfer to heavy work. Caveat: evidence is contested — fully adjusted cohorts found the opposite (see finding card).',
+          note: 'The "physical activity paradox": meta-analysis (17 studies, 193,696 workers) found HIGH occupational activity → all-cause mortality HR 1.18 (1.05–1.34) in MEN; women HR 0.90 (0.80–1.01) — authors report no association for women. Middle step is our interpolation (paper only reports low vs high; CI widened to the high-exposure CI). Steps apply the male estimate to all sexes. Leisure activity benefits don\'t transfer to heavy work. Caveat: evidence is contested — fully adjusted cohorts found the opposite (see finding card).',
         },
       ],
     },
@@ -373,11 +375,19 @@ const HEALTH_MODEL = {
       unit: 'steps/day',
       min: 0, max: 20000, step: 500, default: 4800,
       hint: 'Total steps per day from walking, errands, exercise. US average ≈ 4,500–5,000.',
-      // lancet2025steps: largest and most comprehensive meta-analysis — 57 studies, 35 cohorts
-      // All-cause: HR ~0.45 at 12,000 vs 2,000 steps/day, non-linear, steepest gains 2,000→6,000
-      // CVD: linear dose-response, HR ~0.50 at 12,000. Cancer: HR 0.48 at 12,000 (wider CI)
-      // Dementia: cognition points from HR ~0.58 at 12,000 steps — observational
-      // banach2023 cross-checks: 14 studies, HR ~0.51 for higher vs lower quartile
+      // lancet2025steps: largest and most comprehensive meta-analysis — 57 studies, 35 cohorts.
+      // VERIFIED vs the published abstract (PMID 40713949, Lancet Public Health 10(8):e668–e681)
+      // on 2026-07-31: at 7,000 vs 2,000 steps/day — all-cause HR 0.53 (0.46–0.60) NON-LINEAR
+      // (inflection ~5,000–7,000 → gains flatten past ~7k); CVD mortality 0.53 (0.37–0.77)
+      // LINEAR (3 studies, I² 78%, GRADE low); cancer mortality 0.63 (0.55–0.72) LINEAR;
+      // dementia 0.62 (0.53–0.73); depressive symptoms 0.78 (0.73–0.83); cancer incidence
+      // 0.94 (0.87–1.01) NS (honest null); CVD incidence 0.75 (0.67–0.85).
+      // Intermediate bands (4k/6k) are log-space interpolations between the reference and the
+      // verified 7k anchor; CVD/cancer tails follow the review's linear shape and are held flat
+      // above 15k (no published support beyond).
+      // Cross-checks: paluch2022 (Q2 median 5,801 steps → all-cause HR 0.60 [0.51–0.71]);
+      // banach2023 (per-1,000-step HR 0.85 all-cause, HR 0.93 per 500 steps CV mortality —
+      // forced-linear models, steeper tails than the review's non-linear fit, which is primary).
       //
       // OVERLAP with cardio (MVPA min/week) — both capture overlapping activity.
       // Effect is NOT additive with cardio; true combined benefit lies between each alone.
@@ -397,43 +407,43 @@ const HEALTH_MODEL = {
          * meta-analysis of device-measured step count and health outcomes.
          */
         {
-          output: 'mortality', type: 'steps', evidence: 'high', source: ['lancet2025steps', 'banach2023'],
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['lancet2025steps', 'banach2023'],
           steps: [
             { max: 2000, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 4000, hr: 0.78, hrLow: 0.70, hrHigh: 0.86 },
-            { max: 6000, hr: 0.67, hrLow: 0.59, hrHigh: 0.75 },
-            { max: 8000, hr: 0.58, hrLow: 0.50, hrHigh: 0.67 },
-            { max: 10000, hr: 0.52, hrLow: 0.44, hrHigh: 0.61 },
-            { max: 15000, hr: 0.46, hrLow: 0.38, hrHigh: 0.55 },
-            { max: Infinity, hr: 0.42, hrLow: 0.34, hrHigh: 0.51 },
+            { max: 4000, hr: 0.78, hrLow: 0.73, hrHigh: 0.82 },
+            { max: 6000, hr: 0.60, hrLow: 0.54, hrHigh: 0.66 },
+            { max: 7000, hr: 0.53, hrLow: 0.46, hrHigh: 0.60 },
+            { max: 10000, hr: 0.53, hrLow: 0.46, hrHigh: 0.60 },
+            { max: 15000, hr: 0.53, hrLow: 0.46, hrHigh: 0.60 },
+            { max: Infinity, hr: 0.53, hrLow: 0.46, hrHigh: 0.60 },
           ],
-          note: 'Lancet 2025 dose-response meta-analysis (57 studies): all-cause mortality HR ~0.45 at 12,000 vs 2,000 steps/day. Non-linear dose–response — steepest gains from 2,000→6,000 steps, diminishing above 10,000. Cross-checked against Banach 2023 (14 studies) and Paluch 2022 (15 cohorts).',
+          note: 'Lancet 2025 dose-response meta-analysis (57 studies, 35 cohorts): all-cause mortality HR 0.53 (0.46–0.60) at 7,000 vs 2,000 steps/day (14 studies, GRADE moderate). Non-linear — gains are steepest from 2,000→6,000 and flatten above ~7,000 (inflection 5,000–7,000), so 10,000+ steps read ~the same as 7,000. The 4,000/6,000 bands are our log-space interpolation between the reference and the verified 7,000-step anchor. Cross-checked against Paluch 2022 (median 5,801 steps → HR 0.60 [0.51–0.71]) and Banach 2023 (per-1,000-step HR 0.85 — forced-linear models give steeper tails than the review\'s non-linear fit, which is primary).',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'high', source: ['lancet2025steps', 'banach2023'],
+          output: 'cvd', type: 'steps', evidence: 'low', source: ['lancet2025steps', 'banach2023'],
           steps: [
             { max: 2000, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 4000, hr: 0.78, hrLow: 0.68, hrHigh: 0.88 },
-            { max: 6000, hr: 0.69, hrLow: 0.60, hrHigh: 0.79 },
-            { max: 8000, hr: 0.62, hrLow: 0.53, hrHigh: 0.72 },
-            { max: 10000, hr: 0.55, hrLow: 0.46, hrHigh: 0.65 },
-            { max: 15000, hr: 0.50, hrLow: 0.41, hrHigh: 0.60 },
-            { max: Infinity, hr: 0.47, hrLow: 0.38, hrHigh: 0.57 },
+            { max: 4000, hr: 0.78, hrLow: 0.67, hrHigh: 0.90 },
+            { max: 6000, hr: 0.60, hrLow: 0.45, hrHigh: 0.81 },
+            { max: 7000, hr: 0.53, hrLow: 0.37, hrHigh: 0.77 },
+            { max: 10000, hr: 0.36, hrLow: 0.20, hrHigh: 0.66 },
+            { max: 15000, hr: 0.19, hrLow: 0.08, hrHigh: 0.51 },
+            { max: Infinity, hr: 0.19, hrLow: 0.08, hrHigh: 0.51 },
           ],
-          note: 'Lancet 2025: CVD mortality shows a linear dose-response association with steps — HR ~0.50 at 12,000 steps. Banach 2023 found similar HR ~0.51 for Q2 vs Q1 (5,537 vs 3,967 steps). The CVD benefit is partly independent of the all-cause effect (different mediators: BP, lipids, endothelial function).',
+          note: 'Lancet 2025: CVD mortality follows a LINEAR dose-response — HR 0.53 (0.37–0.77) at 7,000 vs 2,000 steps/day (3 studies, I² 78%, GRADE low). Bands past 7,000 follow the review\'s linear shape (slope corroborated by Banach 2023: HR 0.93 per 500 steps) and are held flat above 15,000 (no published support beyond). CVD incidence is weaker: HR 0.75 (0.67–0.85) at 7,000. The CVD benefit is partly independent of the all-cause effect (different mediators: BP, lipids, endothelial function).',
         },
         {
           output: 'cancer', type: 'steps', evidence: 'moderate', source: ['lancet2025steps'],
           steps: [
             { max: 2000, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 4000, hr: 0.80, hrLow: 0.65, hrHigh: 0.98 },
-            { max: 6000, hr: 0.70, hrLow: 0.55, hrHigh: 0.88 },
-            { max: 8000, hr: 0.62, hrLow: 0.47, hrHigh: 0.80 },
-            { max: 10000, hr: 0.55, hrLow: 0.40, hrHigh: 0.75 },
-            { max: 15000, hr: 0.48, hrLow: 0.33, hrHigh: 0.71 },
-            { max: Infinity, hr: 0.46, hrLow: 0.30, hrHigh: 0.70 },
+            { max: 4000, hr: 0.83, hrLow: 0.79, hrHigh: 0.88 },
+            { max: 6000, hr: 0.69, hrLow: 0.62, hrHigh: 0.77 },
+            { max: 7000, hr: 0.63, hrLow: 0.55, hrHigh: 0.72 },
+            { max: 10000, hr: 0.48, hrLow: 0.38, hrHigh: 0.59 },
+            { max: 15000, hr: 0.30, hrLow: 0.21, hrHigh: 0.43 },
+            { max: Infinity, hr: 0.30, hrLow: 0.21, hrHigh: 0.43 },
           ],
-          note: 'Lancet 2025: cancer mortality HR 0.48 (0.33–0.71) at 12,000 vs 2,000 steps — wider CI than all-cause, reflecting fewer events and heterogeneity by cancer type. The mechanism is thought to be through adiposity, inflammation and insulin sensitivity.',
+          note: 'Lancet 2025: cancer mortality HR 0.63 (0.55–0.72) at 7,000 vs 2,000 steps/day (3 studies, GRADE moderate), linear dose-response; bands past 7,000 follow that linear shape, held flat above 15,000. Honest null: cancer INCIDENCE is essentially unaffected (HR 0.94 [0.87–1.01], non-significant, GRADE low) — the mortality benefit likely reflects better outcomes once cancer is diagnosed (adiposity, inflammation, insulin sensitivity), not fewer cancers.',
         },
         {
           output: 'cognition', type: 'steps', evidence: 'moderate', source: ['lancet2025steps'],
@@ -443,7 +453,7 @@ const HEALTH_MODEL = {
             { max: 10000, points: 0.25 },
             { max: Infinity, points: 0.35 },
           ],
-          note: 'Lancet 2025: dementia risk HR ~0.58 at 12,000 steps. For cognitive function (not just dementia), observational studies show slower decline with higher step counts, but RCT evidence is thin. Points here are modest and based on the dementia HR being consistent across cohorts.',
+          note: 'Lancet 2025: dementia risk HR 0.62 (0.53–0.73) at 7,000 vs 2,000 steps/day (2 studies, I² 0%), non-linear — gains flatten above ~7,000. For cognitive function (not just dementia), observational studies show slower decline with higher step counts, but RCT evidence is thin. Points here are modest and based on the dementia HR being consistent across cohorts.',
         },
         {
           output: 'happiness', type: 'steps', evidence: 'low', source: ['lancet2025steps'],
@@ -453,7 +463,7 @@ const HEALTH_MODEL = {
             { max: 10000, points: 0.2 },
             { max: Infinity, points: 0.25 },
           ],
-          note: 'Lancet 2025 found a linear inverse association with depressive symptoms. The happiness/wellbeing link is largely correlational (more active people report higher wellbeing; reverse causality plausible). Points are small.',
+          note: 'Lancet 2025: linear inverse association with depressive symptoms — HR 0.78 (0.73–0.83) at 7,000 vs 2,000 steps/day (3 studies, GRADE moderate). The happiness/wellbeing link is largely correlational (more active people report higher wellbeing; reverse causality plausible). Points are small.',
         },
       ],
     },
@@ -467,7 +477,7 @@ const HEALTH_MODEL = {
       min: 4, max: 14, step: 0.5, default: 9,
       hint: 'Desk, commute and couch. US average ≈ 8–10 h/day.',
       // biswas2015 meta-analysis (47 studies): prolonged sitting → HR 1.24 all-cause, after activity adjustment
-      // Cancer: HR 1.17, CVD: HR 1.15 at high vs low sedentary time
+      // Cancer: HR 1.17, CVD: HR 1.18 (1.179) at high vs low sedentary time
       // BUT the effect ATTENUATES at higher activity levels — an interaction we don't model
       // Sedentary time hits hardest when leisure activity is low (finding: sitting >= 10 && cardio < 150)
       // CVD pathway: impaired endothelial function, reduced lipoprotein lipase activity, metabolic dysregulation
@@ -496,11 +506,11 @@ const HEALTH_MODEL = {
           output: 'cvd', type: 'steps', evidence: 'moderate', source: ['biswas2015'],
           steps: [
             { max: 6, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 9, hr: 1.06, hrLow: 1.03, hrHigh: 1.10 },
-            { max: 12, hr: 1.12, hrLow: 1.07, hrHigh: 1.17 },
-            { max: Infinity, hr: 1.15, hrLow: 1.107, hrHigh: 1.195 },
+            { max: 9, hr: 1.07, hrLow: 1.04, hrHigh: 1.12 },
+            { max: 12, hr: 1.14, hrLow: 1.08, hrHigh: 1.20 },
+            { max: Infinity, hr: 1.18, hrLow: 1.106, hrHigh: 1.257 },
           ],
-          note: 'Same meta-analysis, CVD mortality: HR 1.150 (1.107–1.195) for high vs low sedentary time; middle steps interpolated.',
+          note: 'Same meta-analysis, CVD mortality: HR 1.179 (1.106–1.257) for high vs low sedentary time; middle steps interpolated.',
         },
       ],
     },
@@ -514,12 +524,16 @@ const HEALTH_MODEL = {
       unit: 'g/day',
       min: 0, max: 50, step: 1, default: 15,
       hint: 'Vegetables, fruit, legumes, whole grains. US average ≈ 15 g/day.',
-      // yang2015 meta-analysis (17 cohorts, ~1M people): RR 0.90 per +10g/day for all-cause mortality
-      // Benefit capped at 30g/day; top-vs-bottom-tertile RR 0.84 — linear dose may overstate at high intakes
+      // yang2015 meta-analysis (VERIFIED, PMID 25552267): 17 cohorts, 982,411
+      // members, 67,260 deaths; RR 0.90 (0.86-0.94) per +10g/day, I2 77%;
+      // top-vs-bottom-tertile RR 0.84 (0.80-0.87). Benefit capped at 30g/day;
+      // the tertile contrast suggests the linear dose may overstate at high intakes
       //
-      // reynolds2019 Lancet series (185 prospective studies): 15-30% lower colorectal cancer incidence
-      // 25-29 g/day optimal for cancer; 10-20% lower CVD mortality driven by cholesterol/BP effects
-      // CVD pathway: soluble fiber lowers LDL, insoluble fiber improves glycaemic control
+      // reynolds2019 Lancet series (VERIFIED vs full text, PMID 30638909):
+      // colorectal cancer RR 0.84 (0.78-0.89), cancer mortality 0.87
+      // (0.79-0.95), CHD mortality 0.69 (0.60-0.81), CHD incidence 0.76,
+      // stroke mortality 0.80 (NS), stroke incidence 0.78; optimal 25-29 g/day;
+      // CVD composite is our geometric-mean construction (see cvd effect note)
       //
       // aune2016grain (finding): whole grains are part of the fiber benefit — RR 0.83 per 3 servings/day
       // We don't count whole grains separately to avoid double-counting (overlap rule)
@@ -527,26 +541,26 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 10, capAt: 30,
           hr: 0.90, hrLow: 0.86, hrHigh: 0.94,
-          evidence: 'high', source: ['yang2015'],
-          note: 'Meta-analysis (17 cohorts, ~1M people): RR 0.90 (0.86–0.94) per +10 g/day. Benefit capped at 30 g/day in this model; the top-vs-bottom-tertile comparison (RR 0.84) suggests the linear dose may overstate at high intakes.',
+          evidence: 'high', source: ['yang2015', 'aune2016grain'],
+          note: 'Meta-analysis (VERIFIED, PMID 25552267: 17 cohorts, 982,411 members, 67,260 deaths): RR 0.90 (0.86–0.94) per +10 g/day, I² 77%. Benefit capped at 30 g/day in this model; the top-vs-bottom-tertile comparison (RR 0.84, 0.80–0.87) suggests the linear dose may overstate at high intakes. Whole grains (Aune 2016: RR 0.83 per 3 servings/day) run the same pathway — not counted separately (overlap rule).',
         },
         {
           output: 'cancer', type: 'steps', evidence: 'moderate', source: ['reynolds2019'],
           steps: [
-            { max: 9, hr: 1.15, hrLow: 1.05, hrHigh: 1.25 },
+            { max: 9, hr: 1.19, hrLow: 1.12, hrHigh: 1.27 },
             { max: 24, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: Infinity, hr: 0.82, hrLow: 0.75, hrHigh: 0.92 },
+            { max: Infinity, hr: 0.84, hrLow: 0.78, hrHigh: 0.89 },
           ],
-          note: 'Lancet series (185 prospective studies): 15–30% lower colorectal cancer incidence for high vs low fiber consumers, with dose–response for colorectal and breast cancer; 25–29 g/day looked optimal. Our step mapping is approximate.',
+          note: 'Reynolds 2019 (Lancet series, 185 prospective studies, ~135M person-years, VERIFIED vs full text): colorectal cancer incidence RR 0.84 (0.78–0.89) highest vs lowest fibre consumers (22 studies, GRADE moderate); cancer mortality RR 0.87 (0.79–0.95); per-8-g linear slope for colorectal incidence RR 0.92 (0.89–0.95). 25–29 g/day optimal with continued benefit at higher intakes. Our >24 g band = the published highest-vs-lowest RR; the <9 g band is the exact log-inverse construction (modeling choice, disclosed).',
         },
         {
           output: 'cvd', type: 'steps', evidence: 'moderate', source: ['reynolds2019'],
           steps: [
-            { max: 9, hr: 1.12, hrLow: 1.03, hrHigh: 1.22 },
+            { max: 9, hr: 1.35, hrLow: 0.92, hrHigh: 2.00 },
             { max: 24, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: Infinity, hr: 0.85, hrLow: 0.77, hrHigh: 0.93 },
+            { max: Infinity, hr: 0.74, hrLow: 0.50, hrHigh: 1.09 },
           ],
-          note: 'Lancet series: higher fiber intake was associated with 10–20% lower CVD mortality — similar dose–response to the cancer effect, driven partly by cholesterol-lowering and blood-pressure effects.',
+          note: 'Reynolds 2019 (VERIFIED vs full text): the paper publishes no single CVD composite — its components are CHD mortality RR 0.69 (0.60–0.81), CHD incidence 0.76 (0.69–0.83), stroke incidence 0.78 (0.69–0.88), stroke mortality 0.80 (0.56–1.14, NS). Our >24 g band is the geometric-mean composite of the two mortality components (CHD + stroke, 0.74) with CI combined in quadrature — a disclosed construction; the <9 g band is its log-inverse.',
         },
       ],
     },
@@ -570,7 +584,7 @@ const HEALTH_MODEL = {
           output: 'mortality', type: 'perUnit', per: 1, ref: 2.6, capAt: 5,
           hr: 0.95, hrLow: 0.92, hrHigh: 0.98,
           evidence: 'high', source: ['wang2014'],
-          note: 'Dose-response meta-analysis (16 cohorts): HR 0.95 (0.92–0.98) per serving/day, plateauing around 5 servings. Calibrated: US average 2.6 servings/day = 1.0×.',
+          note: 'Dose-response meta-analysis (VERIFIED, PMID 25073782: 16 cohorts, 833,234 participants, 56,423 deaths): HR 0.95 (0.92–0.98) per serving/day, threshold ~5 servings after which risk does not reduce further. Calibrated: US average 2.6 servings/day = 1.0×.',
         },
         {
           output: 'happiness', type: 'steps', evidence: 'low', source: ['ocean2019'],
@@ -582,15 +596,15 @@ const HEALTH_MODEL = {
         },
         {
           output: 'cancer', type: 'perUnit', per: 1, ref: 2.6, capAt: 5,
-          hr: 1.00, hrLow: 0.97, hrHigh: 1.03,
+          hr: 0.97, hrLow: 0.90, hrHigh: 1.03,
           evidence: 'moderate', source: ['wang2014'],
-          note: 'Same meta-analysis: fruit & veg were "not appreciably associated" with cancer mortality — studied, honestly null (unlike cardiovascular mortality).',
+          note: 'Same meta-analysis (VERIFIED vs full text, PMC4115152): cancer mortality HR 0.97 (0.90–1.03, P=0.31) per serving/day — "not appreciably associated", studied, honestly null (unlike cardiovascular mortality).',
         },
         {
           output: 'cvd', type: 'perUnit', per: 1, ref: 2.6, capAt: 5,
-          hr: 0.96, hrLow: 0.93, hrHigh: 0.99,
+          hr: 0.96, hrLow: 0.92, hrHigh: 0.99,
           evidence: 'high', source: ['wang2014'],
-          note: 'Same meta-analysis, cardiovascular mortality: HR 0.96 (0.93–0.99) per serving/day — small, graded, and robust across cohorts.',
+          note: 'Same meta-analysis, cardiovascular mortality (VERIFIED vs full text): HR 0.96 (0.92–0.99) per serving/day — small, graded, and robust across cohorts.',
         },
       ],
     },
@@ -871,9 +885,8 @@ const HEALTH_MODEL = {
       ],
      // hint: 'Swedish-style snus has the best data. Less harmful than smoking — not harmless.',
       // byhamre2021 pooled 8 Swedish cohorts (169k never-smoking men): exclusive current snus use
-      // All-cause: aHR 1.28 (1.20-1.35), CVD: aHR 1.27 (driven by stroke + ischaemic heart disease)
-      // Cancer: aHR 1.12 (1.00-1.26) — weaker, borderline, mostly pancreatic in wider literature
-      // Men-only data; other smokeless products (US, Indian) may differ substantially
+      // All-cause: aHR 1.28 (1.20-1.35), CVD: aHR 1.27 (1.15-1.41), cancer: aHR 1.12 (1.00-1.26)
+      // Risk increases with DURATION of use, not weekly amount. Men-only data.
       // Harm reduction relative to smoking (no combustion) but not harmless — ~28% higher all-cause
       effects: [
         {
@@ -882,7 +895,7 @@ const HEALTH_MODEL = {
             no: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             yes: { hr: 1.28, hrLow: 1.20, hrHigh: 1.35 },
           },
-          note: 'Pooled 8 Swedish cohorts, 169k never-smoking men: exclusive current snus use → aHR 1.28 all-cause, 1.27 cardiovascular, 1.12 cancer mortality. Men-only data; other smokeless products may differ.',
+          note: 'Pooled 8 Swedish cohorts (VERIFIED, PMID 33347584: 169,103 never-smoking men): exclusive current snus use → aHR 1.28 (1.20–1.35) all-cause, 1.27 (1.15–1.41) cardiovascular, 1.12 (1.00–1.26) cancer mortality. Risk rose with duration of use, not weekly amount. Men-only data; other smokeless products may differ.',
         },
         {
           output: 'cancer', type: 'byOption', evidence: 'moderate', source: ['byhamre2021'],
@@ -890,15 +903,15 @@ const HEALTH_MODEL = {
             no: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             yes: { hr: 1.12, hrLow: 1.00, hrHigh: 1.26 },
           },
-          note: 'Same pooled analysis, cancer mortality: aHR 1.12 (1.00–1.26) — weaker and borderline, mostly pancreatic in the wider literature.',
+          note: 'Same pooled analysis (VERIFIED): cancer mortality aHR 1.12 (1.00–1.26) — weaker and borderline, mostly pancreatic in the wider literature.',
         },
         {
           output: 'cvd', type: 'byOption', evidence: 'moderate', source: ['byhamre2021'],
           byOption: {
             no: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            yes: { hr: 1.27, hrLow: 1.20, hrHigh: 1.35 },
+            yes: { hr: 1.27, hrLow: 1.15, hrHigh: 1.41 },
           },
-          note: 'Same pooled analysis, cardiovascular mortality: aHR 1.27 (1.20–1.35) — driven by stroke and ischaemic heart disease. The all-cause and CVD HRs are near-identical because CVD is ~half the excess.',
+          note: 'Same pooled analysis (VERIFIED): cardiovascular mortality aHR 1.27 (1.15–1.41). The all-cause and CVD HRs are near-identical because CVD is a large share of the excess.',
         },
       ],
     },
@@ -933,12 +946,12 @@ const HEALTH_MODEL = {
             occasional: { hr: 1.05, hrLow: 0.90, hrHigh: 1.25 },
             regular: { hr: 1.12, hrLow: 0.89, hrHigh: 1.39 },
           },
-          note: 'Kaiser Permanente cohort (65k): current use NOT significantly associated with mortality (men RR 1.12, CI crosses 1.0). An honest null — but "no mortality signal" ≠ safe; see findings below. Smoked cannabis likely shares combustion harms with tobacco (not yet quantified).',
+          note: 'Kaiser Permanente cohort (VERIFIED, PMID 9146436: 65,171 people): men current marijuana use — non-AIDS mortality RR 1.12 (0.89–1.39, NOT significant); women 1.09 (0.80–1.48). The "regular" band is the published men\'s estimate; "occasional" is an interpolation between never and that estimate (disclosed). An honest null — but "no mortality signal" ≠ safe; see findings below. Smoked cannabis likely shares combustion harms with tobacco (not yet quantified).',
         },
         {
           output: 'cognition', type: 'byOption', evidence: 'low', source: ['moore2007'],
           byOption: { never: { points: 0 }, occasional: { points: -0.1 }, regular: { points: -0.3 } },
-          note: 'Systematic review: psychosis risk rises dose-dependently (ever-use OR 1.41; heavy use OR 2.09). Evidence for depression/anxiety outcomes less consistent. Cognitive points are qualitative.',
+          note: 'Systematic review (VERIFIED, PMID 17662880): psychosis risk rises dose-dependently — ever-use OR 1.41 (1.20–1.65), most frequent use OR 2.09 (1.54–2.84). Evidence for depression/anxiety outcomes less consistent. Cognitive points are qualitative.',
         },
         {
           output: 'happiness', type: 'byOption', evidence: 'low', source: ['moore2007'],
@@ -956,9 +969,14 @@ const HEALTH_MODEL = {
       unit: 'mg/day',
       min: 0, max: 600, step: 10, default: 280,
       hint: 'Nuts, legumes, whole grains, leafy greens. Typical intake ≈ 250–350 mg/day.',
-      // fang2016 dose-response meta (40 cohorts, >1M people): RR 0.90 per +100mg/day all-cause
-      // CVD stronger: RR 0.85 per +100mg/day — consistent with Mg's role in BP regulation + arrhythmia prevention
-      // Dietary intake partly a marker of overall diet quality; supplement trials are weaker
+      // fang2016 dose-response meta (VERIFIED, PMID 27927203: 40 cohorts,
+      // >1M participants, 10,983 deaths): RR 0.90 (0.81-0.99) per +100mg/day
+      // all-cause mortality. IMPORTANT: total CVD is NULL per the paper
+      // (RR 0.99, 0.88-1.10, NS; CHD 0.92, 0.85-1.01, NS) — the old 0.85
+      // cvd column was not in the paper. Protective components: stroke
+      // 0.93 (0.89-0.97), heart failure 0.78 (0.69-0.89); T2D 0.81
+      // (0.77-0.86). Dietary intake partly a marker of overall diet
+      // quality; supplement trials are weaker.
       //
       // Finding (fang2016): higher Mg associated with lower heart-failure risk (RR 0.78 per 100mg/day)
       // and lower type-2 diabetes risk (RR 0.81) — both plausible mechanisms (electrolyte balance, insulin sensitivity)
@@ -967,13 +985,13 @@ const HEALTH_MODEL = {
           output: 'mortality', type: 'perUnit', per: 100, ref: 250, minDose: 150, capAt: 450,
           hr: 0.90, hrLow: 0.81, hrHigh: 0.99,
           evidence: 'moderate', source: ['fang2016'],
-          note: 'Dose-response meta-analysis (40 cohorts, >1M people): RR 0.90 (0.81–0.99) per +100 mg/day, anchored here at 250 mg and capped at 450 mg. Dietary intake — partly a marker of overall diet quality; supplement trials are weaker.',
+          note: 'Dose-response meta-analysis (VERIFIED, PMID 27927203: 40 cohorts, >1M participants, 10,983 deaths): RR 0.90 (0.81–0.99) per +100 mg/day, anchored here at 250 mg and capped at 450 mg. Dietary intake — partly a marker of overall diet quality; supplement trials are weaker.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 100, ref: 250, minDose: 150, capAt: 450,
-          hr: 0.85, hrLow: 0.77, hrHigh: 0.93,
+          hr: 0.99, hrLow: 0.88, hrHigh: 1.10,
           evidence: 'moderate', source: ['fang2016'],
-          note: 'Same meta-analysis, CVD-specific: RR 0.85 (0.77–0.93) per +100 mg/day — stronger than the all-cause effect, consistent with magnesium\'s role in blood-pressure regulation and arrhythmia prevention.',
+          note: 'Same meta-analysis (VERIFIED vs abstract): total CVD per 100 mg/day RR 0.99 (0.88–1.10) — NOT significant; CHD 0.92 (0.85–1.01, NS). The protection is component-specific: stroke 0.93 (0.89–0.97), heart failure 0.78 (0.69–0.89). The old 0.85 estimate was not in the paper; the composite CVD signal is effectively null.',
         },
       ],
     },
@@ -1000,7 +1018,7 @@ const HEALTH_MODEL = {
             { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: Infinity, hr: 0.83, hrLow: 0.75, hrHigh: 0.91 },
           ],
-          note: 'Meta-analysis (10 prospective studies, 136k people): high purpose → RR 0.83 (0.75–0.91) all-cause mortality and CV events. The low-purpose step is our approximation. Causality unproven — purpose may mark depression or circumstance.',
+          note: 'Meta-analysis (VERIFIED, PMID 26630073: 10 prospective studies, 136,265 people): high purpose → RR 0.83 (0.75–0.91) all-cause mortality and RR 0.83 (0.75–0.92) CV events. The low-purpose step is our approximation. Causality unproven — purpose may mark depression or circumstance.',
         },
         {
           output: 'happiness', type: 'steps', evidence: 'low', source: ['cohen2016'],
@@ -1016,9 +1034,9 @@ const HEALTH_MODEL = {
           steps: [
             { max: 3, hr: 1.10, hrLow: 1.00, hrHigh: 1.30 },
             { max: 7, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: Infinity, hr: 0.83, hrLow: 0.75, hrHigh: 0.91 },
+            { max: Infinity, hr: 0.83, hrLow: 0.75, hrHigh: 0.92 },
           ],
-          note: 'Cohen 2016: purpose in life was associated with lower combined CVD event risk (RR 0.83, 0.75–0.91), similar to all-cause. The association is largely indirect — higher purpose tracks more activity, less smoking, better treatment adherence.',
+          note: 'Cohen 2016 (VERIFIED, PMID 26630073): purpose in life was associated with lower combined CVD event risk (RR 0.83, 0.75–0.92), similar to all-cause. The association is largely indirect — higher purpose tracks more activity, less smoking, better treatment adherence.',
         },
       ],
     },
@@ -1120,43 +1138,51 @@ const HEALTH_MODEL = {
         { value: 'lots', label: '3+ / week' },
       ],
       //hint: 'Modest mortality benefit (~3–5% lower), slightly stronger for CVD (~4–6% lower). Observational — part of the benefit may be substitution (fish replacing red meat).',
-      // kwok2019 + li2020 dose-response meta-analyses: RR ~0.97 per serving/week all-cause
-      // CVD stronger: ~4-6% lower per 1-2 servings/week (RR 0.96) — consistent across cohorts
-      // Mechanism: omega-3 (triglycerides, anti-inflammatory), substituting red meat
+      // jayedi2018 dose-response meta (VERIFIED, PMID 29317009: 14 cohorts, 911,348
+      // participants, 75,451 deaths): all-cause RR 0.98 (0.97-1.00) per 20 g/day
+      // (I2 82%); CVD mortality RR 0.96 (0.94-0.98) per 20 g/day (I2 0%).
+      // kwok2019 review independently reports the same fish all-cause 0.98 (0.97-1.00).
+      // Bands below = the published per-20-g linear slope at ~0.7x (1-2 servings/wk
+      // ≈ 14 g/d) and ~1.8x (3+ servings/wk ≈ 36 g/d), log-scaled. Caveat: the
+      // dose-response is U-shaped in Western cohorts (nadir ~20-60 g/d) — the 3+/week
+      // band assumes intake stays in the beneficial window.
       //
-      // Cancer (kwok2019): limited and inconsistent — no convincing association exists
-      // Unlike red meat, fish fatty acids are neutral or beneficial; residual confounding with healthier diet
+      // Cancer (zhang2018, NIH-AARP 421,309 people): men highest-vs-lowest fish quintile
+      // 6% lower cancer mortality (RR 0.94, 0.90-0.99); women null. Site-specific metas
+      // are inconsistent — total-cancer signal is small and sex-dependent. Bands are a
+      // conservative construction centered on the men's estimate, pulled toward null
+      // for the null women's result (disclosed).
       //
       // li2016fish meta (21 studies, 260k): fish consumption → lower depression risk RR 0.88
       // Dose-response gradient, observational only. Omega-3 supplements DO NOT replicate this
       // (VITAL: null) — the fish benefit is partly about eating fish, not isolated omega-3
       effects: [
         {
-          output: 'mortality', type: 'byOption', evidence: 'moderate', source: ['kwok2019', 'li2020'],
+          output: 'mortality', type: 'byOption', evidence: 'moderate', source: ['kwok2019', 'jayedi2018'],
           byOption: {
             none: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            some: { hr: 0.97, hrLow: 0.93, hrHigh: 1.01 },
-            lots: { hr: 0.95, hrLow: 0.91, hrHigh: 1.00 },
+            some: { hr: 0.98, hrLow: 0.98, hrHigh: 1.00 },
+            lots: { hr: 0.96, hrLow: 0.95, hrHigh: 1.00 },
           },
-          note: 'Dose-response meta-analyses find RR ≈ 0.97 (0.93–1.00) per serving/week; 3+/week corresponds to ~0.95 (0.91–1.00). Observational — residual confounding and substitution (fish replacing meat) likely drive part of the association, but the dose-response gradient is consistent across cohorts.',
+          note: 'Dose-response meta-analyses (VERIFIED): RR 0.98 (0.97–1.00) per 20 g/day all-cause mortality (Jayedi 2018, 14 cohorts/911,348 people; I² 82%) — independently confirmed by the Kwok 2019 review (0.98, 0.97–1.00). 1–2 servings/week ≈ 0.7×20 g → 0.98; 3+ servings/week ≈ 1.8×20 g → 0.96 (log-scaled construction, disclosed). Caveat: the curve is U-shaped in Western cohorts (nadir ~20–60 g/day) and part of the benefit is substitution for red/processed meat.',
         },
         {
-          output: 'cancer', type: 'byOption', evidence: 'low', source: ['kwok2019'],
+          output: 'cancer', type: 'byOption', evidence: 'low', source: ['zhang2018'],
           byOption: {
             none: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            some: { hr: 1.00, hrLow: 0.94, hrHigh: 1.06 },
-            lots: { hr: 1.00, hrLow: 0.93, hrHigh: 1.08 },
+            some: { hr: 0.99, hrLow: 0.96, hrHigh: 1.02 },
+            lots: { hr: 0.97, hrLow: 0.94, hrHigh: 1.00 },
           },
-          note: 'Limited and inconsistent evidence for fish intake and cancer incidence in general populations. Unlike red/processed meat, no convincing association exists between fish and cancer — possibly because the fatty acids in fish are neutral or beneficial, and the primary confounding is with healthier overall diet.',
+          note: 'No consistent total-cancer signal (VERIFIED, Zhang 2018, NIH-AARP 421,309 people, 16 y): men highest-vs-lowest fish quintile had 6% lower cancer mortality (RR 0.94, 0.90–0.99); women null. Site-specific meta-analyses are inconsistent. Bands are a conservative construction centered on the men\'s estimate and pulled toward null for the null women\'s result (disclosed) — the honest bottom line is "fish ≈ neutral for total cancer".',
         },
         {
-          output: 'cvd', type: 'byOption', evidence: 'moderate', source: ['kwok2019'],
+          output: 'cvd', type: 'byOption', evidence: 'moderate', source: ['jayedi2018'],
           byOption: {
             none: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            some: { hr: 0.96, hrLow: 0.92, hrHigh: 1.00 },
-            lots: { hr: 0.94, hrLow: 0.90, hrHigh: 0.99 },
+            some: { hr: 0.97, hrLow: 0.96, hrHigh: 0.99 },
+            lots: { hr: 0.93, hrLow: 0.89, hrHigh: 0.96 },
           },
-          note: 'Dose-response: fish associated with ~4–6% lower CVD mortality per 1–2 servings/week (RR 0.96, 0.94–0.98 per serving in Li 2020 umbrella). The CVD association is stronger and more consistent than for all-cause mortality, consistent with plausible mechanisms (omega-3, substituting red meat).',
+          note: 'Dose-response (VERIFIED, Jayedi 2018): CVD mortality RR 0.96 (0.94–0.98) per 20 g/day, I² 0%, consistent across cohorts. Bands are the published per-20-g slope at ~0.7× (1–2 servings/week ≈ 14 g/day → 0.97) and ~1.8× (3+ servings/week ≈ 36 g/day → 0.93), log-scaled construction (disclosed). Omega-3 supplementation does not reproduce this in RCTs (VITAL: null) — part of the association is eating fish instead of meat.',
         },
         {
           output: 'happiness', type: 'byOption', evidence: 'low', source: ['li2016fish'],
@@ -1192,19 +1218,19 @@ const HEALTH_MODEL = {
           output: 'mortality', type: 'perUnit', per: 28, capAt: 35,
           hr: 0.78, hrLow: 0.72, hrHigh: 0.84,
           evidence: 'high', source: ['aune2016nuts'],
-          note: 'Dose-response meta-analysis (20 studies): RR 0.78 (0.72–0.84) per 28 g/day; tree nuts = peanuts. Benefit capped at 35 g/day in this model.',
+          note: 'Dose-response meta-analysis (VERIFIED vs abstract, PMID 27916000: 20 studies/29 publications, 15 on all-cause): RR 0.78 (0.72–0.84) per 28 g/day, I² 66%. Results similar for tree nuts and peanuts. Benefit capped at 35 g/day in this model.',
         },
         {
           output: 'cancer', type: 'perUnit', per: 28, capAt: 35,
           hr: 0.85, hrLow: 0.76, hrHigh: 0.94,
           evidence: 'high', source: ['aune2016nuts'],
-          note: 'Same meta-analysis, total cancer: RR 0.85 (0.76–0.94) per 28 g/day.',
+          note: 'Same meta-analysis (VERIFIED, PMID 27916000): total cancer RR 0.85 (0.76–0.94) per 28 g/day, n=8 studies, I² 42%.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 28, capAt: 35,
           hr: 0.79, hrLow: 0.70, hrHigh: 0.88,
           evidence: 'high', source: ['aune2016nuts'],
-          note: 'Same meta-analysis, CVD mortality: RR 0.79 (0.70–0.88) per 28 g/day — the lipid-lowering, anti-inflammatory and endothelial effects of nuts are clearest for CVD.',
+          note: 'Same meta-analysis (VERIFIED, PMID 27916000): CVD mortality RR 0.79 (0.70–0.88) per 28 g/day, n=12, I² 60% (CHD 0.71 [0.63–0.80]; stroke 0.93 [0.83–1.05], NS) — lipid-lowering, anti-inflammatory and endothelial effects are clearest for CVD.',
         },
       ],
     },
@@ -1220,7 +1246,8 @@ const HEALTH_MODEL = {
       hint: 'Habitual sleep duration.',
       // cappuccio2010 meta (16 studies, 1.4M): U-shaped — short sleep RR 1.12, long RR 1.30
       // Long sleep partly reflects illness/confounding (reverse causation — sick people sleep more)
-      // CVD: short RR 1.07 (BP pathways), long RR 1.28 (weaker than all-cause, more confounded)
+      // CVD (cappuccio2011 EHJ, 15 studies/475k): total CVD short RR 1.03 (NS), long RR 1.41
+      // — the short-sleep signal is in CHD (1.48) and stroke (1.15) individually, not the composite
       //
       // lowe2017 meta (61 experimental studies): sleep restriction impairs executive function (g=−0.324)
       // sustained attention (g=−0.409), long-term memory (g=−0.192) — medium effects, increase with age
@@ -1235,7 +1262,7 @@ const HEALTH_MODEL = {
             { max: 9.0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: Infinity, hr: 1.30, hrLow: 1.22, hrHigh: 1.38 },
           ],
-          note: 'Meta-analysis (16 studies, 1.4M people): short sleep RR 1.12, long sleep RR 1.30. U-shaped; long sleep may partly reflect illness (reverse causation).',
+          note: 'Meta-analysis (VERIFIED vs abstract, PMID 20469800: 16 studies, 1,382,999 people, 112,566 deaths): short sleep RR 1.12 (1.06–1.18), long sleep RR 1.30 (1.22–1.38). U-shaped; long sleep may partly reflect illness (reverse causation).',
         },
         {
           output: 'cognition', type: 'steps', evidence: 'moderate', source: ['lowe2017'],
@@ -1244,7 +1271,7 @@ const HEALTH_MODEL = {
             { max: 9.4, points: 0 },
             { max: Infinity, points: -0.2 },
           ],
-          note: 'Meta-analysis of 61 experimental studies: sleep restriction significantly impairs executive function (g=−0.324), sustained attention (g=−0.409) and long-term memory (g=−0.192). Effects are medium in magnitude and increase with age.',
+          note: 'Meta-analysis of 61 experimental studies (VERIFIED, PMID 28757454): sleep restriction significantly impairs executive function (g=−0.324), sustained attention (g=−0.409) and long-term memory (g=−0.192). Effects are medium in magnitude and increase with age.',
         },
         {
           output: 'happiness', type: 'steps', evidence: 'moderate', source: ['bacaro2023'],
@@ -1253,16 +1280,16 @@ const HEALTH_MODEL = {
             { max: 9.4, points: 0 },
             { max: Infinity, points: -0.1 },
           ],
-          note: 'Longitudinal meta-analysis (42 studies): good sleep (duration/quality) predicts higher subjective well-being over time (r=0.18) and higher psychological well-being (r=0.15). Bidirectional relationship with small-to-moderate effect sizes.',
+          note: 'Longitudinal meta-analysis (VERIFIED, PMID 38125984, 42 studies in meta): good sleep (duration/quality) predicts higher subjective well-being over time (r=0.18) and higher psychological well-being (r=0.15). Bidirectional relationship with small-to-moderate effect sizes.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'high', source: ['cappuccio2010'],
+          output: 'cvd', type: 'steps', evidence: 'high', source: ['cappuccio2011'],
           steps: [
-            { max: 6.9, hr: 1.07, hrLow: 1.00, hrHigh: 1.15 },
+            { max: 6.9, hr: 1.03, hrLow: 0.93, hrHigh: 1.15 },
             { max: 9.0, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: Infinity, hr: 1.28, hrLow: 1.16, hrHigh: 1.42 },
+            { max: Infinity, hr: 1.41, hrLow: 1.19, hrHigh: 1.68 },
           ],
-          note: 'Same meta-analysis, CVD mortality: short sleep RR 1.07 (1.00–1.15), long sleep RR 1.28 (1.16–1.42). The long-sleep association is weaker for CVD than for all-cause, possibly because short sleep affects CVD through BP pathways while long sleep is more confounded.',
+          note: 'Cappuccio 2011 EHJ meta (VERIFIED, 15 studies/474,684 people): total CVD — short sleep RR 1.03 (0.93–1.15, NOT significant), long sleep RR 1.41 (1.19–1.68). The short-sleep signal lives in the components, not the composite: CHD 1.48 (1.22–1.80), stroke 1.15 (1.00–1.31). The old 1.07/1.28 figures were not in the literature.',
         },
       ],
     },
@@ -1291,7 +1318,7 @@ const HEALTH_MODEL = {
             { max: 8, hr: 1.1917, hrLow: 1.0917, hrHigh: 1.3000 },
             { max: Infinity, hr: 1.6167, hrLow: 1.3833, hrHigh: 1.8833 },
           ],
-          note: 'Pooled 68k adults: psychological distress (GHQ-12) predicted mortality dose-dependently. Calibrated: US avg stress ~3.5/10 = 1.0×. Our 1–10 slider is mapped onto those tiers.',
+          note: 'Pooled 68,222 adults, GHQ-12 (VERIFIED, PMID 22849956): distress scores 1–3 HR 1.20 (1.13–1.27), 4–6 HR 1.43 (1.31–1.56), 7–12 HR 1.94 (1.66–2.26), dose-response. Our 1–10 slider is mapped onto those tiers, normalized so the US-average ~3.5/10 = 1.0×: every step is the published HR ÷ 1.20 (e.g. 1.43/1.20 = 1.1917, 1.94/1.20 = 1.6167), disclosed construction.',
         },
         {
           output: 'cognition', type: 'steps', evidence: 'moderate', source: ['franks2021', 'aggarwal2014'],
@@ -1299,7 +1326,7 @@ const HEALTH_MODEL = {
             { max: 7, points: 0 },
             { max: Infinity, points: -0.4 },
           ],
-          note: 'Meta-analysis: higher perceived stress → increased risk of MCI (HR 1.19) and dementia (HR 1.44) in prospective studies. Aggarwal 2014 CHAP cohort (6k older adults): higher stress → accelerated cognitive decline over 7 years, independent of depression and neuroticism.',
+          note: 'Meta-analysis (VERIFIED, PMID 34366334): higher perceived stress → increased risk of MCI (HR 1.19, 1.03–1.38) and all-cause dementia (HR 1.44, 1.07–1.95) in prospective studies. Aggarwal 2014 CHAP cohort (VERIFIED, PMID 24367123: 6,207 older adults, 6.8 y): higher stress → faster cognitive decline, independent of depression and neuroticism.',
         },
         {
           output: 'happiness', type: 'steps', evidence: 'low', source: ['russ2012'],
@@ -1331,9 +1358,9 @@ const HEALTH_MODEL = {
       unit: 'days/week',
       min: 0, max: 7, step: 1, default: 3,
       hint: 'Days with social contact.',
-      // holtlunstad2010 meta (148 studies): stronger social relationships → 50% higher survival odds
+      // holtlunstad2010 meta (148 studies, 309k): stronger social relationships → 50% higher survival odds
       // OR 1.50 (1.42-1.59); strongest for complex social integration (OR 1.91)
-      // CVD effect particularly strong, persists after adjusting for activity, smoking, BMI
+      // Effect consistent across causes of death (incl. CVD) and after adjusting for activity, smoking, BMI
       // Effect size comparable to quitting smoking — social isolation is a major risk factor
       //
       // Happiness: strongest known correlate of wellbeing across cultures (same meta)
@@ -1347,7 +1374,7 @@ const HEALTH_MODEL = {
             { max: 3, hr: 1.15, hrLow: 1.08, hrHigh: 1.22 },
             { max: Infinity, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
           ],
-          note: 'Meta-analysis (148 studies): stronger social relationships → 50% higher survival odds (OR 1.50, 1.42–1.59). HRs here approximate that OR; strongest for complex social integration (OR 1.91).',
+          note: 'Meta-analysis (VERIFIED, PMID 20668659: 148 studies, 308,849 people): stronger social relationships → 50% higher survival odds (OR 1.50, 1.42–1.59). HRs here approximate that OR; strongest for complex social integration (OR 1.91, 1.63–2.23).',
         },
         {
           output: 'happiness', type: 'steps', evidence: 'low', source: ['holtlunstad2010'],
@@ -1365,7 +1392,7 @@ const HEALTH_MODEL = {
             { max: 3, hr: 1.12, hrLow: 1.05, hrHigh: 1.19 },
             { max: Infinity, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
           ],
-          note: 'Same meta-analysis: social isolation has a particularly strong effect on CVD — the association persists after adjusting for activity, smoking and BMI. The HRs here mirror the all-cause pattern.',
+          note: 'Same meta-analysis (VERIFIED): the survival effect was consistent across causes of death including CVD, and robust to adjustment. The HRs here mirror the all-cause pattern (disclosed approximation — the paper reports the overall OR 1.50, not cause-specific HRs).',
         },
       ],
     },
@@ -1391,7 +1418,7 @@ const HEALTH_MODEL = {
       // hale2015: screens near bedtime displace sleep — already counted in sleep slider if set honestly
       effects: [
         {
-          output: 'happiness', type: 'steps', evidence: 'low', source: ['hunt2018', 'nielsenGauge2024', 'datareportal2025'],
+          output: 'happiness', type: 'steps', evidence: 'low', source: ['hunt2018', 'zhai2015', 'nielsenGauge2024', 'datareportal2025'],
           steps: [
             { max: 1, points: 0 },
             { max: 3, points: -0.05 },
@@ -1424,7 +1451,7 @@ const HEALTH_MODEL = {
             { max: 59, points: 0.1 },
             { max: Infinity, points: 0.3 },
           ],
-          note: 'Meta-analysis of 47 RCTs with active controls: mindfulness meditation gave small-moderate reductions in anxiety (effect size 0.38) and depression (0.30) — but no evidence it beats other active treatments (exercise, therapy).',
+          note: 'Meta-analysis of 47 RCTs / 3,515 people (VERIFIED, PMID 24395196): mindfulness meditation gave small-moderate reductions in anxiety (effect size 0.38, CI 0.12–0.64) and depression (0.30, 0.00–0.59) at 8 weeks — but no evidence it beats other active treatments (exercise, therapy).',
         },
       ],
     },
@@ -1528,8 +1555,8 @@ const HEALTH_MODEL = {
       effects: [
         {
           output: 'cognition', type: 'toggle', points: 0.5,
-          evidence: 'moderate', source: ['avgerinos2018'],
-          note: 'Systematic review of RCTs: creatine improved short-term memory and reasoning; effect clearer in vegetarians, older and stressed individuals. Other domains unclear.',
+          evidence: 'low', source: ['avgerinos2018'],
+          note: 'Systematic review of RCTs (VERIFIED, PMID 29704637: only 6 studies, 281 individuals): creatine may improve short-term memory and reasoning; vegetarians responded better than meat-eaters on memory tasks; young healthy adults unchanged; other domains conflicting. Evidence is thin — low tier.',
         },
       ],
     },
@@ -1553,17 +1580,17 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'toggle', evidence: 'high', source: ['manson2019omega3'],
           hr: 1.02, hrLow: 0.90, hrHigh: 1.15,
-          note: 'VITAL RCT (n=26k, 5.3 y): all-cause mortality HR 1.02 (0.90–1.15) — 978 deaths, slightly MORE deaths in the omega-3 group. Not statistically significant and effectively null.',
+          note: 'VITAL RCT (n=26k, 5.3 y, VERIFIED vs abstract): all-cause mortality HR 1.02 (0.90–1.15) — 978 deaths overall, slightly MORE deaths in the omega-3 group. Not statistically significant and effectively null.',
         },
         {
           output: 'cvd', type: 'toggle', evidence: 'high', source: ['manson2019omega3'],
           hr: 0.92, hrLow: 0.80, hrHigh: 1.06,
-          note: 'VITAL RCT: major cardiovascular events HR 0.92 (0.80–1.06) — null (CI includes 1.0). A secondary signal for MI (HR 0.72, 0.59–0.90) did not survive correction for multiplicity. Meta-analyses of all RCTs confirm no significant benefit for primary prevention.',
+          note: 'VITAL RCT (VERIFIED vs abstract): major cardiovascular events HR 0.92 (0.80–1.06), P=0.24 — null (CI includes 1.0). A secondary signal for total MI (HR 0.72, 0.59–0.90) did not survive correction for multiplicity. Meta-analyses of all RCTs confirm no significant benefit for primary prevention.',
         },
         {
           output: 'cancer', type: 'toggle', evidence: 'high', source: ['manson2019omega3'],
           hr: 1.03, hrLow: 0.93, hrHigh: 1.13,
-          note: 'VITAL RCT: invasive cancer incidence HR 1.03 (0.93–1.13) — null. Cancer mortality HR 0.97 — also null. The observational suggestion that omega-3 prevents cancer does not hold up in a trial.',
+          note: 'VITAL RCT (VERIFIED vs abstract): invasive cancer incidence HR 1.03 (0.93–1.13), P=0.56 — null. Cancer mortality HR 0.97 (0.79–1.20) — also null. The observational suggestion that omega-3 prevents cancer does not hold up in a trial.',
         },
         {
           output: 'cognition', type: 'toggle', points: 0,
@@ -1598,8 +1625,9 @@ const HEALTH_MODEL = {
       // Optimal 25(OH)D ~77.5-100 nmol/L; supplementation RCTs show mixed/null results
       //
       // Cancer (manson2019 VITAL): cancer death HR 0.83 (0.67-1.02) — suggestive but not significant
-      // Cancer incidence null (1.03). CVD: observational 45% higher risk deficient vs sufficient, but
-      // supplements null (0.97). The observational vs RCT gap means causality is unresolved.
+      // Cancer incidence null (0.96, 0.88-1.06). CVD: observational ~41% higher risk deficient
+      // vs sufficient (schottker2014: 1.41, 1.18-1.68), but supplements null (0.97).
+      // The observational vs RCT gap means causality is unresolved.
       effects: [
         {
           output: 'mortality', type: 'byOption', evidence: 'moderate', source: ['schottker2014'],
@@ -1608,7 +1636,7 @@ const HEALTH_MODEL = {
             sufficient: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             supplement: { hr: 0.99, hrLow: 0.87, hrHigh: 1.12 },
           },
-          note: 'Deficiency (bottom vs top quintile) → RR 1.57 in pooled cohorts — BUT the VITAL RCT (26k people) found supplements did NOT reduce cancer, CVD or mortality (HR 0.99). Deficiency likely marks poor health; whether correcting it helps is unresolved.',
+          note: 'Deficiency (bottom vs top quintile) → RR 1.57 (1.36–1.81) in pooled cohorts (Schöttker 2014 IPD meta, 26,018 people, VERIFIED) — BUT the VITAL RCT (26k people) found supplements did NOT reduce cancer, CVD or mortality (HR 0.99). Deficiency likely marks poor health; whether correcting it helps is unresolved.',
         },
         {
           output: 'cognition', type: 'byOption', evidence: 'moderate', source: ['zhang2024vitd'],
@@ -1622,16 +1650,16 @@ const HEALTH_MODEL = {
             sufficient: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             supplement: { hr: 0.83, hrLow: 0.67, hrHigh: 1.02 },
           },
-          note: 'VITAL RCT, cancer DEATH with supplementation: HR 0.83 (0.67–1.02) — suggestive but not significant; cancer incidence was null (1.03).',
+          note: 'VITAL RCT, cancer DEATH with supplementation: HR 0.83 (0.67–1.02) — suggestive but not significant; cancer incidence was null (0.96, 0.88–1.06). (Both VERIFIED vs the NEJM abstract.)',
         },
         {
           output: 'cvd', type: 'byOption', evidence: 'moderate', source: ['schottker2014'],
           byOption: {
-            deficient: { hr: 1.45, hrLow: 1.25, hrHigh: 1.65 },
+            deficient: { hr: 1.41, hrLow: 1.18, hrHigh: 1.68 },
             sufficient: { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             supplement: { hr: 0.97, hrLow: 0.85, hrHigh: 1.12 },
           },
-          note: 'CVD mortality shows a similar deficiency signal (observational, 45% higher risk in bottom quintile) but supplements were null in VITAL (HR 0.97 for major CVD events). As with all-cause, deficiency is likely a health marker, not a causal risk factor.',
+          note: 'CVD mortality bottom-vs-top quintile: RR 1.41 (1.18–1.68) in people without prior CVD (Schöttker 2014, VERIFIED vs full text; 1.65 [1.22–2.22] in those with prior CVD) — but supplements were null in VITAL (HR 0.97, 0.85–1.12, for major CVD events). As with all-cause, deficiency is likely a health marker, not a causal risk factor.',
         },
       ],
     },
@@ -1654,12 +1682,12 @@ const HEALTH_MODEL = {
         {
           output: 'happiness', type: 'toggle', points: -0.4,
           evidence: 'moderate', source: ['houston2018'],
-          note: 'RCT meta-analysis: correcting non-anaemic iron deficiency REDUCES fatigue (SMD −0.38) — so leaving it untreated costs you that. No effect on measured physical capacity.',
+          note: 'RCT meta-analysis (VERIFIED, PMID 29626044, 18 trials/1,170 people): correcting non-anaemic iron deficiency REDUCES fatigue (SMD −0.38, 0.52–0.23) — so leaving it untreated costs you that. No effect on measured physical capacity (VO2max SMD 0.11, NS).',
         },
         {
           output: 'cognition', type: 'toggle', points: -0.2,
           evidence: 'low', source: ['falkingham2010'],
-          note: 'RCT meta-analysis (14 studies): iron supplementation improved attention and concentration irrespective of baseline iron status (SMD 0.59, CI 0.29–0.90). In anaemic participants, IQ improved 2.5 points. No effect on memory or psychomotor skills. Cognition benefit clearest in children and women, understudied in men.',
+          note: 'RCT meta-analysis (VERIFIED, PMID 20100340, 14 RCTs): iron supplementation improved attention and concentration irrespective of baseline iron status (SMD 0.59, CI 0.29–0.90, no heterogeneity). In anaemic participants, IQ improved 2.5 points (1.24–3.76). No effect on memory or psychomotor skills. All trials in children 6+/adolescents/women — no RCTs in men or older people, so generalisability is unknown.',
         },
       ],
     },
@@ -1683,7 +1711,7 @@ const HEALTH_MODEL = {
             { max: 0, points: 0 },
             { max: Infinity, points: 0.15 },
           ],
-          note: 'ACTIVE trial: speed-of-processing training cut 10-year dementia risk ~29% — but gains are mostly domain-specific (you get better at the task). Broad "brain boost" from puzzles is unproven.',
+          note: 'ACTIVE trial (VERIFIED, PMID 29201994, N=2,802, 10 y): speed-of-processing training cut dementia risk 29% (HR 0.71, 0.50–0.998) — but memory/reasoning training did NOT (HR 0.79, NS), so gains are task-specific. Broad "brain boost" from puzzles is unproven.',
         },
       ],
     },
@@ -1710,13 +1738,13 @@ const HEALTH_MODEL = {
           output: 'mortality', type: 'perUnit', per: 10, ref: 8, minDose: 3, capAt: 30,
           hr: 1.073, hrLow: 1.071, hrHigh: 1.075,
           evidence: 'high', source: ['di2017'],
-          note: 'Medicare open cohort (61M people, 460M person-years): +7.3% (7.1–7.5) all-cause mortality per +10 µg/m³ PM2.5 — and +13.6% even below the 12 µg/m³ US standard. Anchored at the US mean (8). Levers: location, HEPA purifiers, masks, avoiding high-traffic routes.',
+          note: 'Medicare open cohort (VERIFIED, PMID 28657878: 60.9M people, 460M person-years): +7.3% (7.1–7.5) all-cause mortality per +10 µg/m³ PM2.5 — and +13.6% even below the 12 µg/m³ US standard. Anchored at the US mean (8). Levers: location, HEPA purifiers, masks, avoiding high-traffic routes.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 10, ref: 8, minDose: 3, capAt: 30,
-          hr: 1.10, hrLow: 1.08, hrHigh: 1.12,
-          evidence: 'high', source: ['di2017'],
-          note: 'Same cohort, CVD mortality: +10% (8–12%) per +10 µg/m³ — CVD is the primary mechanism for PM2.5 mortality effects through inflammation, oxidative stress and plaque progression.',
+          hr: 1.13, hrLow: 1.10, hrHigh: 1.15,
+          evidence: 'high', source: ['di2017', 'orellano2024'],
+          note: 'Circulatory-disease mortality: RR 1.13 (1.10–1.15) per +10 µg/m³ PM2.5 — the WHO 2021 guidelines review update, pooled 42 cohort studies (VERIFIED, PMID 39399882). CVD is the primary mechanism for PM2.5 mortality effects through inflammation, oxidative stress and plaque progression. (Di 2017 itself reports all-cause only.)',
         },
       ],
     },
@@ -1729,54 +1757,66 @@ const HEALTH_MODEL = {
       unit: 'hours/day',
       min: 0, max: 10, step: 0.5, default: 1.5,
       hint: 'Time spent outside between ~9 am and 5 pm — walking, gardening, sitting in the park. This is about both daylight health effects (circadian rhythm, vitamin D) AND UV effects (skin cancer risk). US average ≈ 1–2 h/day.',
-      // adventist2025 (AHS-2, 83k): time outdoors shows reverse-J association with all-cause mortality
-      // 2h HR 0.90, 3h HR 0.88, 5h HR 0.90 — benefit persists without attenuation
-      // CVD: 0.87-0.86 at 3-5h. Cancer: modest net benefit or neutrality at all levels
+      // adventist2025 (AHS-2, 83,205 people, VERIFIED PMID 40444275): time outdoors
+      // 9am–5pm (warmer months) vs 0.5 h ref, reverse-J: all-cause 2h 0.90 (0.86–0.93),
+      // 3h 0.88 (0.84–0.93), 5h 0.90 (0.85–0.95); CVD 0.89/0.87/0.86; cancer ELEVATED
+      // 1.02 (NS) / 1.08 (NS) / 1.15 (sig at 5h). >5 h not published — steps hold flat.
+      // 0 h/day band is interpolated (AHS-2's lowest category is 0.5 h; lindqvist2014
+      // avoiders ~2× vs highest — our bands are conservative; disclosed in notes).
       //
-      // stevenson2024 UK Biobank: higher UV → lower all-cause + CVD mortality
-      // Sun-BEEM 2026: medium UV HR 0.89, high UV HR 0.84 vs low
-      // CVD benefit (NO-mediated BP reduction) stronger than all-cause
+      // stevenson2024 UK Biobank (VERIFIED PMID 39094281, peer-reviewed): higher UV →
+      // lower all-cause + CVD + cancer mortality — QUALITATIVE (no per-category HRs in
+      // the abstract; not open access).
       //
-      // lindqvist2014 Swedish women: sun avoiders had ~2× mortality vs highest exposure — striking
+      // sunbeem2026 (medRxiv PREPRINT, not peer-reviewed, 419,007 UKB, VERIFIED numbers):
+      // all-cause medium 0.89 (0.87–0.91) / high 0.84 (0.82–0.87) vs low; CVD 0.82/0.77;
+      // non-skin cancer 0.92/0.89; skin cancer mortality flat. Matches UK Stevenson;
+      // CONFLICTS with US AHS-2 on cancer — latitude-dependent direction.
       //
-      // maartense2024 meta (30 studies): light exposure → SM effect on wellbeing (d=0.46)
-      // Sunlight stimulates serotonin, beta-endorphin, vitamin D; bright-light therapy d=0.48 for depression
+      // lindqvist2014 Swedish women (VERIFIED PMID 24697969): sun avoiders ~2× all-cause
+      // mortality vs highest-exposure group (composite habits, not hours) — backs the
+      // low band; avoiders' excess was largely CVD + non-cancer deaths.
       //
-      // Cancer trade-off (findings): skin cancer incidence rises but NOT skin cancer MORTALITY in temperate
-      // climates — non-skin cancer mortality benefits of UV appear to outweigh skin cancer mortality
+      // maartense2024 meta (VERIFIED PMID 39664799): 30 of 74 studies pooled,
+      // light → wellbeing d=0.46 (0.29–0.62), sensitivity 0.53 (0.35–0.72), I² 96%.
+      // (The old "bright-light d=0.48 for depression" claim is NOT in this paper —
+      // dropped per the golden rule.)
+      //
+      // Cancer trade-off: US cohort shows skin-cancer-driven elevation at high exposure;
+      // UK evidence (low-sun country) inverse. Steps use the verified US numbers.
       effects: [
         {
-          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['adventist2025', 'stevenson2024'],
+          output: 'mortality', type: 'steps', evidence: 'moderate', source: ['adventist2025', 'stevenson2024', 'sunbeem2026'],
           steps: [
             { max: 0.25, hr: 1.15, hrLow: 1.06, hrHigh: 1.25 },
             { max: 1.0,  hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 3.0,  hr: 0.90, hrLow: 0.86, hrHigh: 0.94 },
+            { max: 3.0,  hr: 0.88, hrLow: 0.84, hrHigh: 0.93 },
             { max: 5.0,  hr: 0.90, hrLow: 0.85, hrHigh: 0.95 },
-            { max: Infinity, hr: 0.88, hrLow: 0.82, hrHigh: 0.94 },
+            { max: Infinity, hr: 0.90, hrLow: 0.85, hrHigh: 0.95 },
           ],
-          note: 'Adventist Health Study 2 (83k people, Nazeeh 2025): time outdoors shows a reverse-J association with all-cause mortality — risk drops from 0.5 h (ref) to 2 h (HR 0.90), 3 h (HR 0.88), and 5 h (HR 0.90). Benefit persists without attenuation at high exposure. Lindqvist 2014 Swedish women: avoiders had ~2× mortality vs highest sun group. Stevenson 2024 UK Biobank: higher UV — all-cause mortality lower. Sun-BEEM 2026 UK Biobank: medium UV HR 0.89, high UV HR 0.84 vs low.',
+          note: 'AHS-2 (VERIFIED, PMID 40444275; 83,205 people, 11,515 deaths, warmer months vs 0.5 h ref): all-cause 2 h 0.90 (0.86–0.93), 3 h 0.88 (0.84–0.93), 5 h 0.90 (0.85–0.95) — reverse-J, benefit persists without attenuation. 0 h/day band (1.15) interpolated: AHS-2\'s lowest category is 0.5 h; Lindqvist 2014 (PMID 24697969) sun-avoiders had ~2× mortality vs the highest group, so our band is deliberately conservative. >5 h held flat at the 5 h estimate (no published category). Stevenson 2024 (UK Biobank, PMID 39094281) confirms the direction qualitatively. Sun-BEEM preprint (medRxiv 2026, 419k UK Biobank, NOT peer-reviewed): 0.89/0.84 vs low.',
         },
         {
-          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['adventist2025', 'stevenson2024'],
+          output: 'cvd', type: 'steps', evidence: 'moderate', source: ['adventist2025', 'stevenson2024', 'sunbeem2026'],
           steps: [
             { max: 0.25, hr: 1.18, hrLow: 1.06, hrHigh: 1.32 },
             { max: 1.0,  hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 3.0,  hr: 0.88, hrLow: 0.83, hrHigh: 0.94 },
-            { max: 5.0,  hr: 0.87, hrLow: 0.79, hrHigh: 0.95 },
-            { max: Infinity, hr: 0.85, hrLow: 0.77, hrHigh: 0.94 },
+            { max: 3.0,  hr: 0.87, hrLow: 0.79, hrHigh: 0.94 },
+            { max: 5.0,  hr: 0.86, hrLow: 0.79, hrHigh: 0.94 },
+            { max: Infinity, hr: 0.86, hrLow: 0.79, hrHigh: 0.94 },
           ],
-          note: 'AHS-2 (Nazeeh 2025): CVD mortality HR 0.89 (2 h), 0.87 (3 h), 0.86 (5 h). Stevenson 2024: stronger inverse UV-CVD mortality association than all-cause — driven by nitric-oxide-mediated blood pressure reduction and improved endothelial function. Sun-BEEM 2026: high UV consistently associated with lower CVD mortality.',
+          note: 'AHS-2 (VERIFIED, PMID 40444275): CVD mortality 2 h 0.89 (0.83–0.95), 3 h 0.87 (0.79–0.94), 5 h 0.86 (0.79–0.94) vs 0.5 h ref. Stevenson 2024 (PMID 39094281): the inverse UV–CVD association is stronger than all-cause — nitric-oxide-mediated blood pressure reduction (qualitative). Sun-BEEM preprint (medRxiv 2026, not peer-reviewed): CVD 0.82/0.77 vs low. 0 h/day band interpolated (same disclosure as mortality).',
         },
         {
-          output: 'cancer', type: 'steps', evidence: 'moderate', source: ['stevenson2024', 'adventist2025'],
+          output: 'cancer', type: 'steps', evidence: 'low', source: ['adventist2025', 'stevenson2024', 'sunbeem2026'],
           steps: [
-            { max: 0.25, hr: 1.06, hrLow: 0.97, hrHigh: 1.16 },
+            { max: 0.25, hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
             { max: 1.0,  hr: 1.00, hrLow: 1.00, hrHigh: 1.00 },
-            { max: 3.0,  hr: 0.96, hrLow: 0.90, hrHigh: 1.02 },
-            { max: 5.0,  hr: 0.96, hrLow: 0.89, hrHigh: 1.03 },
-            { max: Infinity, hr: 0.96, hrLow: 0.88, hrHigh: 1.05 },
+            { max: 3.0,  hr: 1.08, hrLow: 0.97, hrHigh: 1.20 },
+            { max: 5.0,  hr: 1.15, hrLow: 1.02, hrHigh: 1.29 },
+            { max: Infinity, hr: 1.15, hrLow: 1.02, hrHigh: 1.29 },
           ],
-          note: 'Stevenson 2024 UK Biobank: UV inversely associated with cancer mortality — higher UV is beneficial at all levels examined. Sun-BEEM 2026: non-skin cancer mortality lower, skin cancer mortality flat at high UV. AHS-2 (Nazeeh 2025) found cancer mortality slightly elevated at 5 h (HR 1.15, 1.02–1.29) in a low-baseline-risk Adventist population, possibly driven by skin cancer incidence. Preponderance of evidence supports modest net benefit or neutrality at all sun exposure levels.',
+          note: 'AHS-2 (VERIFIED, PMID 40444275 — the only peer-reviewed quantitative cohort): cancer MORTALITY rises with exposure — 2 h 1.02 (0.93–1.13, NS), 3 h 1.08 (0.97–1.20, NS), 5 h 1.15 (1.02–1.29, significant), possibly skin-cancer-incidence-driven. UK evidence finds the opposite in a low-sun country: Stevenson 2024 (PMID 39094281) qualitative inverse; Sun-BEEM preprint (medRxiv 2026, not peer-reviewed) non-skin cancer 0.92/0.89 vs low, skin-cancer mortality flat. Direction is latitude-dependent — steps use the verified US numbers; evidence low.',
         },
         {
           output: 'happiness', type: 'steps', evidence: 'moderate', source: ['maartense2024'],
@@ -1787,7 +1827,7 @@ const HEALTH_MODEL = {
             { max: 5.0,  points: 0.3 },
             { max: Infinity, points: 0.3 },
           ],
-          note: 'Meta-analysis of 30 studies (74 systematic): light exposure has a small-to-moderate positive effect on wellbeing (pooled d=0.46, CI 0.29–0.62; sensitivity d=0.53). Sunlight stimulates serotonin synthesis, beta-endorphin release, and vitamin D production. Bright-light therapy RCTs show d=0.48 for depression remission.',
+          note: 'Meta-analysis (VERIFIED, PMID 39664799; 30 studies of 74 from a systematic review): light exposure has a small-to-moderate positive effect on wellbeing — pooled d=0.46 (0.29–0.62), sensitivity 0.53 (0.35–0.72); high heterogeneity (I² 96%). Sunlight stimulates serotonin synthesis and beta-endorphin release.',
         },
       ],
     },
@@ -1823,14 +1863,14 @@ const HEALTH_MODEL = {
         {
           output: 'mortality', type: 'perUnit', per: 3.5, ref: 33, capAt: 56,
           hr: 0.87, hrLow: 0.84, hrHigh: 0.90,
-          evidence: 'high', source: ['kodama2009'],
-          note: 'Meta-analysis (33 studies): RR 0.87 (0.84–0.90) per 1-MET (3.5 ml/kg/min) higher fitness, calibrated to US average ~33 ml/kg/min. Corroborated by Mandsager 2018: elite vs low fitness HR 0.20.',
+          evidence: 'high', source: ['kodama2009', 'mandsager2018'],
+          note: 'Meta-analysis (33 studies; 102,980 participants, 6,910 deaths): RR 0.87 (0.84–0.90) per 1-MET (3.5 ml/kg/min) higher fitness, VERIFIED exact vs the paper (PMID 19454641, JAMA 301:2024–35). 1 MET ≈ 1 km/h higher running/jogging speed. Calibrated to US average ~33 ml/kg/min. Low vs high CRF contrast: RR 1.70 (1.51–1.92). Corroborated by Mandsager 2018: elite vs low fitness HR 0.20.',
         },
         {
           output: 'cvd', type: 'perUnit', per: 3.5, ref: 33, capAt: 56,
           hr: 0.85, hrLow: 0.82, hrHigh: 0.88,
           evidence: 'high', source: ['kodama2009'],
-          note: 'Same meta-analysis, CVD events: RR 0.85 (0.82–0.88) per 1-MET — calibrated to US average ~33 ml/kg/min. The CVD effect is slightly stronger than all-cause, consistent with cardiorespiratory fitness being a direct measure of cardiovascular health.',
+          note: 'Same meta-analysis, CHD/CVD events (84,323 participants, 4,485 cases): RR 0.85 (0.82–0.88) per 1-MET, VERIFIED exact vs the paper (PMID 19454641). Calibrated to US average ~33 ml/kg/min. The CVD effect is slightly stronger than all-cause, consistent with cardiorespiratory fitness being a direct measure of cardiovascular health. Low vs high CRF contrast: RR 1.56 (1.39–1.75).',
         },
       ],
     },
@@ -1898,7 +1938,7 @@ const HEALTH_MODEL = {
       gatedBy: 'gripOn',
       hint: 'Best of a few squeezes, dominant hand. Rough averages: ~40 kg men, ~25 kg women.',
       // leong2015 PURE study (17 countries, 140k): HR 1.16 per 5kg LOWER grip for all-cause mortality
-      // CVD: HR 1.19 per 5kg LOWER — even stronger than all-cause
+      // CVD: HR 1.17 per 5kg LOWER — even stronger than all-cause
       // Grip predicted mortality more strongly than systolic blood pressure — remarkable for a simple test
       // However, it's a MARKER of overall strength, not necessarily a modifiable lever (overlaps
       // strength-training input). Whether improving grip itself helps is untested.
@@ -1912,9 +1952,9 @@ const HEALTH_MODEL = {
         },
         {
           output: 'cvd', type: 'perUnit', per: 5, ref: 30, minDose: 15, capAt: 60,
-          hr: 0.84, hrLow: 0.81, hrHigh: 0.87,
+          hr: 0.855, hrLow: 0.807, hrHigh: 0.901,
           evidence: 'moderate', source: ['leong2015'],
-          note: 'PURE study, CVD mortality: HR 1.19 (1.15–1.23) per 5 kg LOWER grip — expressed as 0.84 per +5 kg, calibrated to US average ~30 kg. Grip predicted CVD mortality even more strongly than all-cause in the PURE cohort. Marker, not necessarily modifiable lever.',
+          note: 'PURE study, CVD mortality: HR 1.17 (1.11–1.24) per 5 kg LOWER grip — expressed as 0.855 per +5 kg, calibrated to US average ~30 kg. Grip predicted CVD mortality even more strongly than all-cause in the PURE cohort. Marker, not necessarily modifiable lever.',
         },
       ],
     },
@@ -1959,9 +1999,9 @@ const HEALTH_MODEL = {
         },
         {
           output: 'cvd', type: 'perUnit', per: 10, ref: 72, minDose: 45, capAt: 100,
-          hr: 1.15, hrLow: 1.12, hrHigh: 1.18,
+          hr: 1.15, hrLow: 1.11, hrHigh: 1.18,
           evidence: 'moderate', source: ['aune2017rhr'],
-          note: 'Same meta-analysis, CVD-specific: +15% (12–18%) per +10 bpm — calibrated to US average RHR 72 bpm = 1.0×. The RHR–CVD association is the best-established of all, reflecting the direct relationship between heart rate and myocardial oxygen demand.',
+          note: 'Same meta-analysis, CVD-specific: +15% (11–18%) per +10 bpm — calibrated to US average RHR 72 bpm = 1.0×. The RHR–CVD association is the best-established of all, reflecting the direct relationship between heart rate and myocardial oxygen demand.',
         },
       ],
     },
@@ -2019,6 +2059,10 @@ const HEALTH_MODEL = {
       text: 'Dual use of cigarettes + e-cigarettes gives ~6% increased mortality. Switching from smoking to e-cigarettes only reduced mortality by ~35% vs continued smoking.',
     },
     {
+      when: (v) => v.vaping === 'current', dir: 'neutral', input: 'Vaping', source: ['kundu2025'],
+      text: 'Cancer: no significant incident or prevalent cancer found in never-smoker vapers across a 39-study systematic review; DNA-damage biomarker evidence is mostly from acute exposure. The cancer card lists vaping as no-data for now.',
+    },
+    {
       when: (v) => v.smoking === 'current', dir: 'bad', input: 'Smoking', source: ['thun2013', 'jha2013'],
       text: 'Current smokers have ~25× the lung-cancer death rate of never-smokers (and ~23× the COPD death rate). Significant increase in risk of COPD and vascular disease, also icnreasing mortality.',
     },
@@ -2027,7 +2071,7 @@ const HEALTH_MODEL = {
       text: 'No strength/balance training → up to 25% more falls later in life.',
     },
     {
-      when: (v) => v.strength < 1 && v.sex === 'female', dir: 'bad', input: 'Strength', source: ['howe2011'],
+      when: (v) => v.strength < 1 && v.sex === 'female', dir: 'bad', input: 'Strength', source: ['howe2011', 'blochibenfeldt2025'],
       text: 'Increased chance of osteoporosis. Resistance training preserves bone density, lack of training rapidly accelerates bone loss, especially in postmenopausal women.',
     },
     {
@@ -2107,7 +2151,7 @@ const HEALTH_MODEL = {
       text: 'above the US annual standard (12 µg/m³); WHO\'s guideline is 5 — HEPA purifiers, masks and route/location choices measurably reduce exposure',
     },
     {
-      when: (v) => v.occupationalPA >= 2, dir: 'neutral', input: 'Physical activity at work', source: ['dalene2021'],
+      when: (v) => v.occupationalPA >= 2, dir: 'neutral', input: 'Physical activity at work', source: ['dalene2021', 'cillekens2022'],
       text: 'The "physical activity paradox" is contested: after full adjustment for socioeconomic and health factors, Norwegian men in active occupations lived 0.4–1.7 years LONGER (Dalene 2021). The Coenen 2018 meta-analysis pooled mostly crudely adjusted studies — healthy-worker selection may drive its higher-risk finding. Our effect uses Coenen (sex-specific), and this uncertainty is part of why the estimate is moderate evidence.',
     },
     {
@@ -2135,6 +2179,711 @@ const HEALTH_MODEL = {
       when: (v) => v.sunExposure <= 1, dir: 'bad', input: 'Sun exposure', source: ['lindqvist2014', 'stevenson2024'],
       text: 'Too little sun also misses vitamin D, nitric oxide and circadian benefits.',
     },
+    {
+      when: (v) => v.vo2maxOn, dir: 'good', input: 'VO2 max', source: ['weeldreyer2025'],
+      text: 'Measured fitness absorbs most of BMI\'s mortality association: the unfit have ~2× all-cause mortality (and 2–3× CVD) at ANY BMI, while fit-at-any-BMI ≈ normal-weight fit. The bar is modest — better than the least-fit 20% is often enough. (The Mayo table\'s ≥35-BMI row still shows 1.45 at high self-reported PA — measured CRF ≠ self-reported PA.)',
+    },
+    {
+      when: (v) => v.heightCm > 0 && (v.weightKg / Math.pow(v.heightCm / 100, 2)) < 18.5, dir: 'neutral', input: 'Weight', source: ['sanchezlastra2021'],
+      text: 'Underweight caveat: the Mayo PA×adiposity study EXCLUDED BMI <18.5 at baseline (illness-related weight loss), so underweight maps into the normal-weight row here — the elevated mortality risk below BMI 18.5 seen in other studies (Di Angelantonio 2016) is NOT counted in the adiposity cluster.',
+    },
+  ],
+
+  // ------------------------------------------------- Joint models (conflation)
+  // When multiple inputs share a causal pathway, their marginal effects must
+  // NOT be multiplied — the joint estimate replaces the product (see PLAN.md
+  // §1.2–1.11 for the verified joint models). Each entry describes ONE
+  // sub-model; the engine (Phase 2) dispatches per `cluster` and only applies
+  // the joint model when at least one cluster member is active. Ownership
+  // rule: an input's HR is counted by at most ONE joint model — the first
+  // entry whose `members` include it (array order decides).
+  //
+  // Schema (documented; this array is EMPTY until Phase 3 populates it):
+  //   {
+  //     id:       string,            // unique joint-model id
+  //     cluster:  string,            // cluster key (e.g. 'diet', 'movement',
+  //                                  //   'adiposity', 'substances', 'psychosocial')
+  //     members:  string[],          // input ids whose marginal HRs this
+  //                                  //   entry REPLACES (each counted once)
+  //     model:    'score'|'table'|'cells',
+  //                                  // 'score': additive score built from
+  //                                  //   per-input components (PURE-style);
+  //                                  //   each component gets partial credit
+  //                                  //   along the published gradient
+  //                                  // 'table': grid of published joint
+  //                                  //   categories (e.g. Ekelund PA×sitting,
+  //                                  //   Mayo 2021 PA×adiposity) with
+  //                                  //   bilinear interpolation
+  //                                  // 'cells': published discrete cells
+  //                                  //   (e.g. Momma 2022 aerobic×strength,
+  //                                  //   Duncan 2023 PA×strength×sleep) —
+  //                                  //   same shape as 'table', no
+  //                                  //   interpolation
+  //     lookup:   { components, gradient }  // 'score' model:
+  //                                  //   components: [{ input, max, weight,
+  //                                  //     valueOf? }]
+  //                                  //     (read-only axis inputs; score =
+  //                                  //     Σ weight·clamp(value/max, 0, 1);
+  //                                  //     partialCredit per input =
+  //                                  //     Σ weight·fraction over the
+  //                                  //     slider's entries, for the UI;
+  //                                  //     valueOf maps segmented values,
+  //                                  //     e.g. fish {none:0, some:1, lots:1})
+  //                                  //   gradient: [{ max, hr, hrLow, hrHigh }]
+  //                                  //     (score -> HR steps, same walk as
+  //                                  //     input `steps`)
+   //              { axes, grid, interpolate, ratio }  // 'table'/'cells':
+   //                                  //   axes: [{ id, label, unit,
+   //                                  //     inputs: [ids], coeffs: [..],
+   //                                  //     fn: (values, resolveValue) -> n,
+   //                                  //     bands: [{ max, label }] }]
+   //                                  //     (axis value = Σ coeffᵢ·inputᵢ,
+   //                                  //     banded by `max` cutoffs; inputs
+   //                                  //     are read-only — members decide
+   //                                  //     whose HRs this replaces; `fn`
+   //                                  //     replaces the sum for categorical
+   //                                  //     axes (Duncan PA category — all
+   //                                  //     thresholds live here, and the fn
+   //                                  //     must mirror the engine's
+   //                                  //     gated/superseded rule, e.g.
+   //                                  //     vo2maxOn retires cardio);
+   //                                  //     gated-off or superseded inputs
+   //                                  //     contribute 0 automatically)
+   //                                  //   grid: nested array by band index,
+   //                                  //     entries { hr, hrLow, hrHigh };
+   //                                  //     interpolate: true → bilinear on
+   //                                  //     log HR between band cutoffs
+   //                                  //     (2 axes only)
+   //                                  //   ratio: { axis, referent } →
+   //                                  //     total = cell(...)/cell(axis →
+   //                                  //     referent band): the lookup
+   //                                  //     contributes only the referent
+   //                                  //     axis's main effect (interacted
+   //                                  //     with the other axis); the other
+   //                                  //     axis's row effect is divided away
+   //                                  //     because a sibling cluster owns it
+   //                                  //     (Duncan's PA rows are owned by
+   //                                  //     Ekelund/Momma). CI = quadrature
+   //                                  //     of the two cells' sigmas.
+  //     outputs:  { mortality: lookup, cvd: lookup, ... }  // per-output
+  //                                  //   lookups; outputs without coverage
+  //                                  //   fall back to the members' marginal
+  //                                  //   product
+  //     evidence: 'high'|'moderate'|'low',  // widens the joint total's CI
+  //     source:   string|string[],  // keys into `sources` below
+  //     calibrate: true,  // OPTIONAL: shift this joint model's lookup
+  //                                  //   (and CI) by a constant log-space
+  //                                  //   offset per HR output so the total at
+  //                                  //   the AVERAGE profile equals the owned
+  //                                  //   members' marginal product exactly
+  //                                  //   (calibration rule §2.1). Used when
+  //                                  //   the published table's default cell
+  //                                  //   is far from our members' frame
+  //                                  //   (Ekelund ~92% off); skipped when it
+  //                                  //   is within the tolerance band (Momma).
+  //                                  //   Members already owned by an earlier
+  //                                  //   joint model are excluded from the
+  //                                  //   anchor sum (first-owner rule).
+  //   }
+  // While empty, the engine multiplies marginals exactly as before — this
+  // structure is a no-op by design.
+  jointModels: [
+    {
+      // PURE-style healthy diet score (Phase 3.1). One joint model per
+      // cluster, here: the 4 inputs with PURE score components mapped onto
+      // our sliders (fiber, fruitVeg, nuts, fish).
+      id: 'dietScore',
+      cluster: 'diet',
+      members: ['fiber', 'fruitVeg', 'nuts', 'fish'],
+      model: 'score',
+      evidence: 'high',
+      source: ['mente2023'],
+      outputs: {
+        mortality: {
+          // Six PURE components, five mappable: fruit, vegetables, legumes,
+          // nuts, fish (dairy excluded — the paper's Appendix S8 shows
+          // dropping any single component barely changes the association).
+          // fruitVeg feeds BOTH the fruit and the vegetables component:
+          // 6 servings/d ≈ fruit (PURE median 145 g/d ≈ 1.8 servings) +
+          // vegetables (250 g/d ≈ 3.1 servings); 3 servings/d = the
+          // vegetables point. fiber stands in for legumes (PURE median
+          // 38 g/d ≈ 6–8 g fiber → 25 g/d). fish max 1 (any regular
+          // intake = the PURE fish median 12 g/d point).
+          components: [
+            { input: 'fruitVeg', max: 6, weight: 1 }, // fruit
+            { input: 'fruitVeg', max: 6, weight: 1 }, // vegetables
+            { input: 'fiber', max: 25, weight: 1 }, // legumes
+            { input: 'nuts', max: 9, weight: 1 }, // nuts
+            { input: 'fish', max: 1, weight: 1, valueOf: { none: 0, some: 1, lots: 1 } },
+          ],
+          // Per-point HR 0.91 (0.89–0.93) — the paper's per-20-percentile
+          // increment, applied as exact powers. Cross-check: ≥5-vs-≤1 0.70
+          // (0.63–0.77) vs our top step 0.91^4 = 0.6857 (0.6274–0.7481).
+          gradient: [
+            { max: 1, hr: 1.0, hrLow: 1.0, hrHigh: 1.0 },
+            { max: 2, hr: 0.91, hrLow: 0.89, hrHigh: 0.93 },
+            { max: 3, hr: 0.8281, hrLow: 0.7921, hrHigh: 0.8649 },
+            { max: 4, hr: 0.7536, hrLow: 0.705, hrHigh: 0.8044 },
+            { max: 5, hr: 0.6857, hrLow: 0.6274, hrHigh: 0.7481 },
+          ],
+        },
+      },
+      note: "PURE healthy diet score (Mente 2023, Eur Heart J 44:2560–79): one point per above-median component; scores here are FRACTIONAL (partial credit along each component), so the US-average profile scores ≈3.0 points and lands mid-gradient (≈0.75 HR). The paper's per-20-percentile increment 0.91 (0.89–0.93) is applied per point as exact powers; the published ≥5-vs-≤1 contrast 0.70 (0.63–0.77) matches our top step 0.686 (0.627–0.748) within ~2%. Members' own marginal effects (fiber Yang 2015, fruit/veg Wang 2014, nuts Aune 2016, fish Kwok 2019/Li 2020) are superseded for mortality; the joint total replaces the marginal product when the score lookup covers the output.",
+    },
+    {
+      // PA×sitting joint table (Phase 3.2). Ekelund 2016 (Lancet): 16
+      // studies, 1,005,791 people, 84,609 deaths; harmonised meta-analysis
+      // of the sitting×PA interaction. Members' marginal effects (cardio
+      // Arem 2015, steps Stamatakis 2011, sitting Biswas 2015) are
+      // superseded for mortality; cancer/CVD have no coverage here and fall
+      // back to the members' marginals.
+      id: 'ekelundTable',
+      cluster: 'movement',
+      members: ['cardio', 'steps', 'sitting'],
+      model: 'table',
+      evidence: 'high',
+      source: ['ekelund2016'],
+      calibrate: true,
+      outputs: {
+        mortality: {
+          axes: [
+            // PA axis (MET-min/wk): cardio min/wk × 4 MET (moderate
+            // equivalent) + steps/d × 7 × 0.03 MET-min (walking ≈ 3 MET at
+            // ~100 steps/min). Quartile cutoffs from the paper (MET-h/w ×
+            // 60): Q1 ≤150, Q2 ≤960, Q3 ≤1800, Q4 >2130 (above 2130 the
+            // risk is flat per the paper, so Q4's cell clamps).
+            { id: 'pa', label: 'PA', unit: 'MET-min/wk', inputs: ['cardio', 'steps'], coeffs: [4, 0.21], bands: [{ max: 150, label: 'Q1' }, { max: 960, label: 'Q2' }, { max: 1800, label: 'Q3' }, { max: 2130, label: 'Q4' }] },
+            // Sitting axis (h/day): the paper's <4 and 4–6 rows are stored
+            // as-is; the open-ended >8 row is the LAST band so ≥8 h clamps
+            // flat to it, and 6–8 h values interpolate between the 4–6 and
+            // >8 rows (the published 6–8 row is not stored separately — it
+            // is close to that midpoint, disclosed in the note).
+            { id: 'sit', label: 'Sitting', unit: 'h/day', inputs: ['sitting'], coeffs: [1], bands: [{ max: 4, label: '<4' }, { max: 6, label: '4–6' }, { max: 8, label: '≥6' }] },
+          ],
+          // Rows = PA quartile (Q1…Q4), cols = sitting (<4, 4–6, >8).
+          // Referent = <4 h/d + Q4 (1.00, top-right). Grid rows hold the HR
+          // AT each band cutoff; interpolate: true bilinears between them.
+          grid: [
+            [{ hr: 1.27, hrLow: 1.22, hrHigh: 1.30 }, { hr: 1.35, hrLow: 1.30, hrHigh: 1.40 }, { hr: 1.59, hrLow: 1.52, hrHigh: 1.66 }],
+            [{ hr: 1.12, hrLow: 1.08, hrHigh: 1.16 }, { hr: 1.15, hrLow: 1.11, hrHigh: 1.20 }, { hr: 1.27, hrLow: 1.21, hrHigh: 1.33 }],
+            [{ hr: 1.03, hrLow: 0.99, hrHigh: 1.07 }, { hr: 1.08, hrLow: 1.04, hrHigh: 1.13 }, { hr: 1.13, hrLow: 1.07, hrHigh: 1.19 }],
+            [{ hr: 1.00, hrLow: 0.96, hrHigh: 1.04 }, { hr: 1.00, hrLow: 0.96, hrHigh: 1.04 }, { hr: 1.04, hrLow: 0.99, hrHigh: 1.10 }],
+          ],
+          interpolate: true,
+        },
+      },
+      note: "Ekelund 2016 (Lancet 388:1302–10): harmonised meta-analysis of 16 studies (1,005,791 people), joint sitting×PA all-cause mortality. Sitting 9 h/d at the US-average profile lands in the paper's >8 h/d row and ≈Q3 PA (defaults → PA 1248 MET-min/wk), where the table reads ≈1.22 while the members' marginal product is 0.59 — the `calibrate: true` anchor shifts the whole table by a constant log-space offset so the average profile is exactly 1.0× (calibration rule), preserving the table's shape and the sitting×PA interaction. HRs between band cutoffs are interpolated on the log scale (rows/cols hold the HR at each cutoff); the open-ended >8 h/d row clamps flat (≥8 h), and the published 6–8 h/d row is not stored separately — 6–8 h values interpolate between the 4–6 and >8 rows (the paper's 6–8 cells sit near that midpoint; 9 h/d reads the flat >8 row). Cells are minimally adjusted (age, sex) plus each study's original covariates — diet is not uniformly adjusted, and the remaining cross-cluster overlap with the diet score is not modelled. Ref cell CI (0.96–1.04) approximated from the adjacent published cell (the paper gives no CI for the referent). Cancer/CVD outputs have no table coverage and use the members' marginal effects.",
+    },
+    {
+      // Aerobic×strength cells (Phase 3.2). Momma 2022 (BJSM): systematic
+      // review + meta-analysis; the both-cells are the published joint
+      // estimates and are genuinely synergistic (0.60 < 0.85×0.80 ≈ 0.68).
+      // The `strength` slider's marginal (0.85 at the US-average 1
+      // session/wk, now exactly matching the MS-only cell) is superseded;
+      // `cardio` stays owned by ekelundTable —
+      // this axis only reads it to select the aerobic row.
+      id: 'mommaCells',
+      cluster: 'movement',
+      members: ['strength'],
+      model: 'table',
+      evidence: 'low',
+      source: ['momma2022'],
+      outputs: {
+        mortality: {
+          axes: [
+            // Aerobic axis (read-only, owned by ekelundTable): ≥150 min/wk
+            // moderate-equivalent = "AER" (the paper's aerobic group).
+            { id: 'aer', label: 'Aerobic', unit: 'min/wk', inputs: ['cardio'], coeffs: [1], bands: [{ max: 149, label: 'none' }, { max: 9999, label: 'AER' }] },
+            // Strength axis (sessions/wk): any ≥1 = "MS" (the paper's
+            // muscle-strengthening group; the J-shaped dose-response beyond
+            // 2–3 sessions/wk is not modelled — binary band, disclosed).
+            { id: 'ms', label: 'Strength', unit: 'sessions/wk', inputs: ['strength'], coeffs: [1], bands: [{ max: 0, label: 'none' }, { max: 99, label: 'MS' }] },
+          ],
+          // Rows = aerobic (none, AER), cols = strength (none, MS).
+          // Referent = neither (1.00, top-left). Published cells used
+          // directly (no interpolation — 'cells' semantics). `ratio`
+          // divides by the none COLUMN (axis 1, referent 0): total =
+          // cell(aerobic, strength) / cell(aerobic, none). The aerobic
+          // ROW main effect is divided away because the Ekelund cluster's
+          // PA axis (cardio+steps) owns aerobic PA on mortality — keeping
+          // both would price the aerobic signal twice (3.2f probe: cardio
+          // 0→300 moved Ekelund ×0.824 AND this row ×0.706, combined
+          // ×0.582 vs Arem's single 0.63). What remains is the strength
+          // main effect interacted with aerobic status (the published
+          // synergy survives: both-cell 0.60/0.80 = 0.75 < MS-only 0.85).
+          // At the default none row the ratio is exactly the published
+          // MS-only cell (0.85) — no calibration change. On cancer/cvd
+          // Ekelund has no coverage, so aerobic there falls back to the
+          // cardio input's own marginal — still priced exactly once.
+          grid: [
+            [{ hr: 1.00, hrLow: 0.96, hrHigh: 1.04 }, { hr: 0.85, hrLow: 0.79, hrHigh: 0.93 }],
+            [{ hr: 0.80, hrLow: 0.78, hrHigh: 0.82 }, { hr: 0.60, hrLow: 0.54, hrHigh: 0.67 }],
+          ],
+          ratio: { axis: 1, referent: 0 },
+        },
+        cancer: {
+          axes: [
+            { id: 'aer', label: 'Aerobic', unit: 'min/wk', inputs: ['cardio'], coeffs: [1], bands: [{ max: 149, label: 'none' }, { max: 9999, label: 'AER' }] },
+            { id: 'ms', label: 'Strength', unit: 'sessions/wk', inputs: ['strength'], coeffs: [1], bands: [{ max: 0, label: 'none' }, { max: 99, label: 'MS' }] },
+          ],
+          grid: [
+            [{ hr: 1.00, hrLow: 0.96, hrHigh: 1.04 }, { hr: 0.88, hrLow: 0.80, hrHigh: 0.97 }],
+            [{ hr: 0.80, hrLow: 0.78, hrHigh: 0.82 }, { hr: 0.72, hrLow: 0.53, hrHigh: 0.98 }],
+          ],
+          ratio: { axis: 1, referent: 0 },
+        },
+        cvd: {
+          axes: [
+            { id: 'aer', label: 'Aerobic', unit: 'min/wk', inputs: ['cardio'], coeffs: [1], bands: [{ max: 149, label: 'none' }, { max: 9999, label: 'AER' }] },
+            { id: 'ms', label: 'Strength', unit: 'sessions/wk', inputs: ['strength'], coeffs: [1], bands: [{ max: 0, label: 'none' }, { max: 99, label: 'MS' }] },
+          ],
+          grid: [
+            [{ hr: 1.00, hrLow: 0.96, hrHigh: 1.04 }, { hr: 0.83, hrLow: 0.73, hrHigh: 0.93 }],
+            [{ hr: 0.79, hrLow: 0.76, hrHigh: 0.82 }, { hr: 0.54, hrLow: 0.41, hrHigh: 0.70 }],
+          ],
+          ratio: { axis: 1, referent: 0 },
+        },
+      },
+      note: "Momma 2022 (BJSM 56:755–63): systematic review + meta-analysis of prospective cohorts; all cells are 'minimally adjusted plus aerobic PA adjusted in every study' (several also adjusted diet — the diet overlap is partly handled in-study). MS-only cells are Momma's aerobic-adjusted single-activity contrasts (all-cause 0.85, cancer 0.88, CVD 0.83); aerobic-only cells are approximated from the existing Arem 2015 ≥150 min/wk bands (0.80 all-cause/cancer — the cardio cancer effect mirrors mortality — 0.79 CVD) because Momma's aerobic-only contrast is graphical only (Figure 5); the combined cells are Momma's published joint estimates and are SYNERGISTIC (all-cause 0.60 < 0.85×0.80 ≈ 0.68 — the interaction is the point of the cells). RATIO MODE (3.2f): total = cell(aerobic, strength) / cell(aerobic, none) — the aerobic ROW main effect is divided away because the Ekelund cluster's PA axis owns aerobic PA on mortality (keeping both double-priced the aerobic signal ~8–15%, found by the 3.2f probe); the strength main effect × aerobic interaction survives (both-cell 0.60/0.80 = 0.75, still < MS-only 0.85 — synergy intact). On cancer/cvd, Ekelund has no coverage and aerobic falls back to the cardio input's own marginal, so each output prices aerobic exactly once. NO `calibrate` anchor: the default none row is exactly the published MS-only cells (0.85/0.88/0.83) and matches the strength marginal's 1-session band exactly (0.85/0.88/0.83) — the published cells stay intact (unlike the Ekelund table, which is ~92% off at defaults). The strength band is binary (any ≥1 session/wk = MS) — the paper's J-shaped dose-response (min RR at ~60 min/wk, no benefit past ~130 min/wk) is not modelled. Referent = no AER + no MS. Evidence 'low' (GRADE very low, I² 59–85%).",
+    },
+    {
+      // Sleep×PA category cells (Phase 3.2). Duncan 2023 (JSHS 12:65–72,
+      // NHIS 2004–2014, n=282,473, 18,793 deaths): joint PA×sleep-duration
+      // table, referent Active-Rec. `ratio: true` divides by the Rec column
+      // so the table contributes ONLY the sleep main effect interacted with
+      // PA category — the PA-row main effect is owned by the Ekelund/Momma
+      // clusters and would double-count if multiplied. The `sleep` slider's
+      // marginal (Cappuccio 2010) is superseded for mortality only.
+      id: 'duncanCells',
+      cluster: 'movement',
+      members: ['sleep'],
+      model: 'table',
+      evidence: 'low',
+      source: ['duncan2023'],
+      outputs: {
+        mortality: {
+          axes: [
+            // PA category (categorical, via `fn`): the paper's Active /
+            // AER only / MSA only / Inactive groups. Thresholds: aerobic
+            // ≥150 min/wk mod-equivalent flips AER on; strength ≥2
+            // sessions/wk flips MSA on; both = Active; neither = Inactive.
+            // Mirrors the engine's supersession rule: vo2maxOn retires the
+            // cardio slider (the Ekelund PA axis does the same), so
+            // measured fitness never double-counts. Returns the band index.
+            {
+              id: 'paCategory', label: 'PA category',
+              fn: (v, r) => {
+                const cardio = (v.vo2maxOn ? 0 : r('cardio')) || 0;
+                const strength = r('strength') || 0;
+                const aer = cardio >= 150, msa = strength >= 2;
+                return aer && msa ? 3 : aer ? 2 : msa ? 1 : 0;
+              },
+              bands: [
+                { max: 0, label: 'Inactive' },
+                { max: 1, label: 'MSA only' },
+                { max: 2, label: 'AER only' },
+                { max: 3, label: 'Active' },
+              ],
+            },
+            // Sleep duration (h/day): Short ≤6.9, Rec ≤9.4, Long ≤11. The
+            // 9.1–9.9 range is ambiguous in the study itself (its Long
+            // boundary is ≥10 for 18–64 y and ≥9 for >64 y) — 9.5 maps
+            // Long, disclosed.
+            { id: 'sleep', label: 'Sleep', unit: 'h/day', inputs: ['sleep'], coeffs: [1], bands: [{ max: 6.9, label: 'Short' }, { max: 9.4, label: 'Rec' }, { max: 11, label: 'Long' }] },
+          ],
+          // Rows = PA category in BAND order (Inactive, MSA only, AER only,
+          // Active — note: NOT the paper's display order, which lists the
+          // referent Active first); cols = sleep (Short, Rec, Long). The
+          // paper's published cells, used directly — NO interpolation: the
+          // study's sleep groups are discrete categories (Rec = 7–9 h), so
+          // a slider value inside a band reads that band's cell (no
+          // invented gradient; also keeps the defaults ratio exactly 1.0).
+          // `ratio` divides by the Rec column (band 1) so at defaults
+          // (Inactive, Rec) the total is 1.00 exactly — the average person
+          // sleeps a reference duration, no calibration offset needed.
+          grid: [
+            [{ hr: 1.59, hrLow: 1.43, hrHigh: 1.76 }, { hr: 1.68, hrLow: 1.53, hrHigh: 1.84 }, { hr: 2.20, hrLow: 1.99, hrHigh: 2.44 }],
+            [{ hr: 1.43, hrLow: 1.17, hrHigh: 1.76 }, { hr: 1.56, hrLow: 1.36, hrHigh: 1.80 }, { hr: 2.32, hrLow: 1.85, hrHigh: 2.91 }],
+            [{ hr: 1.28, hrLow: 1.14, hrHigh: 1.44 }, { hr: 1.21, hrLow: 1.09, hrHigh: 1.34 }, { hr: 1.54, hrLow: 1.34, hrHigh: 1.76 }],
+            [{ hr: 1.08, hrLow: 0.92, hrHigh: 1.26 }, { hr: 1.00, hrLow: 1.00, hrHigh: 1.00 }, { hr: 1.40, hrLow: 1.11, hrHigh: 1.77 }],
+          ],
+          ratio: { axis: 1, referent: 1 },
+        },
+      },
+      note: "Duncan 2023 (J Sport Health Sci 12:65–72, NHIS 2004–2014, n=282,473): joint PA×sleep-duration all-cause mortality. Ratio mode: total = cell(PA, sleep) / cell(PA, Rec) — the PA-row main effect (Inactive 1.68 → Active 1.00 gradient) is divided away because Ekelund/Momma already own the PA risk; what remains is the sleep main effect interacted with PA category, which is the study's novel finding (short-sleep risk ~eliminated in the Active group, 1.08 NS; long-sleep risk persists at every PA level, worst with low PA 2.20–2.32). No multiplicative interaction is significant in the study, so the cells are used directly; the study's sleep groups are discrete categories, so there is NO interpolation on the sleep axis (a value inside a band reads that band's cell — the defaults ratio is then exactly 1.00, no `calibrate` anchor needed). Sleep slider 4–11 h, step 0.5; Rec = the 7–9 h (18–64 y) / 7–8 h (>64 y) reference; the 9.1–9.9 range is ambiguous in the study itself and 9.5 maps Long. The study does NOT adjust for diet or sedentary behaviour (stated limitation) — the diet overlap is priced by the `duncanCells ↔ dietScore` overlap pair (ρ 0.10), and sitting overlap by the Ekelund cluster's own sitting axis. The Active-Rec referent cell has no published CI (1.00 used as-is; the ratio's CI adds only the denominator's sigma — a slight understatement, disclosed). Evidence 'low' (self-reported PA/sleep, wide CIs in some cells).",
+    },
+    {
+      // PA×adiposity joint table (Phase 3.3). Sanchez-Lastra 2021 (Mayo Clin
+      // Proc 96:105–19; UK Biobank n=295,917, 6,684 deaths): joint PA×BMI
+      // and PA×body-fat cells for ALL-CAUSE, CVD- and cancer-mortality
+      // (Model 3). Replaces the Di Angelantonio BMI marginal on all three HR
+      // outputs AND gives the body-fat slider real CVD + cancer data; the
+      // bodyFat marginal (Jayedi 2022) retires on mortality too (first-owner
+      // rule — one joint model per cluster, members counted once).
+      // The PA axis is rank-preserving (Ekelund cutoffs, not Mayo's MET
+      // medians — UK Biobank self-report overreports; keeping both tables'
+      // axes on the same scale matters more, disclosed). The adiposity axis
+      // reads derived BMI, or the measured body-fat slider when bodyFatOn;
+      // the grid follows the axis mode (the BF quartile rows are a separate
+      // published table — same study, different adiposity measure).
+      id: 'mayoCells',
+      cluster: 'adiposity',
+      members: ['bmi', 'bodyFat'],
+      model: 'table',
+      evidence: 'high',
+      source: ['sanchezlastra2021'],
+      calibrate: true,
+      outputs: {
+        mortality: {
+          // Axis 0 = grid ROWS, axis 1 = grid COLUMNS (indexGrid order; the
+          // grids below are stored rows=PA, cols=adiposity). The ratio's
+          // referent is column 0 of axis 1 — the normal/low adiposity column
+          // — so the PA-row main effect divides away.
+          axes: [
+            // PA axis: rank-preserving mapping onto the Ekelund quartile
+            // cutoffs the movement cluster already uses (G3 ≤150 / G2 ≤1800 /
+            // G1 >1800 MET-min/wk from cardio min/wk × 4 + steps/d × 0.21) —
+            // NOT the paper's MET medians (UKB overreports; the two tables
+            // must stay on the same PA scale). vo2maxOn retires the cardio
+            // slider here automatically (engine axis rule, same as Ekelund).
+            { id: 'pa', label: 'PA', unit: 'MET-min/wk', inputs: ['cardio', 'steps'], coeffs: [4, 0.21], bands: [{ max: 150, label: 'G3' }, { max: 1800, label: 'G2' }, { max: Infinity, label: 'G1' }] },
+            // Adiposity axis. BMI mode: the study's four BMI groups
+            // (18.5–24.9 / 25–29.9 / 30–34.9 / ≥35); BMI <18.5 was EXCLUDED
+            // from the study (illness-related weight loss), so underweight
+            // maps into the normal-weight band (col 0) — the Di Angelantonio
+            // left arm is not counted (finding + note). BF mode (bodyFatOn):
+            // the study's sex-specific distribution-matched quartiles — the
+            // paper publishes NO % cutoffs, so these bands are OUR disclosed
+            // translation via the Deurenberg 1991 BF%-BMI equation at the UK
+            // Biobank mean age (56 y): BF% at BMI 18.5/25/30/35 ≈ 30/37/43/49
+            // (women), 19/27/33/39 (men). Returns the band INDEX (Duncan
+            // paCategory pattern).
+            {
+              id: 'adip', label: 'Adiposity',
+              fn: (v, r) => {
+                if (v.bodyFatOn) {
+                  const bf = r('bodyFat');
+                  if (typeof bf !== 'number' || !isFinite(bf)) return 0;
+                  const c = v.sex === 'female' ? [30, 37, 43, 49] : [19, 27, 33, 39];
+                  const idx = c.findIndex((x) => bf <= x);
+                  return idx < 0 ? 3 : idx;
+                }
+                const bmi = r('bmi');
+                if (typeof bmi !== 'number' || !isFinite(bmi)) return 0;
+                if (bmi < 18.5) return 0;
+                if (bmi < 25) return 0;
+                if (bmi < 30) return 1;
+                if (bmi < 35) return 2;
+                return 3;
+              },
+              bands: [
+                { max: 0, label: 'Normal' },
+                { max: 1, label: 'Overweight' },
+                { max: 2, label: 'Obese I' },
+                { max: 3, label: 'Obese II+' },
+              ],
+            },
+          ],
+          // Rows = PA group in BAND order (G3, G2, G1 — NOT the paper's
+          // display order), cols = adiposity bands normal-first (normal /
+          // overweight / obese I / ≥35 for BMI; low / med-low / med-high /
+          // high for BF) so the ratio's referent col = 0. Published Model 3
+          // cells used directly, NO interpolation (both axes are discrete
+          // study categories — Duncan precedent). `ratio {axis: 1,
+          // referent: 0}` divides by the normal column: the PA-row main
+          // effect divides away (Ekelund's PA axis owns PA on mortality;
+          // the cardio+steps marginals own it on cancer/cvd) and what
+          // survives is the published PA×adiposity interaction
+          // (attenuation: BF high 1.54 → 1.24 from G3 to G1; BMI ≥35 flat
+          // 1.52 → 1.45). At defaults (G2, overweight) the ratio reads
+          // 1.02/1.07 = 0.9533 — below 1.0 because the normal-weight G2
+          // cell (1.07) is itself elevated (overweight-paradox artifact,
+          // see note). `calibrate: true` anchors the table so the cluster
+          // total at defaults equals the members' marginal product (the
+          // bmi marginal ≈1.20; the ratio 0.9533 is ~26% off — Ekelund
+          // anchor rule). CI for the referent cell: no published CI (1.00
+          // used as-is — the ratio's CI then adds only the numerator's
+          // sigma; slight understatement, disclosed, Duncan precedent).
+          grids: {
+            bmi: [
+              [{ hr: 1.22, hrLow: 1.07, hrHigh: 1.38 }, { hr: 1.12, hrLow: 1.00, hrHigh: 1.24 }, { hr: 1.38, hrLow: 1.22, hrHigh: 1.56 }, { hr: 1.52, hrLow: 1.30, hrHigh: 1.78 }],
+              [{ hr: 1.07, hrLow: 0.96, hrHigh: 1.18 }, { hr: 1.02, hrLow: 0.93, hrHigh: 1.11 }, { hr: 1.09, hrLow: 0.97, hrHigh: 1.23 }, { hr: 1.43, hrLow: 1.21, hrHigh: 1.67 }],
+              [{ hr: 1.00, hrLow: 1.00, hrHigh: 1.00 }, { hr: 1.00, hrLow: 0.90, hrHigh: 1.10 }, { hr: 1.15, hrLow: 1.02, hrHigh: 1.29 }, { hr: 1.45, hrLow: 1.21, hrHigh: 1.73 }],
+            ],
+            bodyFat: [
+              [{ hr: 1.11, hrLow: 0.96, hrHigh: 1.28 }, { hr: 1.13, hrLow: 1.01, hrHigh: 1.25 }, { hr: 1.38, hrLow: 1.22, hrHigh: 1.55 }, { hr: 1.54, hrLow: 1.33, hrHigh: 1.79 }],
+              [{ hr: 1.05, hrLow: 0.94, hrHigh: 1.16 }, { hr: 1.01, hrLow: 0.92, hrHigh: 1.11 }, { hr: 1.13, hrLow: 1.01, hrHigh: 1.26 }, { hr: 1.36, hrLow: 1.17, hrHigh: 1.59 }],
+              [{ hr: 1.00, hrLow: 1.00, hrHigh: 1.00 }, { hr: 1.02, hrLow: 0.93, hrHigh: 1.12 }, { hr: 1.12, hrLow: 0.99, hrHigh: 1.25 }, { hr: 1.24, hrLow: 1.04, hrHigh: 1.49 }],
+            ],
+          },
+          gridForAxis: function (r, v) { return this.grids[v.bodyFatOn ? 'bodyFat' : 'bmi']; },
+          ratio: { axis: 1, referent: 0 },
+        },
+        cvd: {
+          // Same axis order as mortality: axis 0 = PA (grid ROWS), axis 1 =
+          // adiposity (grid COLUMNS; ratio referent = normal col 0).
+          axes: [
+            { id: 'pa', label: 'PA', unit: 'MET-min/wk', inputs: ['cardio', 'steps'], coeffs: [4, 0.21], bands: [{ max: 150, label: 'G3' }, { max: 1800, label: 'G2' }, { max: Infinity, label: 'G1' }] },
+            {
+              id: 'adip', label: 'Adiposity',
+              fn: (v, r) => {
+                if (v.bodyFatOn) {
+                  const bf = r('bodyFat');
+                  if (typeof bf !== 'number' || !isFinite(bf)) return 0;
+                  const c = v.sex === 'female' ? [30, 37, 43, 49] : [19, 27, 33, 39];
+                  const idx = c.findIndex((x) => bf <= x);
+                  return idx < 0 ? 3 : idx;
+                }
+                const bmi = r('bmi');
+                if (typeof bmi !== 'number' || !isFinite(bmi)) return 0;
+                if (bmi < 18.5) return 0;
+                if (bmi < 25) return 0;
+                if (bmi < 30) return 1;
+                if (bmi < 35) return 2;
+                return 3;
+              },
+              bands: [
+                { max: 0, label: 'Normal' },
+                { max: 1, label: 'Overweight' },
+                { max: 2, label: 'Obese I' },
+                { max: 3, label: 'Obese II+' },
+              ],
+            },
+          ],
+          // CVD-MORTALITY cells (supp Table 9, Model 3, Fine–Gray
+          // competing-risk subdistribution HRs — stated on the card). Note
+          // the real 0.89 anomaly: normal-weight G2 (0.89 [0.68–1.15] < REF)
+          // is driven by sparse CVD deaths (n=128 in the ref cell) —
+          // transcribed as published, disclosed. `ratio` + `calibrate`
+          // identical to mortality (the bmi CVD marginal ≈1.25 at defaults
+          // anchors the table).
+          grids: {
+            bmi: [
+              [{ hr: 1.31, hrLow: 0.97, hrHigh: 1.78 }, { hr: 1.10, hrLow: 0.85, hrHigh: 1.42 }, { hr: 1.71, hrLow: 1.30, hrHigh: 2.24 }, { hr: 1.55, hrLow: 1.08, hrHigh: 2.23 }],
+              [{ hr: 0.89, hrLow: 0.68, hrHigh: 1.15 }, { hr: 0.99, hrLow: 0.79, hrHigh: 1.23 }, { hr: 1.12, hrLow: 0.86, hrHigh: 1.48 }, { hr: 1.99, hrLow: 1.44, hrHigh: 2.76 }],
+              [{ hr: 1.00, hrLow: 1.00, hrHigh: 1.00 }, { hr: 1.03, hrLow: 0.83, hrHigh: 1.29 }, { hr: 1.15, hrLow: 0.87, hrHigh: 1.51 }, { hr: 1.37, hrLow: 0.90, hrHigh: 2.06 }],
+            ],
+            bodyFat: [
+              [{ hr: 1.20, hrLow: 0.85, hrHigh: 1.68 }, { hr: 1.24, hrLow: 0.96, hrHigh: 1.59 }, { hr: 1.30, hrLow: 0.97, hrHigh: 1.72 }, { hr: 1.58, hrLow: 1.13, hrHigh: 2.21 }],
+              [{ hr: 1.00, hrLow: 0.77, hrHigh: 1.30 }, { hr: 0.88, hrLow: 0.70, hrHigh: 1.10 }, { hr: 1.12, hrLow: 0.86, hrHigh: 1.45 }, { hr: 1.71, hrLow: 1.24, hrHigh: 2.36 }],
+              [{ hr: 1.00, hrLow: 1.00, hrHigh: 1.00 }, { hr: 1.03, hrLow: 0.83, hrHigh: 1.29 }, { hr: 1.01, hrLow: 0.76, hrHigh: 1.34 }, { hr: 1.20, hrLow: 0.80, hrHigh: 1.81 }],
+            ],
+          },
+          gridForAxis: function (r, v) { return this.grids[v.bodyFatOn ? 'bodyFat' : 'bmi']; },
+          ratio: { axis: 1, referent: 0 },
+        },
+        cancer: {
+          // Same axis order as mortality: axis 0 = PA (grid ROWS), axis 1 =
+          // adiposity (grid COLUMNS; ratio referent = normal col 0).
+          axes: [
+            { id: 'pa', label: 'PA', unit: 'MET-min/wk', inputs: ['cardio', 'steps'], coeffs: [4, 0.21], bands: [{ max: 150, label: 'G3' }, { max: 1800, label: 'G2' }, { max: Infinity, label: 'G1' }] },
+            {
+              id: 'adip', label: 'Adiposity',
+              fn: (v, r) => {
+                if (v.bodyFatOn) {
+                  const bf = r('bodyFat');
+                  if (typeof bf !== 'number' || !isFinite(bf)) return 0;
+                  const c = v.sex === 'female' ? [30, 37, 43, 49] : [19, 27, 33, 39];
+                  const idx = c.findIndex((x) => bf <= x);
+                  return idx < 0 ? 3 : idx;
+                }
+                const bmi = r('bmi');
+                if (typeof bmi !== 'number' || !isFinite(bmi)) return 0;
+                if (bmi < 18.5) return 0;
+                if (bmi < 25) return 0;
+                if (bmi < 30) return 1;
+                if (bmi < 35) return 2;
+                return 3;
+              },
+              bands: [
+                { max: 0, label: 'Normal' },
+                { max: 1, label: 'Overweight' },
+                { max: 2, label: 'Obese I' },
+                { max: 3, label: 'Obese II+' },
+              ],
+            },
+          ],
+          // CANCER-MORTALITY cells (supp Table 10, Model 3, Fine–Gray
+          // competing-risk subdistribution HRs). Flatter than all-cause; the
+          // ≥35 row carries the published gradient (1.57 G1 → 1.48 G3).
+          // `ratio` + `calibrate`: no bmi/bodyFat cancer marginal exists, so
+          // the members' product at defaults is 1.0 and the calibration
+          // anchors the table to exactly 1.0 at defaults (the old
+          // no-data-free product).
+          grids: {
+            bmi: [
+              [{ hr: 1.12, hrLow: 0.94, hrHigh: 1.32 }, { hr: 1.20, hrLow: 1.05, hrHigh: 1.38 }, { hr: 1.30, hrLow: 1.10, hrHigh: 1.54 }, { hr: 1.48, hrLow: 1.19, hrHigh: 1.84 }],
+              [{ hr: 1.10, hrLow: 0.97, hrHigh: 1.24 }, { hr: 1.09, hrLow: 0.97, hrHigh: 1.22 }, { hr: 1.21, hrLow: 1.04, hrHigh: 1.40 }, { hr: 1.30, hrLow: 1.05, hrHigh: 1.63 }],
+              [{ hr: 1.00, hrLow: 1.00, hrHigh: 1.00 }, { hr: 1.07, hrLow: 0.95, hrHigh: 1.20 }, { hr: 1.29, hrLow: 1.11, hrHigh: 1.49 }, { hr: 1.57, hrLow: 1.25, hrHigh: 1.97 }],
+            ],
+            bodyFat: [
+              [{ hr: 1.01, hrLow: 0.84, hrHigh: 1.21 }, { hr: 1.13, hrLow: 0.99, hrHigh: 1.30 }, { hr: 1.43, hrLow: 1.23, hrHigh: 1.68 }, { hr: 1.45, hrLow: 1.18, hrHigh: 1.78 }],
+              [{ hr: 1.03, hrLow: 0.91, hrHigh: 1.18 }, { hr: 1.10, hrLow: 0.98, hrHigh: 1.23 }, { hr: 1.21, hrLow: 1.04, hrHigh: 1.39 }, { hr: 1.25, hrLow: 1.02, hrHigh: 1.54 }],
+              [{ hr: 1.00, hrLow: 1.00, hrHigh: 1.00 }, { hr: 1.07, hrLow: 0.95, hrHigh: 1.20 }, { hr: 1.27, hrLow: 1.09, hrHigh: 1.47 }, { hr: 1.31, hrLow: 1.04, hrHigh: 1.65 }],
+            ],
+          },
+          gridForAxis: function (r, v) { return this.grids[v.bodyFatOn ? 'bodyFat' : 'bmi']; },
+          ratio: { axis: 1, referent: 0 },
+        },
+      },
+      note: "Sanchez-Lastra 2021 (Mayo Clin Proc 96:105–19, UK Biobank n=295,917, 6,684 deaths): joint PA×adiposity tables (Model 3). RATIO MODE: total = cell(PA, adiposity) / cell(PA, normal) — the PA-row main effect divides away because the movement cluster's Ekelund PA axis owns PA on mortality (and the cardio+steps marginals on cancer/CVD, where Ekelund has no coverage); what survives is the published PA×adiposity INTERACTION (high PA attenuates high-adiposity risk but does not eliminate it; at BMI ≥35 no attenuation: G1 1.45 vs G3 1.52). RANK-PRESERVING PA AXIS (disclosed): the paper's G1/G2/G3 are UK Biobank self-reported MET-min/wk quintiles (medians ≈2,800–3,700 / ≈925–2,230 / ≈340–490) — we do NOT reuse those medians; the axis maps cardio+steps onto the Ekelund quartile cutoffs (G3 ≤150 / G2 ≤1800 / G1 >1800 MET-min/wk) so both tables stay on the same PA scale. UKB overreports PA, so a given slider value lands in a higher activity group than the paper's median would suggest. `calibrate: true` (Ekelund anchor rule): at defaults (G2, overweight) the ratio reads 1.02/1.07 = 0.9533, the members' marginal product is the bmi marginal ≈1.20 (bodyFat gated off) — ~26% off, so a constant log-space offset anchors the cluster total to the members' product at defaults (it cancels in the page's evaluate() normalization anyway). OVERWEIGHT-PARADOX ARTIFACT (disclose, never 'protect'): the normal-weight cells (G3 1.22, G2 1.07) are elevated by reverse causality + smoking; the never-smoker restriction (supp Table 6, n=168,654) attenuates to NS — so the ratio can read <1 for overweight at low PA (G3×overweight 1.12/1.22 = 0.92), a source artifact, not a protective claim. UNDERWEIGHT: BMI <18.5 was EXCLUDED from the study, so underweight maps into the normal-weight row (the Di Angelantonio left arm is lost — disclosed, finding). BODY-FAT MODE: the BF rows are the study's sex-specific distribution-matched quartiles; NO % cutoffs are published, so the axis uses our disclosed translation via the Deurenberg 1991 equation at the UK Biobank mean age (56 y): BF% ≈ 30/37/43/49 (women), 19/27/33/39 (men) at BMI 18.5/25/30/35 — our translation, not the paper's. CVD and cancer tables are Fine–Gray COMPETING-RISK subdistribution HRs (mortality = Cox); the CVD 0.89 normal-weight-G2 anomaly is real (sparse deaths, n=128 in ref cell) and transcribed as-is. No significant multiplicative interactions in the study (P>0.18) — cells used directly, NO interpolation (discrete study categories). Diet pattern IS adjusted in Model 3 → ρ(mayoCells, dietScore) ≈ 0, no new overlap pair. Referent cell CI: not published (1.00 used as-is — the ratio's CI adds only the numerator's sigma; slight understatement, Duncan precedent).",
+    },
+  ],
+
+  // --------------------------------------------------- Overlap pairs (ρ)
+  // Residual correlations between inputs whose marginal effects were NOT
+  // mutually adjusted in their primary sources (verified in PLAN.md §1.12
+  // and §1.14). When both members of a pair are active on the same output,
+  // the engine (Phase 2) discounts the weaker effect in log space by `rho`
+  // and widens the combined uncertainty by the covariance term
+  // 2·rhoU·σᵢ·σⱼ. rho = 0 reproduces today's plain multiplication.
+  //
+  // Schema (documented; this array is EMPTY until Phase 3 populates it —
+  // the verified values live in PLAN.md §1.12/§1.14 until then):
+  //   {
+  //     a:       string,           // input id (first member) — may also be a
+  //                                 //   joint-model id (Phase 3): the pair
+  //                                 //   then prices the input against the
+  //                                 //   cluster total, not the input alone
+  //     b:       string,           // input id (second member), same rule
+  //     rho:     number,           // 0..1 — input-correlation point estimate
+  //                                 //   (magnitude; sign recorded in `note`)
+  //     rhoU:    number,           // 0..1 — uncertainty half-width used in
+  //                                 //   the covariance term (2·rhoU·σᵢ·σⱼ)
+  //     kind:    'shared-pathway'|'residual-confounding'|'mediator',
+  //     tier:    'high'|'moderate'|'low',  // evidence tier of rho itself
+  //     note:    string,           // direction of the input correlation +
+  //                                 //   what the source actually found
+  //     source:  string|string[],  // keys into `sources` below
+  //   }
+  overlaps: [
+    {
+      // Harmful foods vs the diet score (PLAN §1.4): same intake channel —
+      // people who eat more processed meat / drink more SSBs eat fewer
+      // score foods. Pan 2012 and Malik 2019 already adjust for whole
+      // grains/fruit/veg, so the HRs are not double-charged statistically;
+      // the pair prices the residual intake correlation.
+      a: 'processedMeat',
+      b: 'dietScore', // joint-model id: pair vs the cluster total
+      rho: 0.3,
+      rhoU: 0.15,
+      kind: 'residual-confounding',
+      tier: 'moderate',
+      note: 'Processed meat ↔ diet score. Pan 2012 adjusts for whole grains/fruit/veg; substitution estimates bound the residual correlation at 10–22%. rhoU = 0.5·rho convention (§3.1).',
+      source: ['pan2012'],
+    },
+    {
+      a: 'ssb',
+      b: 'dietScore',
+      rho: 0.15,
+      rhoU: 0.075,
+      kind: 'residual-confounding',
+      tier: 'moderate',
+      note: 'SSB ↔ diet score. Malik 2019 adjusts for whole grains/fruit/veg/BMI and reports no SSB×diet-quality interaction (P > .10), so the residual correlation is small. rhoU = 0.5·rho convention.',
+      source: ['malik2019'],
+    },
+    {
+      a: 'magnesium',
+      b: 'dietScore',
+      rho: 0.5,
+      rhoU: 0.25,
+      kind: 'shared-pathway',
+      tier: 'moderate',
+      note: 'Magnesium ↔ diet score: Mg food sources ARE the score foods (nuts, legumes, whole grains, vegetables) — same-pathway overlap, so the marginal HR is largely pre-billed by the score. rhoU = 0.5·rho convention.',
+      source: ['fang2016'],
+    },
+    {
+      // Cluster↔cluster pair (Phase 3.2): sleep's marginal is RETIRED into
+      // duncanCells, so blending the marginal would discount a number that
+      // is not in the model — the pair prices the sleep-cells total against
+      // the diet total instead.
+      a: 'duncanCells',
+      b: 'dietScore',
+      rho: 0.10,
+      rhoU: 0.05,
+      kind: 'residual-confounding',
+      tier: 'low',
+      note: 'Duncan cells ↔ diet score. Duncan 2023 explicitly does NOT adjust for diet (stated limitation) — the sleep cells partially absorb diet correlation, so the sleep-cell contribution gets a modest discount. rhoU = 0.5·rho convention.',
+      source: ['duncan2023'],
+    },
+    {
+      // Cluster-facing pair (Phase 3.2): the old rhr↔cardio pair (ρ 0.20,
+      // verified) cannot exist as written — cardio is cluster-owned. The
+      // cluster total includes steps+sitting too, which dilutes the shared
+      // pathway, hence the discount from 0.20 to 0.15.
+      a: 'rhr',
+      b: 'ekelundTable',
+      rho: 0.15,
+      rhoU: 0.075,
+      kind: 'shared-pathway',
+      tier: 'low',
+      note: 'Resting heart rate ↔ Ekelund PA×sitting cluster: the retired rhr↔cardio pair (ρ 0.20), rewritten against the cluster total and discounted to 0.15 because the total also carries steps+sitting. The engine discounts whichever side is weaker — at typical active values the input side (rhr) is the weaker one and gets the discount (e.g. 1.29 → 1.24); when the cluster total itself is weak (near 1.0) the small discount lands on the cluster side. rhoU = 0.5·rho convention.',
+      source: ['aune2017rhr'],
+    },
+    {
+      a: 'sunExposure',
+      b: 'ekelundTable',
+      rho: 0.10,
+      rhoU: 0.05,
+      kind: 'shared-pathway',
+      tier: 'low',
+      note: 'Sun exposure ↔ Ekelund PA×sitting cluster: absorbs the retired sun↔steps pair — steps contribute ~40% of the default PA axis — so no separate sun↔steps pair exists. Small, honest discount on whichever side is weaker. rhoU = 0.5·rho convention.',
+      source: ['adventist2025', 'stevenson2024'],
+    },
+    {
+      // PLAN §1.12 / §3.4: substance mutual-adjustment verification. Two
+      // failing pairs only — everything else in the category is honestly
+      // multiplied. Both pairs are silent at defaults (snus 'no', vaping
+      // 'never', alcohol 2.5 → all HR 1.0).
+      a: 'snus',
+      b: 'alcohol',
+      rho: 0.15,
+      rhoU: 0.10,
+      kind: 'residual-confounding',
+      tier: 'moderate',
+      note: 'Snus ↔ alcohol (PLAN §1.12): byhamre2021 main aHRs adjust for attained age + BMI ONLY — alcohol not in the main model. Sensitivity (+education +alcohol +physical activity) "yielded similar results", so the double count is real but small. Engine discounts whichever side is weaker per output. rhoU = 0.5·rho convention.',
+      source: ['byhamre2021'],
+    },
+    {
+      a: 'vaping',
+      b: 'alcohol',
+      rho: 0.10,
+      rhoU: 0.05,
+      kind: 'unmeasured-confounding',
+      tier: 'low',
+      note: 'Vaping ↔ alcohol (PLAN §1.12): PATH collects no alcohol data — unmeasured confounder. Numerically moot while the vaping CVD estimate is a null (HR 1.00 [0.69–1.45]): a 1.0 HR raised to (1−ρ) is still 1.0, so the blend is a no-op today; kept for honest structure, activates automatically if a future vaping HR turns non-null. rhoU = 0.5·rho convention.',
+      source: ['berlowitz2022'],
+    },
+  ],
+
+  // ---------------------------------------- Per-lever-only clusters (Phase 3)
+  // Cluster keys whose combined HR must NOT be computed at all — no joint
+  // model exists and the pairwise correlations are too entangled to model
+  // (e.g. psychosocial: purpose↔stress↔social triangle). Their contributions
+  // are shown individually with a conflation label; they never enter the
+  // total product (engine sets `perLever: true` on their contribution
+  // records). Populated by Phase 3.5.
+  //
+  // Schema (documented; entries are objects so members can be declared):
+  //   {
+  //     cluster: string,            // cluster key (e.g. 'psychosocial')
+  //     members: string[],          // input ids shown individually
+  //   }
+  //
+  // psychosocial (PLAN §1.11/§1.14): NO joint purpose×stress×social×
+  // sleepReg mortality model exists — the per-lever-only landing is the fix
+  // (structural, not ρ, so the purpose↔stress↔social triangle cannot
+  // double-discount). The four sliders stop entering the mortality/cancer/
+  // cvd products entirely; their happiness/cognition POINTS still
+  // accumulate (points outputs have no accumulator entry). sleepReg loses
+  // its marginal HR; sleep duration stays in the duncanCells joint model;
+  // screenTime is already mind-only (happiness-only) by design. See PLAN
+  // map at line ~850, "§3.5 implementation notes".
+  perLeverOnly: [
+    {
+      cluster: 'psychosocial',
+      members: ['purpose', 'stress', 'social', 'sleepRegularity'],
+    },
   ],
 
   // ---------------------------------------------------------------- Sources
@@ -2149,7 +2898,61 @@ const HEALTH_MODEL = {
       url: 'https://doi.org/10.1093/aje/kwu257',
       pmid: '25552267',
 		},
-		blochibenfeldt2025: {
+    mente2023: {
+      authors: 'Mente A, Dehghan M, Rangarajan S, O\'Donnell M, et al. (PURE investigators)',
+      year: 2023,
+      title: 'Diet, cardiovascular disease, and mortality in 80 countries',
+      journal: 'European Heart Journal, 44(28):2560–2579',
+      url: 'https://doi.org/10.1093/eurheartj/ehad269',
+      pmid: '37414411',
+      note: 'Open access (CC BY-NC). PURE healthy diet score: 6 components (fruit, vegetables, legumes, nuts, fish, dairy), 1 point each for above-median intake; ≥5-vs-≤1 → HR 0.70 (0.63–0.77) for all-cause mortality; per-20-percentile increment HR 0.91 (0.89–0.93).',
+    },
+    duncan2023: {
+      authors: 'Duncan MJ, Oftedal S, Kline CE, Plotnikoff RC, Holliday EG',
+      year: 2023,
+      title: 'Combined associations of physical activity and sleep duration with all-cause mortality: the National Health Interview Survey',
+      journal: 'Journal of Sport and Health Science, 12(1):65–72',
+      url: 'https://doi.org/10.1016/j.jshs.2022.07.003',
+      pmid: '35872092',
+      note: 'Open access (PMC9923431). NHIS 2004–2014, n=282,473, 18,793 deaths (follow-up 5.4 y mean, deaths within 1 y excluded). Joint PA×sleep-duration table (12 cells, referent Active + Rec sleep): Active rows eliminate the short-sleep association (1.08, NS) but not long-sleep risk (1.40–2.32, worst with MSA-only/Inactive); no significant multiplicative interaction. Model 3 adjusts age, sex, education, race/ethnicity, work status, BMI, alcohol, smoking, self-rated health, chronic disease — diet and sedentary behaviour NOT adjusted (stated limitation).',
+    },
+    ekelund2016: {
+      authors: 'Ekelund U, Steene-Johannessen J, Brown WJ, Fagerland MW, et al.',
+      year: 2016,
+      title: 'Does physical activity attenuate, or even eliminate, the detrimental association of sitting time with mortality? A harmonised meta-analysis of data from more than 1 million men and women',
+      journal: 'Lancet, 388(10051):1302–1310',
+      url: 'https://doi.org/10.1016/S0140-6736(16)30370-1',
+      pmid: '27475271',
+      note: 'Harmonised meta-analysis, 16 studies, 1,005,791 participants, 84,609 deaths (13 studies on sitting), follow-up 2–18.1 y. Joint sitting×PA table (Supplementary Table 4): referent <4 h/d sitting + Q4 PA; high PA eliminates sitting risk (interaction p<0.0001). Cells minimally adjusted (sex, age) plus each study\'s original covariates.',
+    },
+    momma2022: {
+      authors: 'Momma H, Kawakami R, Honda T, Sawada SS',
+      year: 2022,
+      title: 'Muscle-strengthening activities are associated with lower risk and mortality in major non-communicable diseases: a systematic review and meta-analysis of cohort studies',
+      journal: 'British Journal of Sports Medicine, 56(13):755–763',
+      url: 'https://doi.org/10.1136/bjsports-2021-105061',
+      pmid: '35228201',
+      note: 'Open access (PMC9209691). Systematic review + meta-analysis of prospective cohorts. Joint MS+aerobic vs neither: all-cause RR 0.60 (0.54–0.67), CVD 0.54 (0.41–0.70), cancer 0.72 (0.53–0.98); aerobic-adjusted single-activity: MS-only 0.85 (0.79–0.93) / 0.83 / 0.88. GRADE very low for all outcomes (I² 59–85%).',
+    },
+    sanchezlastra2021: {
+      authors: 'Sanchez-Lastra MA, Ding D, Dalene KE, Ekelund U, Tarp J',
+      year: 2021,
+      title: 'Physical activity and mortality across levels of adiposity: a prospective cohort study from the UK Biobank',
+      journal: 'Mayo Clinic Proceedings, 96(1):105–119',
+      url: 'https://doi.org/10.1016/j.mayocp.2020.06.049',
+      pmid: '33309181',
+      note: 'Open access (CC BY; verified against the supplementary file mmc1.docx, Tables 2/3/6/9/10). UK Biobank, n=295,917, median follow-up 8.9 y (to Jan 31 2018), 6,684 deaths. Joint PA×adiposity Model 3 tables: all-cause mortality (Cox, Table 3), CVD- and cancer-mortality (Fine–Gray COMPETING-RISK subdistribution models, supplementary Tables 9/10). Referent = most-active PA group (G1) × lowest-adiposity cell. BMI <18.5 EXCLUDED at baseline (illness-related weight loss, with chronic conditions and pregnancy); follow-up began 2 y after baseline; prevalent cancer/CVD excluded. No significant multiplicative interactions (likelihood-ratio P>0.18, Model 3). High PA attenuates but does not eliminate high-adiposity risk (at BMI ≥35 no attenuation: G1 1.45 vs G3 1.52). Never-smoker restriction (n=168,654, supplementary Table 6) attenuates most cells to NS (0.75–1.11) — smoking is a major confounder of the PA×adiposity association. Model 3 adjusts for diet pattern (red/processed meat, fish, fruit+veg), salt, alcohol, smoking, screen time, depression, diabetes, hypertension, statins — diet IS adjusted, so ρ(mayoCells, dietScore) ≈ 0. PA = self-reported MET-min/wk quintiles collapsed to G1 (Q4+Q5, medians ≈2,800–3,700 MET-min/wk), G2 (Q2+Q3, ≈925–2,230), G3 (Q1, ≈340–490) — UK Biobank self-report overreports vs harmonised scales; our model maps these RANK-preserving onto the Ekelund cutoffs (see the mayoCells note). Body-fat % groups are sex-specific distribution-matched quartiles — NO % cutoffs published (our axis uses a disclosed translation, Deurenberg 1991).',
+    },
+    weeldreyer2025: {
+      authors: 'Weeldreyer NR, De Guzman JC, Paterson C, Allen JD, Gaesser GA, Angadi SS',
+      year: 2025,
+      title: 'Cardiorespiratory fitness, body mass index and mortality: a systematic review and meta-analysis',
+      journal: 'British Journal of Sports Medicine, 59(5):339–346',
+      url: 'https://doi.org/10.1136/bjsports-2024-108748',
+      pmid: '39537313',
+      note: 'Open access (PMC11874340). Systematic review + meta-analysis of prospective cohorts with MEASURED cardiorespiratory fitness (maximal/VO2peak exercise tests): 20 studies, 398,716 observations, three-level REML random-effects + robust variance estimation (conservative SEs). Fit = top CRF group per study, unfit = bottom (often merely >20th percentile of age-adjusted CRF — a modest bar). Referent normal-weight fit: unfit ≈2× all-cause mortality and ~2–3× CVD at ANY BMI (normal-weight-unfit 1.92, obese-unfit 2.04 all-cause); fit at any BMI ≈ normal-weight fit (0.96–1.11, all NS) — measured fitness ABSORBS the BMI association. CVD attenuated but not eliminated (fit cells 1.50/1.62, NS). CVD obese-unfit cell fragile (sensitivity analysis). Mostly US/Caucasian, 67% male, mean age 42–64, includes clinical populations.',
+    },
+    blochibenfeldt2025: {
 			authors: 'Bloch-Ibenfeldt M, Gates A, Joergensen N, Linneberg A, et al.',
 			year: 2025,
 			title: 'Heavy resistance training provides short-term benefits on bone formation in well-functioning older adults',
@@ -2173,13 +2976,13 @@ const HEALTH_MODEL = {
       url: 'https://doi.org/10.1371/journal.pmed.1001335',
       pmid: '23139642',
     },
-    momma2022: {
-      authors: 'Momma H, Kawakami R, Honda T, Sawada SS',
-      year: 2022,
-      title: 'Muscle-strengthening activities are associated with lower risk and mortality in major non-communicable diseases: a systematic review and meta-analysis of cohort studies',
-      journal: 'British Journal of Sports Medicine, 56(13):755–763',
-      url: 'https://doi.org/10.1136/bjsports-2021-105061',
-      pmid: '35228201',
+    cappuccio2011: {
+      authors: 'Cappuccio FP, Cooper D, D’Elia L, Strazzullo P, Miller MA',
+      year: 2011,
+      title: 'Sleep duration predicts cardiovascular outcomes: a systematic review and meta-analysis of prospective studies',
+      journal: 'European Heart Journal, 32(12):1484–1492',
+      url: 'https://doi.org/10.1093/eurheartj/ehr007',
+      pmid: '21300732',
     },
     cappuccio2010: {
       authors: 'Cappuccio FP, D’Elia L, Strazzullo P, Miller MA',
@@ -2227,6 +3030,7 @@ const HEALTH_MODEL = {
       title: 'Evidence update on the cancer risk of vaping e-cigarettes: a systematic review',
       journal: 'Tobacco Induced Diseases',
       url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11773639/',
+      pmid: '39877383',
     },
     novak2024: {
       authors: 'Novak ML, Wang GY',
@@ -2242,6 +3046,7 @@ const HEALTH_MODEL = {
       title: 'Understanding the longitudinal associations between e-cigarette use and general mental health, social dysfunction and anhedonia, depression and anxiety, and loss of confidence in a sample from the UK: A linear mixed effect examination',
       journal: 'Journal of Affective Disorders, 346:200–205',
       url: 'https://doi.org/10.1016/j.jad.2023.11.013',
+      pmid: '37956830',
     },
     diangelantonio2016: {
       authors: 'Global BMI Mortality Collaboration (Di Angelantonio E, et al.)',
@@ -2483,13 +3288,21 @@ const HEALTH_MODEL = {
       url: 'https://doi.org/10.1177/2047487319843667',
       pmid: '30971126',
     },
-    li2020: {
-      authors: 'Li Y, Guo L, He K, Fan L, Liang W, He Q',
-      year: 2020,
-      title: 'Fish intake and cardiovascular disease and all-cause mortality: a dose-response meta-analysis of prospective cohorts',
-      journal: 'Heart, 106(2):124–130',
-      url: 'https://doi.org/10.1136/heartjnl-2019-315087',
-      pmid: '31451418',
+    jayedi2018: {
+      authors: 'Jayedi A, Shab-Bidar S, Eimeri S, Djafarian K',
+      year: 2018,
+      title: 'Fish consumption and risk of all-cause and cardiovascular mortality: a dose-response meta-analysis of prospective observational studies',
+      journal: 'Public Health Nutrition, 21(7):1297–1306',
+      url: 'https://doi.org/10.1017/S1368980017003834',
+      pmid: '29317009',
+    },
+    zhang2018: {
+      authors: 'Zhang Y, Zhuang P, He W, Chen J, Wang W, Freedman ND, Abnet CC, Wang J, Jiao J',
+      year: 2018,
+      title: 'Association of fish and long-chain omega-3 fatty acids intakes with total and cause-specific mortality: prospective analysis of 421,309 individuals',
+      journal: 'Journal of Internal Medicine, 284(4):399–417',
+      url: 'https://doi.org/10.1111/joim.12786',
+      pmid: '30019399',
     },
     manson2019omega3: {
       authors: 'Manson JE, Cook NR, Lee IM, et al. (VITAL Research Group)',
@@ -2603,6 +3416,14 @@ const HEALTH_MODEL = {
       url: 'https://doi.org/10.1093/sleep/zsad253',
       pmid: '37738616',
     },
+    orellano2024: {
+      authors: 'Orellano P, Kasdagli MI, Pérez Velasco R, Samoli E',
+      year: 2024,
+      title: 'Long-term exposure to particulate matter and mortality: an update of the WHO global air quality guidelines systematic review and meta-analysis',
+      journal: 'International Journal of Public Health, 69:1607683',
+      url: 'https://doi.org/10.3389/ijph.2024.1607683',
+      pmid: '39399882',
+    },
     di2017: {
       authors: 'Di Q, Wang Y, Zanobetti A, Wang Y, Koutrakis P, Choirat C, Dominici F, Schwartz JD',
       year: 2017,
@@ -2695,9 +3516,9 @@ const HEALTH_MODEL = {
       authors: 'Liu F, Ding C, Zhu Z, et al. (Lancet Public Health 2025 Step Count Collaboration)',
       year: 2025,
       title: 'Daily steps and health outcomes in adults: a systematic review and dose-response meta-analysis',
-      journal: 'The Lancet Public Health, 10(8):e610–e623',
+      journal: 'The Lancet Public Health, 10(8):e668–e681',
       url: 'https://doi.org/10.1016/S2468-2667(25)00164-1',
-      pmid: null,
+      pmid: '40713949',
     },
     banach2023: {
       authors: 'Banach M, Lewek J, Surma S, Penson PE, Sahebkar A, Martin SS, et al.',
@@ -2705,7 +3526,7 @@ const HEALTH_MODEL = {
       title: 'The association between daily step count and all-cause and cardiovascular mortality: a meta-analysis',
       journal: 'European Journal of Preventive Cardiology, 30(18):1975–1985',
       url: 'https://doi.org/10.1093/eurjpc/zwad229',
-      pmid: '37555447',
+      pmid: '37555441',
     },
     stevenson2024: {
       authors: 'Stevenson AC, Clemens T, Pairo-Castineira E, Webb DJ, Weller RB, Dibben C',
@@ -2713,6 +3534,14 @@ const HEALTH_MODEL = {
       title: 'Higher ultraviolet light exposure is associated with lower mortality: an analysis of data from the UK Biobank cohort study',
       journal: 'Health & Place, 89:103328',
       url: 'https://doi.org/10.1016/j.healthplace.2024.103328',
+      pmid: '39094281',
+    },
+    sunbeem2026: {
+      authors: 'Gu J, Stevenson AC, Brady AR, Cowan GJM, Dibben C, Weller RB',
+      year: 2026,
+      title: 'Risk–benefit balance of habitual ultraviolet exposure for cardiovascular, cancer, and skin cancer mortality: UK Biobank cohort study',
+      journal: 'medRxiv preprint 2026.01.08.26343592 (not peer-reviewed)',
+      url: 'https://doi.org/10.64898/2026.01.08.26343592',
       pmid: null,
     },
     adventist2025: {
@@ -2721,7 +3550,7 @@ const HEALTH_MODEL = {
       title: 'The association between time spent outdoors during daylight and mortality among participants of the Adventist Health Study 2 cohort',
       journal: 'Environmental Epidemiology, 9(3):e401',
       url: 'https://doi.org/10.1097/EE9.0000000000000401',
-      pmid: null,
+      pmid: '40444275',
     },
     mahamat2020: {
       authors: 'Mahamat-Saleh Y, Aune D, Schlesinger S',
@@ -2810,7 +3639,7 @@ const HEALTH_MODEL = {
       title: 'A meta-analysis of longitudinal studies on the interplay between sleep, mental health, and positive well-being in adolescents',
       journal: 'International Journal of Clinical and Health Psychology, 24(1):100424',
       url: 'https://doi.org/10.1016/j.ijchp.2023.100424',
-      pmid: null,
+      pmid: '38125984',
     },
     franks2021: {
       authors: 'Franks KH, Rowsthorn E, Bransby L, Lim YY, Chong TTJ, Pase MP',
@@ -2824,9 +3653,9 @@ const HEALTH_MODEL = {
       authors: 'Aggarwal NT, Wilson RS, Beck TL, et al.',
       year: 2014,
       title: 'Perceived stress and change in cognitive function among adults aged 65 and older',
-      journal: 'Psychosomatic Medicine, 76(1):80–88',
-      url: 'https://doi.org/10.1097/PSY.0000000000000018',
-      pmid: '24367124',
+      journal: 'Psychosomatic Medicine, 76(1):80–85',
+      url: 'https://doi.org/10.1097/PSY.0000000000000016',
+      pmid: '24367123',
     },
     maartense2024: {
       authors: 'Maartense I, van Duijnhoven J, Smolders K, de Kort Y',
@@ -2834,7 +3663,7 @@ const HEALTH_MODEL = {
       title: 'The effect of light on wellbeing: a systematic review and meta-analysis',
       journal: 'Journal of Happiness Studies, 25:108',
       url: 'https://doi.org/10.1007/s10902-024-00838-4',
-      pmid: null,
+      pmid: '39664799',
     },
     zhang2024vitd: {
       authors: 'Zhang XX, Yang YY, Liu D, et al.',
@@ -2842,7 +3671,7 @@ const HEALTH_MODEL = {
       title: 'Association of vitamin D levels with risk of cognitive impairment and dementia: a systematic review and meta-analysis of prospective studies',
       journal: 'Journal of Alzheimer\'s Disease, 99(1):31–45',
       url: 'https://doi.org/10.3233/JAD-231381',
-      pmid: null,
+      pmid: '38461506',
     },
     falkingham2010: {
       authors: 'Falkingham M, Abdelhamid A, Curtis P, et al.',

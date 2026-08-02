@@ -67,12 +67,297 @@ tests.
       card: paradox contested — dalene2021 (437k Norwegians, full adjustment)
       found men in active jobs lived 0.4-1.7 y longer; new sources
       cillekens2022 + dalene2021 added. Tests green.
-- [ ] 0.9 SWEEP: systematically cross-check EVERY effect (mortality/cancer/cvd,
-      all ~50 inputs) against its cited source for existence + direction.
-      Two consecutive audits (bodyFat cvd, occupationalPA cvd) found invented
-      CVD columns copied from all-cause curves. Verify each CVD-column source
-      key actually contains a CVD analysis. Fix or null per working agreement;
-      run tests after each fix.
+- [x] 0.9a SWEEP-local: every source key in the sources map must be attached
+      to >=1 rendered citation (effect/finding/joint/bmi/baseline walk).
+      Review pass (2026-08-01) found 7 dead entries (defined, cited only in
+      comments, never rendered): blochibenfeldt2025, moore2012, kundu2025,
+      mandsager2018, cillekens2022, aune2016grain, zhai2015. Fix: attach
+      each to the effect/finding its comment already describes (kundu2025
+      gets a vaping-cancer finding card) or delete. Then 93/93 sources
+      indexed and tests green.
+      DONE 2026-08-01: all 7 attached — moore2012 → cardio mortality effect
+      (also cited in index.html LE-method copy), aune2016grain → fiber
+      mortality effect (note now states the overlap rule), zhai2015 →
+      screenTime happiness effect (was already named in its note), kundu2025
+      → NEW vaping-cancer finding card (neutral, shows when vaping=current),
+      mandsager2018 → vo2max mortality effect, blochibenfeldt2025 → strength
+      osteoporosis finding, cillekens2022 → OPA paradox finding. Sources
+      count now 93/93 both directions (no dead keys, no undefined cites);
+      meta.updated bumped to 2026-08-01. Suite green.
+- [x] 0.9b SWEEP-movement: web-verify every movement-cluster effect column
+      (mortality/cancer/cvd) against its cited source: cardio (arem2015 —
+      incl. CVD column), steps (lancet2025steps — incl. cancer/cvd columns),
+      strength (momma2022/gordon2018/coelhojunior2020), sitting (biswas2015),
+      vo2max (kodama2009), grip (leong2015), rhr (aune2017rhr). occupationalPA
+      + bodyFat CVD columns already nulled (0.2/0.3). Fix or null per working
+      agreement; tests after each fix.
+      PROGRESS 2026-08-01 (fixes applied, tests green):
+      + sitting cvd FIXED: Biswas 2015 (PMID 25599350) CVD mortality is
+        1.179 (1.106–1.257) — our 1.150 (1.107–1.195) was a garbled
+        transcription (looked like CVD incidence 1.143). Now max step
+        1.18/1.106/1.257, middle steps re-interpolated. Mortality (1.24,
+        1.09–1.41) and cancer (1.173, 1.108–1.242) columns verified exact.
+      + grip cvd FIXED: Leong 2015 (PMID 25982160) CVD mortality per 5 kg
+        lower is 1.17 (1.11–1.24), not 1.19 (1.15–1.23). Inverse now
+        hr 0.855 (0.807–0.901); mortality column (0.8621 = 1/1.16,
+        CI 1/1.20–1/1.13) verified exact.
+      + rhr cvd FIXED: Aune 2017 (PMID 28552551) CVD is 1.15 (1.11–1.18) —
+        lower CI was 1.12, now 1.11. Mortality 1.17 (1.14–1.19) and cancer
+        1.14 (1.06–1.23) verified exact.
+      + cardio FIXED: Arem 2015 Table 3 (PMC4451435, n=661k) cause-specific
+        columns now EXACT: cancer 1.00 / 0.87 (0.83–0.90) / 0.79 (0.75–0.82)
+        / 0.75 (0.72–0.79) / 0.74 (0.71–0.77) / 0.69 (0.55–0.87) (was an
+        all-cause reuse, evidence now high); CVD 1.00 / 0.80 (0.77–0.84) /
+        0.67 (0.65–0.70) / 0.59 (0.57–0.63) / 0.58 (0.56–0.61) / 0.71
+        (0.56–0.91) with threshold note; all-cause Infinity step 0.69 ->
+        0.68 (0.59–0.78) per published 75+ MET-h/wk HR.
+      + steps FIXED (all three HR columns + cognition/happiness notes):
+        verified the FULL Lancet 2025 abstract (PMID 40713949, pages
+        e668–e681 — entry had wrong pages + null pmid; both fixed; banach
+        2023 pmid corrected 37555447 -> 37555441). Published anchors at
+        7,000 vs 2,000 steps/day: all-cause 0.53 (0.46–0.60) NON-LINEAR
+        (inflection 5–7k -> all-cause now plateaus at 0.53 from 7k up,
+        old tail 0.46/0.42 at 15k+/Inf overclaimed); CVD mortality 0.53
+        (0.37–0.77) LINEAR (GRADE low, was 'high'; bands 10k/15k follow
+        the linear slope 0.36/0.19, held flat >15k); cancer mortality
+        0.63 (0.55–0.72) LINEAR (10k/15k 0.48/0.30, held flat >15k; old
+        0.48@15k overclaimed). Intermediate 4k/6k bands re-interpolated
+        in log space to the verified anchor (mortality 0.78/0.60, cvd
+        0.78/0.60, cancer 0.83/0.69 — old cancer CIs 0.65–0.98 were
+        invented). Notes: honest null added (cancer INCIDENCE 0.94
+        [0.87–1.01] NS — benefit is mortality-side), dementia note
+        corrected (0.62 [0.53–0.73] at 7k, was ~0.58@12k), depression
+        note now cites 0.78 (0.73–0.83), CVD incidence 0.75 disclosed,
+        Paluch 2022 (Q2 5,801 -> 0.60) + Banach per-increment cross-check
+        documented. Tests: steps pins 0.52/0.67 -> 0.53/0.60, 1.00/0.67 ->
+        1.00/0.60, 15k cvd 0.50 -> 0.19, 15k cancer 0.48 -> 0.30; §[22]
+        members product 0.5896 -> 0.5280; §[3] avg raw sanity bound 0.4 ->
+        0.3. PROBE re-run (live model): movement cluster -72.2% -> -38.4%,
+        steps per-input -48% -> -17.7% (via Ekelund PA axis), naive ratio
+        -93.6% -> -77.9%, pre-clamp -86.2% -> -69.0% — the joint tables are
+        visibly deflating the movement overclaim.
+      + strength FIXED (all three HR columns, evidence, notes; tests green):
+        Momma 2022 full text verified (PMC9209691). Two-group any vs none:
+        all-cause 0.85 (0.79–0.93) [old 0.92 invented CI], CVD 0.83
+        (0.73–0.93) [old 0.90 not in paper], total cancer 0.88 (0.80–0.97)
+        [old 0.81 (0.71–0.93) NOT in the paper — invented; paper's 2-group
+        is 0.88]. Non-linear dose-response minima: all-cause 0.83
+        (0.79–0.86) at ~40 min/wk, CVD 0.82 (0.76–0.90) at ~60, cancer
+        0.91 (0.85–0.97) at ~30; RR <1.00 up to ~130–140 min/wk. New
+        columns: 0 / 1sess = two-group / 2sess = published min / 3+ = our
+        interpolation (geometric midpoint of min->1.0, CI spans min–1.0 —
+        exact values >60 min/wk not published, disclosed). Evidence
+        moderate -> low (paper GRADE very low, I² 59–85%) — now matches
+        mommaCells 'low'. mommaCells note updated: marginal 1-session band
+        now EXACTLY matches the MS-only cells (0.85/0.88/0.83, was ~8%
+        off). Also removed a DUPLICATE momma2022 source key (bare entry at
+        ~2665 shadowed the rich note entry — the last duplicate wins in JS
+        object literals, so sources.html lost the PMC/GRADE note; rich
+        entry now effective). gordon2018 (happiness) + coelhojunior2020
+        (cognition) points untouched. Tests: §[5] pin 0.63*0.85 ->
+        0.63*0.83. PROBE: movement cluster still -38.4%, strength per-input
+        naive 0.85 (-15.0%) — marginal now matches the mommaCells cell.
+      + vo2max VERIFIED EXACT, no changes: Kodama 2009 abstract (PMID
+        19454641, JAMA 301(19):2024–35) confirms per 1-MET higher CRF —
+        all-cause RR 0.87 (0.84–0.90) [102,980 participants, 6,910 deaths,
+        33 studies] and CHD/CVD RR 0.85 (0.82–0.88) [84,323 participants,
+        4,485 cases]; both columns + CIs match to the digit. 1 MET ≈ 1 km/h
+        running speed; low vs high CRF all-cause 1.70 (1.51–1.92). Notes
+        enriched with the verified counts; low->low-vs-high contrast added.
+  DONE — movement cluster fully verified/fixed.
+- [x] 0.9c SWEEP-diet: fiber (yang2015/reynolds2019), fruitVeg (wang2014),
+      magnesium (fang2016), fish (kwok2019/li2020), nuts (aune2016),
+      omega3/vitaminD (manson2019 pair), ironDeficiency (houston2018),
+      creatine (no-data). Coffee/processedMeat/ssb already audited (0.4/1.4).
+      DONE 2026-08-01 — every input checked against its primary source:
+      + fiber: Yang 2015 VERIFIED EXACT (PMID 25552267 — mortality perUnit
+        0.90 [0.86–0.94] per 10 g; 17 cohorts, 982,411 people, 67,260 deaths,
+        I² 77%; note enriched). Reynolds 2019 full text (mirror PDF, Lancet
+        blocks bots): cancer steps -> 1.19 (1.12–1.27) / 1.00 / 0.84
+        (0.78–0.89) = published colorectal-incidence highest-vs-lowest
+        (22 studies); <9 g band = disclosed log-inverse. cvd steps ->
+        1.35 (0.92–2.00) / 1.00 / 0.74 (0.50–1.09) = paper publishes NO
+        single CVD composite, so >24 g band = geometric-mean of published
+        CHD mortality 0.69 (0.60–0.81) x stroke mortality 0.80 (0.56–1.14,
+        NS) with CI in quadrature, <9 g its log-inverse — both disclosed.
+      + fruitVeg: wang2014 VERIFIED (PMC4115152): mortality 0.95 (0.92–0.98)
+        exact (16 cohorts/833,234 people/56,423 deaths). CVD hrLow corrected
+        0.93 -> 0.92 (published 0.92–0.99). CANCER FIXED: old 1.00
+        (0.97–1.03) invented -> published 0.97 (0.90–1.03, P=0.31), the
+        "not appreciably associated" null. Test pin -> 0.97^2.4 (cap 5).
+      + magnesium: fang2016 VERIFIED (PMID 27927203): mortality 0.90
+        (0.81–0.99) per 100 mg/day EXACT (40 cohorts, >1M people, 10,983
+        deaths). CVD FIXED: old 0.85 (0.77–0.93) NOT in paper — total CVD is
+        NULL (RR 0.99, 0.88–1.10, NS; CHD 0.92 [0.85–1.01] NS). Now 0.99
+        (0.88–1.10); note explains protection is component-specific (stroke
+        0.93 [0.89–0.97], heart failure 0.78 [0.69–0.89]).
+      + fish: TWO FABRICATED/DEAD CITATIONS FOUND AND FIXED: "li2020" (Heart)
+        does not exist (DOI unresolvable; PMID 31451418 is a pharmacogenomics
+        paper). Replaced with the real dose-response meta: jayedi2018
+        (Jayedi A et al., Public Health Nutr 21(7):1297–1306, PMID 29317009):
+        all-cause 0.98 (0.97–1.00) per 20 g/day (I² 82%), CVD mortality 0.96
+        (0.94–0.98) per 20 g/day (I² 0%), 14 cohorts/911,348 people. kwok2019
+        verified real (EJPC review; fish all-cause 0.98 [0.97–1.00]) but it
+        covers NO cancer — fish cancer column re-sourced to zhang2018
+        (NIH-AARP, 421,309 people, PMID 30019399): men top-vs-bottom
+        quintile 6% lower cancer mortality (0.94 [0.90–0.99]), women null.
+        Bands rebuilt as disclosed constructions from the per-20-g linear
+        slope (0.7x / 1.8x dose): mortality some 0.98 (0.98–1.00) / lots
+        0.96 (0.95–1.00); cvd some 0.97 (0.96–0.99) / lots 0.93 (0.89–0.96);
+        cancer some 0.99 (0.96–1.02) / lots 0.97 (0.94–1.00). U-shape caveat
+        in Western cohorts noted. Test pin 0.95 -> 0.96.
+      + nuts: aune2016 VERIFIED EXACT (PMID 27916000): all-cause 0.78
+        (0.72–0.84), CVD 0.79 (0.70–0.88), total cancer 0.85 (0.76–0.94)
+        per 28 g/day; resp 0.48 / diabetes 0.61 match findings. Notes
+        enriched, no value changes.
+      + omega3: VITAL VERIFIED EXACT vs NEJM abstract (PMID 30415637):
+        mortality 1.02 (0.90–1.15), CVD 0.92 (0.80–1.06), cancer 1.03
+        (0.93–1.13), cancer death 0.97 (0.79–1.20), MI 0.72 (0.59–0.90).
+        Notes marked VERIFIED; no changes.
+      + vitaminD: VITAL vit-D VERIFIED (PMID 30415629): cancer death 0.83
+        (0.67–1.02) EXACT; supplement mortality 0.99 (0.87–1.12) EXACT; CVD
+        supplement 0.97 (0.85–1.12) EXACT. FIXED: comment+note claimed cancer
+        incidence "null (1.03)" — that is omega-3's number; vit-D cancer
+        incidence is 0.96 (0.88–1.06). CVD deficient FIXED 1.45 (1.25–1.65)
+        -> 1.41 (1.18–1.68) = Schöttker 2014 published CVD-free quintile
+        contrast (full text, PMC4061380; with-prior-CVD 1.65 [1.22–2.22]);
+        all-cause 1.57 (1.36–1.81) EXACT. (schottker2014 PMID 24938302 was
+        already correct in the source map.)
+      + ironDeficiency: houston2018 VERIFIED EXACT (PMID 29626044: fatigue
+        SMD −0.38 [−0.52 to −0.23], physical capacity null) and
+        falkingham2010 VERIFIED EXACT (PMID 20100340: attention SMD 0.59
+        [0.29–0.90], IQ +2.5 pts [1.24–3.76], no RCTs in men). Notes
+        enriched.
+      + creatine: avgerinos2018 VERIFIED (PMID 29704637, only 6 studies /
+        281 people — 6 not the "several" implied). Evidence moderate -> low
+        (thin evidence, conflicting domains, unchanged in young adults).
+      Tests green after every fix. NOTE: two dead/fabricated citations
+      killed this round (li2020, plus the earlier wrong-pmid guesses) —
+      always verify citation identity before numbers.
+- [x] 0.9d SWEEP-mind/substances/environment: sleep (cappuccio2010/lowe2017),
+      stress (russ2012), social (holtLunstad2010), purpose (cohen2016),
+      snus (aune2017snus), cannabis (sidney1997), pm25 (di2017),
+      meditation (goyal2014), cognitiveTraining (ngandu2015).
+      Smoking/alcohol/screenTime/sleepRegularity/sauna/vaping already audited.
+      (note: cognitiveTraining input cites edwards2017 ACTIVE trial, not
+      ngandu2015 — confirmed correct during the sweep.)
+      DONE, tests green after every fix. Audit trail:
+      - sleep: cappuccio2010 VERIFIED exact (PMID 20469800, 16 studies /
+        1,382,999 people / 112,566 deaths): all-cause short 1.12 (1.06-1.18),
+        long 1.30 (1.22-1.38). CVD column was MIS-SOURCED (cited cappuccio2010
+        which is all-cause-only): re-sourced to cappuccio2011 (EHJ, PMID
+        21300732, 15 studies / 474,684 people): total CVD short 1.03
+        (0.93-1.15, NS) / long 1.41 (1.19-1.68) — old 1.07/1.28 matched
+        nothing; CHD 1.48 (1.22-1.80), stroke 1.15 (1.00-1.31). New source
+        entry added. lowe2017 VERIFIED exact (PMID 28757454, g=-0.324/-0.409/
+        -0.192, 61 studies); bacaro2023 VERIFIED + filled null pmid ->
+        38125984 (PMC10730350, r=0.18/0.15, 42 studies).
+      - stress: russ2012 VERIFIED (PMID 22849956, 68,222 people): GHQ 1-3 HR
+        1.20 (1.13-1.27), 4-6 HR 1.43 (1.31-1.56), 7-12 HR 1.94 (1.66-2.26).
+        Model steps = published HR ÷ 1.20 (1.1917/1.6167) — disclosed
+        construction in note. franks2021 VERIFIED exact (PMID 34366334: MCI
+        1.19 [1.03-1.38], dementia 1.44 [1.07-1.95]). aggarwal2014 PMID was
+        WRONG (24367124 = IMPACT depression-CVD paper) -> real 24367123
+        (CHAP, 6,207 older adults), DOI 10.1097/PSY.0000000000000016, pages
+        80-85 fixed.
+      - social: holtlunstad2010 VERIFIED (PMID 20668659, 148 studies /
+        308,849 people): OR 1.50 (1.42-1.59), integration OR 1.91 (1.63-2.23).
+        Comment fixed: paper says effect consistent across causes of death
+        (not "particularly strong" for CVD); cvd note discloses
+        mirror-the-all-cause approximation.
+      - purpose: cohen2016 VERIFIED (PMID 26630073, 10 prospective /
+        136,265 people): all-cause 0.83 (0.75-0.91), CV events 0.83
+        (0.75-0.92) — CVD CI was 0.91, corrected to 0.92 in steps + note.
+      - snus: byhamre2021 VERIFIED (PMID 33347584, 169,103 never-smoking men,
+        8 cohorts): all-cause 1.28 (1.20-1.35), cancer 1.12 (1.00-1.26). CVD
+        CI FIXED 1.20-1.35 -> 1.15-1.41 (was copy-pasted from all-cause). Risk
+        rose with duration, not weekly amount; men-only (note says so).
+      - cannabis: sidney1997 VERIFIED (PMID 9146436, 65,171 people): men
+        current-use non-AIDS RR 1.12 (0.89-1.39) = the regular band; women
+        1.09 (0.80-1.48). Note enriched: "regular" = published men's
+        estimate, "occasional" = disclosed interpolation. moore2007 VERIFIED
+        exact (PMID 17662880: psychosis ever-use OR 1.41 [1.20-1.65],
+        frequent 2.09 [1.54-2.84]).
+      - pm25: mortality VERIFIED exact (di2017, PMID 28657878: +7.3%
+        [7.1-7.5] per 10 µg/m³; 60.9M people / 460.3M person-years; +13.6%
+        even below the 12 µg/m³ US standard). CVD column had NO source — Di
+        2017 abstract publishes no CVD figure. Re-sourced to orellano2024
+        (WHO AQG-update meta, Int J Public Health 69:1607683, PMID 39399882):
+        circulatory mortality 1.127 (1.102-1.152) per 10 µg/m³ (42 studies,
+        high certainty) — now 1.13 (1.10-1.15); IHD 1.143 (1.102-1.186),
+        cerebrovascular 1.146 (1.101-1.192) noted in comment. New source
+        entry added.
+      - meditation: goyal2014 VERIFIED exact (PMID 24395196, 47 RCTs /
+        3,515 people): anxiety ES 0.38 (0.12-0.64), depression 0.30
+        (0.00-0.59) at 8 weeks. No value changes.
+      - cognitiveTraining: edwards2017 VERIFIED exact (PMID 29201994,
+        ACTIVE, N=2,802, 10 y): speed training HR 0.71 (0.50-0.998) = 29%
+        dementia reduction; memory/reasoning NS (0.79, P=.177/.163);
+        per-session HR 0.90 (0.85-0.95). Note now cites exact numbers.
+- [x] 0.9f SWEEP-sunExposure + left-behinds: sunExposure (id `sunExposure`)
+      was NOT in any sweep — its sources adventist2025, stevenson2024,
+      maartense2024 all have `pmid: null`, and its notes quote uncited
+      "Sun-BEEM 2026" HR numbers (0.89/0.84 vs low) that must get a source
+      key or be dropped (golden rule: every number cites). lindqvist2014
+      (PMID 24697969) verified present. Also grep the sources map for any
+      remaining `pmid: null` entries and fill or flag them.
+      DONE 2026-08-01, tests green after every edit:
+      + adventist2025 VERIFIED against full text (OA, PMC12122178, PMID
+        40444275 filled): 83,205 people / 11,515 deaths, warmer months vs
+        0.5 h ref. All-cause 2h 0.90 (0.86-0.93), 3h 0.88 (0.84-0.93),
+        5h 0.90 (0.85-0.95); CVD 0.89 (0.83-0.95) / 0.87 (0.79-0.94) /
+        0.86 (0.79-0.94); CANCER ELEVATED 1.02 (0.93-1.13) NS / 1.08
+        (0.97-1.20) NS / 1.15 (1.02-1.29) SIG at 5h. Cooler-month
+        associations weaker (noted).
+      + mortality steps FIXED: 3h step was 0.90 (a garbled 2h number;
+        note text said 0.88 — the note was right) -> 0.88 (0.84-0.93);
+        Inf step was 0.88 (0.82-0.94, unsourced) -> held flat at the
+        published 5h 0.90 (0.85-0.95), disclosed. 0h band 1.15 (1.06-1.25)
+        kept but now explicitly disclosed as interpolation (AHS-2's lowest
+        category is 0.5h; lindqvist2014 avoiders ~2x, verified abstract
+        PMID 24697969, 29,518 women / 2,545 deaths).
+      + CVD steps FIXED: 3h 0.88 -> 0.87 (0.79-0.94); 5h 0.87 -> 0.86
+        (0.79-0.94); Inf 0.85 -> held 0.86; 0h band disclosed.
+      + CANCER column REBUILT — old steps (0.96 benefit at 3h/5h/Inf)
+        CONTRADICTED the only peer-reviewed quantitative cohort (AHS-2
+        elevation) and matched neither source. New steps = published AHS-2
+        numbers: 1.08 (0.97-1.20) at 3h, 1.15 (1.02-1.29) at 5h+, 0-1h ref
+        zone 1.00; evidence moderate -> low; note discloses the latitude
+        conflict (UK Stevenson 2024 qualitative inverse; Sun-BEEM preprint
+        non-skin cancer 0.92/0.89, skin flat).
+      + Sun-BEEM 2026 IS REAL: Gu J et al., medRxiv preprint
+        2026.01.08.26343592 (NOT peer-reviewed), 419,007 UKB. Verified
+        exact: all-cause medium 0.89 (0.87-0.91) / high 0.84 (0.82-0.87);
+        CVD 0.82/0.77; non-skin cancer 0.92/0.89; skin-cancer mortality
+        flat. Added sunbeem2026 source key (preprint disclosure in journal
+        field), cited on all three sun effects.
+      + stevenson2024 PMID 39094281 filled; abstract verified (qualitative
+        inverse all-cause/CVD/cancer; no per-category HRs — notes now say
+        qualitative, not invented numbers).
+      + maartense2024 PMID 39664799 filled; full text verified (d=0.46
+        [0.29-0.62], sensitivity 0.53 [0.35-0.72], 30 of 74 studies,
+        I2 96%). DROPPED the uncited "bright-light d=0.48 for depression"
+        sentence (not in this paper) + added I2 disclosure.
+      + null-pmid census: kundu2025 -> 39877383, kang2024 -> 37956830,
+        zhang2024vitd -> 38461506 filled. Remaining nulls are all
+        legitimately non-PubMed (nchs2023 CDC brief, hunt2018 JSCP not
+        indexed [DOI verified via Crossref], allcott2020 AER, market
+        reports, sunbeem2026 preprint).
+      + Tests: §[11] pins updated (mortality 2.5h 0.90->0.88, 6h 0.88->
+        0.90; CVD 2.5h 0.88->0.87, 6h 0.85->0.86; cancer 2.5h 0.96->1.08,
+        6h 0.96->1.15); blend/pair tests unaffected (dynamic values).
+        Suite green. Sources 96 -> 97 (sunbeem2026), 97/97 both directions.
+      + PLAN.md §1.16 row updated: sunExposure swept (rebuilt).
+- [x] 0.9e SWEEP-record: append a "0.9 sweep" subsection to PLAN.md with
+      per-input verdicts (verified / fixed / nulled / no-data), final test
+      run, sources count = indexed count.
+      DONE: PLAN.md §1.16 "The 0.9 sweep" — 25 inputs tabulated (5 verified /
+      19 fixed / 1 rebuilt / 2 pre-sweep nulled), the 2 fabricated citations
+      documented, disclosed-construction policy restated, final test run
+      "All tests passed" (2026-08-01, post-sunExposure), sources integrity
+      97/97 both directions (defined-but-unrendered: none, cited-but-
+      undefined: none; remaining null PMIDs = non-PubMed by nature, all
+      Crossref-verified).
 - [x] 0.4 Audit: coffee 1–2 and 5+ steps (id `coffee`, ~line 785).
       DONE: verified vs Poole 2017 umbrella review full text (BMJ 359:j5024,
       PMC5696634). The 3-4 cup steps are EXACT published estimates: all-cause
@@ -178,11 +463,16 @@ the same step + run tests.
       ~HEI-2010/15 (slightly stronger HRs). Decision + overlap table +
       pre-committed fallback recorded in PLAN.md. No code change (decision
       only; numbers enter with the 1.3 mapping).
-- [ ] 1.3 Slider→component mapping: for each protective diet slider (fiber,
+- [x] 1.3 Slider→component mapping: for each protective diet slider (fiber,
       fruitVeg, nuts, fish; decide magnesium + coffee), define the mapping to
       score components with ρ-annotated overlaps (fiber↔fruitVeg
       double-counting risk is explicit); record in PLAN.md, prepare for
       js/factors.js.
+      DONE 2026-08-01: mapping table recorded in PLAN.md §1.3 (fiber → legume
+      + whole-grain fiber, fruitVeg → fruit+veg score, nuts → nuts score,
+      fish → fish score with valueOf fraction, magnesium marginal ρ≈0.3 with
+      veg score, coffee kept as clean marginal ρ≈0). Diet cluster went live
+      under 3.1; this step's substance was absorbed there.
 - [x] 1.4 Harmful foods: verify Pan 2012 (processed meat) and Malik 2019
       (SSB) adjustment sets — are they adjusted for other diet-quality
       indicators? Hunt published substitution analyses (red meat → plant
@@ -503,6 +793,35 @@ the same step + run tests.
       ρ,ρU ∈ [0,1], joint models well-formed). Suite: 20 sections, all
       green, shipped structures empty → byte-identical.
 
+- [x] 2.6 REVIEW-response: refactor the triplicated mortality/cancer/cvd
+      block inside `evaluateRaw` (engine.js ~line 619, three near-identical
+      ~60-line passes) into a shared closure keyed by output. No behavior
+      change — Phase 3.3/3.4/3.5 will touch this code, and the user review
+      flagged it as the top expandability blocker. Tests green.
+      DONE 2026-08-01: single `totals` map (HR_OUTPUTS -> {hr, sigma2}) —
+      accumulation loop, covariance loop, joint-model totals loop and the
+      final bounds all keyed by output; BMI derived effect routes through
+      totals.mortality/totals.cvd; withBounds() helper replaces the three
+      duplicated sigma blocks. Return shape unchanged (hr/hrCancer/hrCvd
+      fields identical). Suite green byte-identical (25 sections).
+- [x] 2.7 REVIEW-response: remove app.js dead code found in review pass
+      (unused constants EZCATI/DEATH_HR/DEATH_LE/SIM_M, evalParams,
+      EKELUND_SOURCE + its aeneas 0x04 code, `noData` if unreferenced,
+      canRun-fetch if unused). Verify each symbol is truly unused first
+      (grep app.js + index.html). Tests unaffected (no engine change).
+      DONE 2026-08-01: grep audit — EZCATI, DEATH_HR, DEATH_LE, SIM_M,
+      evalParams, EKELUND_SOURCE, aeneas 0x04, canRun all have ZERO
+      matches in app.js/index.html/sources.js (already removed in earlier
+      refactors; nothing to delete). The only remnant was the two
+      commented-out `noData` coverage-text assignments in updateCancer/
+      updateCvd. RESTORED instead of removed: AGENTS.md documents the
+      feature ("all others are listed on the card as 'no data yet'"),
+      the engine tests assert it ("coverage note lists no-data inputs",
+      tests/engine.test.js:362/421), and the `<p class="coverage-note">`
+      slots exist in the DOM template — the comment-out was a refactor
+      accident, so the card now lists non-covered inputs again. No engine
+      change; suite green.
+
 ## Phase 3 — live per cluster (order: diet → movement → adiposity → substances → psychosocial)
 
 - [x] 3.1 Diet cluster live: PURE-style score lookup wired (gradient →
@@ -530,9 +849,12 @@ the same step + run tests.
       HR 1.0) — at defaults only the magnesium pair is active; ssb default
       is NOT 0. PLAN.md §3.1 implementation notes extended with "Shipped
       2026-07-31" addendum.
-- [ ] 3.2 Movement cluster live: Ekelund table + Momma/NHIS cells (verified
+- [x] 3.2 Movement cluster live: Ekelund table + Momma/NHIS cells (verified
       subset); supersession (VO2max replaces cardio → moves PA level) still
-      works; probe vs cells.
+      works; probe vs cells. DONE 2026-08-01 (all sub-steps shipped;
+      conflation checks green: no double-count identities on all outputs,
+      aerobic priced once per output post-3.2f, anchoring exact at
+      defaults).
       SUB-STEPS (created 2026-07-31 after §3.1 shipped):
       - [ ] 3.2-plan: record §3.2 implementation notes in PLAN.md — Ekelund
         axis coeffs (cardio min/wk + steps/d → MET-h/w), sitting bands;
@@ -567,35 +889,496 @@ the same step + run tests.
         cluster ownership exclusion (sitting-only anchor = 1.10). Suite:
         all green. PLAN.md §3.2 anchor bullet extended with the shipped
         note.
-      - [ ] 3.2b Ekelund table wired: members [cardio, steps, sitting],
+      - [x] 3.2b Ekelund table wired: members [cardio, steps, sitting],
         PA axis (cardio+steps read-only), sitting axis, interpolate true,
         evidence high, source ekelund2016 (NEW source entry), calibrate:
         true, note disclosing the re-anchor; mortality only (cancer/CVD fall
-        back to members' marginals); §[22] tests.
-      - [ ] 3.2c Momma cells wired: members [strength], axes aerobic
+        back to members' marginals); tests.
+        DONE 2026-07-31: factors.js v0.1.6 — ekelundTable joint model
+        (PA coeffs [4, 0.21], bands Q1 ≤150/Q2 ≤960/Q3 ≤1800/Q4 ≤2130
+        flat-clamped; sitting bands <4/4–6/≥6 — published 6–8 row folded
+        into interpolation, >8 open-ended clamps flat after a fake 99 h/d
+        cutoff was caught distorting ratios ~5–12% at 13–20 h/d);
+        ekelund2016 source entry (idx 85, after mente2023 — chips "Diet
+        score"/"Movement score"); note discloses re-anchor + interpolation +
+        ref-CI approximation + diet non-adjustment + cancer/CVD fallback.
+        ENGINE BUG FIXED: gridTotal computed bands[i-1] unconditionally →
+        crash when an axis value lands in band 0 (sitting 0–4 h); has0/has1
+        now guard the index; regression-tested in §[23].
+        TEST RESTRUCTURE: §[2]–§[15] (all pre-cluster single-factor tests)
+        rerouted to plainModel (sed, lines 78–430) — they were passing only
+        because the diet cluster cancels in the evaluate() normalization
+        when diet stays at defaults; the Ekelund table legitimately changes
+        cardio/steps/sitting absolute readings; §[17] ships-2-clusters
+        assertions + anchored-defaults check (0.5896); §[21] citation
+        assertions updated (ekelund2016 last, mente2023 one before).
+        NEW §[23] "Shipped Ekelund table": cell ratios 1.59/1.04 and
+        1.27/1.59 preserved (shape survives the anchor), sitting 0
+        regression, no-double-count identity with both clusters +
+        magnesium blend (mg default is 280, NOT 250 — pair active at
+        defaults), cancer/CVD fallbacks. Smoke: active 0.82× (+2.0 y),
+        sedentary 1.28× (−2.5 y), low-PA+low-sit 1.03× (table attenuates
+        the marginals' overclaim — naive product 1.86×). Suite all green.
+        PLAN.md §3.2 Ekelund bullet extended with the shipped note.
+        VO2max supersession still pending (3.2d).
+      - [x] 3.2c Momma cells wired: members [strength], axes aerobic
         (cardio read-only, ≥150 min/wk) × strength (any ≥1); grids
         mortality [[1.0, 0.85],[0.80, 0.60]], cancer [[1.0, 0.88],[0.80,
         0.72]], cvd [[1.0, 0.83],[0.79, 0.54]]; aerobic-only cells from the
         existing Arem 2015 bands (disclose); NO calibrate (8% off, within
-        band; keeps the published 0.60); §[22] tests.
-      - [ ] 3.2d Duncan cells + supersession: sleep becomes a cells model
-        (members [sleep], PA axis consumes movement state via an axis fn or
-        decision from 3.2-plan); VO2max supersession: gatedBy-aware axis
-        resolution (vo2maxOn → PA axis reads vo2max→MET-h/w instead of
-        cardio); rhr/sun pair decisions applied; §[23] tests.
-      - [ ] 3.2e probe vs cells + calibration checks (movement probe within
+        band; keeps the published 0.60); §[23] tests.
+        DONE 2026-08-01: factors.js v0.1.7 — mommaCells joint model
+        (3 outputs: mortality/cancer/cvd, each a 2×2 grid; aerobic axis
+        {≤149 none, ≤9999 AER} reads cardio read-only, ms axis {≤0 none,
+        ≤99 MS} reads strength; grids [[1.0, 0.85 (0.79–0.93)],[0.80
+        (0.78–0.82), 0.60 (0.54–0.67)]] / [[1.0, 0.88 (0.80–0.97)],[0.80,
+        0.72 (0.53–0.98)]] / [[1.0, 0.83 (0.73–0.93)],[0.79 (0.76–0.82),
+        0.54 (0.41–0.70)]] — aerobic-only cells approximated from Arem 2015
+        ≥150 bands because Momma's aerobic-only contrast is graphical only
+        (disclosed in the note); momma2022 source entry (BJSM 56(13):755–63,
+        DOI 10.1136/bjsports-2021-105061, PMID 35228201, PMCID PMC9209691).
+        NO calibrate — default cell 0.85 vs members' 0.92 product ≈ 8% off,
+        within the band, keeps the published synergy (0.60 < 0.85×0.80 ≈
+        0.68). Smoke: defaults (none,MS) 0.85/0.88/0.83; strength 0 →
+        1.0/1.0/1.0; cardio 300 no strength → 0.80/0.80/0.79; cardio 300 +
+        strength 2 → 0.60/0.72/0.54; hrAvg still exactly 1.0 at defaults.
+        SUITE FIXED (was 10 red): §[17] → 3 clusters + momma defaults
+        assertion; §[21] no-double-count identity extends to all 8 members
+        (allMems incl. strength) × 3 cluster totals + magnesium blend;
+        redundancy endpoint = pRaw / mprodAll × diet × ekelund × momma;
+        cancer identity replaces the old "identical to plain" (diet members'
+        cancer marginals cancel, momma replaces strength's 0.87); citation
+        assertions corrected — momma2022 is at index 4, NOT last (strength
+        input marginals cite it first in the walk; only ekelund2016 last +
+        mente2023 one before hold); §[23] ratio tests pin strength: 0 so
+        only the Ekelund shape moves — raw ratio is now Ekelund 1.59/1.04
+        × momma aerobic 1.0/0.80 = 1.9111, clusterTotals keeps the pure
+        1.59/1.04; no-double-count identity now 3 clusters; cancer/cvd
+        fallback assertions → momma replaces strength's marginals
+        (0.87/0.9), cardio/steps/sitting still fall back. Suite all green.
+        PLAN.md §3.2 Momma bullet extended with the shipped note.
+      - [x] 3.2d Duncan cells + supersession: sleep becomes a cells model
+        (members [sleep], PA axis consumes movement state via an axis fn);
+        VO2max supersession (PLAN option A: gatedBy-aware axisValue —
+        superseded/gated axis inputs contribute 0, so vo2maxOn → cardio
+        contributes 0, steps stay, Kodama marginal carries fitness; option B
+        vo2max→MET-h/w rejected as unfalsifiable); rhr/sun pair decisions
+        applied; §[23]/§[24] tests. DONE 2026-08-01 (factors.js v0.1.8,
+        engine.js unchanged v0.1.8): SHIPPED — duncanCells joint model
+        (members [sleep], model 'table', evidence 'low', source duncan2023
+        NEW JSHS 12(1):65–72 DOI 10.1016/j.jshs.2022.07.003 PMID 35872092
+        PMC9923431, appended last in sources); PA-category axis is a data
+        fn (v.vo2maxOn ? 0 : r(cardio)) ≥150 → AER, r(strength) ≥2 → MSA,
+        both → Active, returning the band index 0–3 (thresholds live in
+        factors.js, golden rule); sleep axis bands ≤6.9 Short / ≤9.4 Rec /
+        ≤11 Long, NO interpolation (study's sleep groups are discrete
+        categories; interpolation broke the defaults ratio 1.0); grid rows
+        in BAND order (Inactive, MSA only, AER only, Active — NOT the
+        paper's display order), cols (Short, Rec, Long):
+        [[1.59,1.68,2.20],[1.43,1.56,2.32],[1.28,1.21,1.54],[1.08,1.00,1.40]]
+        with published CIs; ratio {axis:1, referent:1} — total =
+        cell(PA,sleep)/cell(PA,Rec): the PA-row main effect is divided away
+        (Ekelund/Momma own PA), the sleep effect is the study's novel
+        finding (short-sleep risk ~eliminated in Active 1.08 NS; long-sleep
+        risk persists everywhere 1.40–2.32); defaults ratio exactly 1.0 →
+        NO calibrate needed; CI = quadrature of numerator/denominator
+        sigmas (referent cell 1.00 has no published CI — slight
+        understatement, disclosed). OVERLAP PAIRS (factors.js): duncanCells
+        ↔ dietScore ρ0.10/ρU0.05 tier low (Duncan doesn't adjust for diet —
+        residual confounding; sleep marginal RETIRED into duncanCells so
+        the pair blends the cluster total); rhr ↔ ekelundTable ρ0.15/ρU0.075
+        (replaces retired rhr↔cardio 0.20 — discounted because the cluster
+        total carries steps+sitting, diluting the shared pathway);
+        sunExposure ↔ ekelundTable ρ0.10/ρU0.05 (absorbs retired sun↔steps;
+        steps ≈40% of the default PA axis). Engine extends axisValue to fn
+        axes + gated/superseded-aware sums, gridTotal threads values/model/
+        output, NEW ratioTotal, clusterTotalFor 5-arg — applied in
+        computeJmTotals/evaluateRaw/clusterTotals. ENG BUG FIXED
+        (boundsEndpoints): lone cluster side of a pair was re-multiplied
+        when the input side was gated off (rhr pair latent) — now `if
+        (c.cluster) continue` (cluster already counted by its own group).
+        SUITE: 9 red expected → fixed — §[17] 4 clusters + duncan defaults
+        1.0; §[18] shipped pairs 6 (3 vs dietScore incl. duncanCells +
+        rhr/sun vs ekelundTable); §[21] identity + sun blend (sun 0.9 →
+        0.9^0.9 at defaults — sun's default HR is 0.9, a real active
+        effect, so it re-blends like magnesium) + duncan total + redundancy
+        + citations (duncan2023 last, ekelund2016 second-last); §[23] raw
+        ratio unchanged 1.9111 — Duncan ratio is 1.0 at Rec sleep in every
+        PA row BY CONSTRUCTION (referent column), the Duncan factor belongs
+        in §[24]; new §[24]: ratio = 1.0 at 7 h in every PA category;
+        sleep 5 → 1.59/1.68 = 0.9464 (Inactive) and 1.08/1.00 = 1.08
+        (Active); sleep 10 → 2.20/1.68 = 1.3095 and 1.40/1.00 = 1.40
+        (Active); CI brackets; vo2maxOn retires cardio from the Ekelund PA
+        axis AND the Duncan fn (totals == cardio 0) while steps still drive
+        the axis; rhr pair gated off by default, active + blended 1.3266^0.85
+        (weaker side) when rhrOn. Suite all green. axisValues are internal
+        to gridTotal (clusterTotals strips them — assertions use HR
+        equality instead). PLAN.md §3.2 Duncan + ratio + rhr/sun pair
+        shipped notes appended.
+      - [x] 3.2e probe vs cells + calibration checks (movement probe within
         band; anchoring exact at defaults; suite green); mark 3.2 [x] DONE.
-- [ ] 3.3 Adiposity live: Mayo joint cells or %-mediated band; supersession
+        DONE 2026-08-01: probe recorded in PLAN.md §3.2 (defaults 0.5012
+        = 0.5896×0.85×1.0 — the earlier 0.543 used the strength MARGINAL
+        0.92 and predates the no-calibrate Momma decision; ~9% below the
+        0.55–0.6 aspirational band, fully explained by the Momma gap;
+        moderate profile 0.2899 vs naive 0.3402 — Momma's published
+        synergy cell drives it). Anchoring exact at defaults (hrAvg 1.0,
+        LE delta 0); suite green. **SURFACED 3.2f**: the moderate probe
+        exposed an aerobic-PA double-count — Ekelund's PA axis (cardio+
+        steps) AND Momma's aerobic row (cardio read-only, Arem ≥150 cell)
+        both price aerobic PA: cardio 0→300 moves Ekelund ×0.824 AND Momma
+        ×0.706 (combined ×0.582 for aerobic alone vs Arem's 0.63). The
+        "read-only axis" note only prevents the cardio MARGINAL double
+        count; the two tables' shared aerobic signal is unpriced. DECISION
+        RECORDED in PLAN.md: fix via ratio-mode on Momma's aerobic axis
+        (Duncan precedent) — total = cell(aerobic, strength)/cell(aerobic,
+        none) divides the aerobic main effect away (owned by Ekelund's PA
+        axis on mortality, by cardio's marginal fallback on cancer/cvd);
+        the strength×aerobic interaction survives (0.60/0.80 = 0.75 < 0.85
+        synergy intact); defaults (none row) identical to shipped
+        (0.85/0.88/0.83) → no anchoring/test churn on defaults.
+      - [x] 3.2f FIX the aerobic double-count: mommaCells gains
+        ratio {axis: 1 (strength), referent: 0 (none)} on all three
+        outputs (mortality/cancer/cvd grids; aerobic-only cells become
+        denominators); update the Momma notes (§1.6 engine-use + factors.js
+        note) to the ratio-mode disclosure; §[23] raw ratio expectation
+        changes (Momma's aerobic factor 1.0/0.80 vanishes — the ratio at
+        strength 0 is 1.0 on both rows → raw ratio = Ekelund 1.59/1.04 =
+        1.5288); §[23] cancer/cvd identities recompute from the new cells
+        (0.72→0.72/0.80=0.90, 0.54→0.54/0.79≈0.6835 — assertions read the
+        totals, only comments/expectations update); smoke records updated
+        (cardio 300 + strength 2 → 0.75/0.90/0.6835); verify: aerobic
+        priced once per output (cardio 0→300 delta ≈ Arem alone), defaults
+        totals unchanged (0.85/0.88/0.83), suite green; mark 3.2 [x] DONE.
+        DONE 2026-08-01 (factors.js v0.1.9, engine unchanged): ratio
+        {axis:1, referent:0} on all three mommaCells outputs. Verified:
+        defaults (none,MS) 0.85/0.88/0.83 EXACTLY unchanged (denominator
+        = the 1.00 ref); cardio 300 + strength 2 → 0.75/0.90/0.6835
+        (0.60/0.80, 0.72/0.80, 0.54/0.79 — the published synergy survives
+        as the interaction: 0.75 < MS-only 0.85); aerobic-only (strength 0)
+        → 1.0/1.0/1.0 (aerobic main effect gone from Momma); aerobic
+        priced once: cardio 0→300 with strength 0 moves ONLY the Ekelund
+        total (combined delta = Ekelund's gradient 0.8244, vs 0.582 with
+        the double count). Suite: §[23] raw ratio updated (now pure
+        Ekelund 1.5288 with both Momma and Duncan ratios at 1.0 in that
+        profile); new §[25] locks in: defaults unchanged, interaction
+        cells, aerobic-only ratio 1.0, once-priced aerobic identity. All
+        green. PLAN.md §3.2 probe bullet rewritten with shipped values +
+        3.2f finding & decision; Momma bullet amended; §1.6 engine-use
+        note amended.
+- [x] 3.3 Adiposity live: Mayo joint cells or %-mediated band; supersession
       (bodyFat replaces BMI) keys in.
-- [ ] 3.4 Substances: ρ pairs applied where 1.12 failed verification;
+      SUB-STEPS (created 2026-08-01; design ready in PLAN.md §1.8/§1.9):
+      - [x] 3.3-plan: record §3.3 implementation notes in PLAN.md — PA-axis
+        mapping decision (Mayo's UKB self-reported quintiles G1/G2/G3 are
+        NOT on Ekelund's harmonized scale — map rank-preserving onto
+        Ekelund's quartile cutoffs: G3 ≤150, G2 ≤1800, G1 >1800 MET-min/wk,
+        disclosed as rank- not value-preserving); ratio-mode decision
+        ({axis: 1, referent: 0} on a rows=PA × cols=adiposity grid: total =
+        cell(PA, adj)/cell(PA, normal) — PA main effect divided away
+        because Ekelund owns it, exactly the Duncan pattern; the published
+        PA×adiposity interaction survives); the UK-Biobank overweight-
+        paradox artifact disclosure (normal-weight-low-PA cell 1.22 is
+        elevated by reverse causality/smoking; supp Table 4 never-smoker
+        restriction → NS; the ratio can read <1 for overweight at low PA —
+        disclose as a source artifact, NOT a protective claim);
+        `calibrate: true` (defaults: ratio total 0.9533 vs members' product
+        1.20 = bmi marginal at BMI 29.76, ~26% off — beyond Momma's 8%
+        tolerance band, so Ekelund's anchor rule applies; the constant
+        log-space shift preserves the cells' interaction; cancels in the
+        page's evaluate() normalization anyway, matters for clusterTotals/
+        bounds/attribution displays); underweight clamp decision (BMI <18.5
+        maps into the 18.5–24.9 row — the Mayo table has no underweight
+        category, so Di Angelantonio's left arm is lost: DISCLOSE in the
+        note + a finding, never invent a left arm); supersession keys
+        (vo2maxOn retires cardio from the Mayo PA axis automatically via
+        the engine's supersededBy check — steps still drive it, exactly the
+        Ekelund treatment; bodyFatOn switches the adiposity axis fn to the
+        BF rows); no new overlap pairs needed (Mayo is diet-adjusted →
+        ρ(mayoCells, dietScore) ≈ 0 per §1.8(4); the ratio already removes
+        the PA share of the Ekelund overlap); BF % band cutoffs gap (the
+        paper's BF groups are sex-specific distribution-matched quartiles —
+        exact % cutoffs needed from the supp tables, else sex-averaged
+        disclosure); CVD grid layout anomaly in §1.8 (normal-BMI × G2 =
+        0.89 < REF 1.00 — verify columns/rows at source) + cancer grid
+        incomplete (only ≥35 row recorded) → both gated on 3.3a.
+        DONE 2026-08-01: `**§3.3 implementation notes — adiposity cluster
+        (planned 2026-08-01; cells verified in §1.8, model decision in
+        §1.9; implementation in 3.3a–d).**` written into PLAN.md after the
+        §3.2 notes (was line 659, before the "Phase 3 — ρs live" heading) —
+        full decision record: PA-axis rank-preserving mapping (Ekelund
+        quartile cutoffs, disclosed), ratio mode (Duncan/3.2f precedent;
+        defaults ratio = 1.02/1.07 = 0.9533), calibrate:true (k =
+        ln 1.20 − ln 0.9533 ≈ +0.23, ~26% gap > Momma's 8% band),
+        overweight-paradox artifact disclosure (never "protect"),
+        underweight clamp + left-arm disclosure (diangelantonio2016 stays
+        cited via the sourceIndex input-effects walk — no dead key),
+        supersession keys (no engine change needed), no-new-pairs (diet-
+        adjusted; ratio removes the Ekelund PA share), bands
+        (G3/G2/G1 rows, normal-first cols, interpolate:false — both axes
+        discrete study categories), all-cause grid transcribed
+        [[1.22,1.12,1.38,1.52],[1.07,1.02,1.09,1.43],[1.00,1.00,1.15,1.45]],
+        retirement + noData shrink, 3.3a gates (CVD 0.89 anomaly, cancer
+        grid, BF % cutoffs), Weeldreyer finding role. NOTE: the earlier
+        todo draft's "calibrate: true REQUIRED" wording is now precise —
+        the anchor is on the RATIO total vs the bmi marginal, not vs a
+        raw cell.
+      - [x] 3.3a: verify Mayo supp Tables 3/9/10 at source (open access CC
+        BY, PMID 33309181): full 4×3 cancer grid, CVD grid layout (0.89
+        anomaly — confirm G1/G2/G3 column order + referent), BF % band
+        cutoffs (sex-specific low/med-low/med-high/high), underweight
+        handling; record exact cells in PLAN.md §1.8 addendum; add source
+        key sanchezlastra2021.
+        DONE 2026-08-01 — every cell verified at source. Download route:
+        ScienceDirect article page is bot-gated (tdm-reservation meta,
+        NOARCHIVE, no article text in HTML; PII S0025619620307564);
+        mayoclinicproceedings.org fulltext + PDF → 403; researchgate → 403;
+        not in PMC; unpaywall: no OA location. WIN: Elsevier supplementary
+        files download directly — `https://ars.els-cdn.com/content/image/
+        1-s2.0-S0025619620307564-mmc1.docx` (mmc2/mmc3 → 404) → extracted
+        to /tmp/opencode/mayo_docx/word/document.xml (10 w:tbl).
+        Table→token mapping confirmed via captions (token 25 = Table 3,
+        47 = Table 6, 73 = Table 9, 90 = Table 10; list-of-tables at
+        tokens 2–11). Findings:
+        + Table 3 all-cause Model 3 EXACTLY matches §1.8 (all 3 sections:
+          BMI/WC/BF; e.g. 18.5–24.9 G2 1.07 (0.96–1.18), ≥35 G1 1.45
+          (1.21–1.73); BF high G3 1.54 (1.33–1.79) = the abstract's 1.54).
+        + Table 9 CVD Model 3: 0.89 ANOMALY CONFIRMED REAL — 18.5–24.9 row
+          G1 1.00 REF / G2 0.89 (0.68–1.15) / G3 1.31 (0.97–1.78); column
+          order G1/G2/G3 + referent verified; sparse deaths (128/100/61 in
+          that row); ≥35 row 1.37 / 1.99 (1.44–2.76) / 1.55 (G2 > G1 > G3
+          — non-monotone; transcribe as-is). Full grid in §1.8 addendum.
+        + Table 10 cancer Model 3: full 4×3 grid extracted (18.5–24.9
+          1.00/1.10 (0.97–1.24)/1.12 (0.94–1.32); ≥35 1.57 (1.25–1.97)/
+          1.30/1.48) — completes §1.8's partial record. WC/BF rows too.
+        + Table 2 PA quintile medians verified (Q1 339–490 / Q2 924–1268
+          / Q3 1644–2226 / Q4 2799–3734 / Q5 5466–7284) → G1/G2/G3 medians
+          in §1.8 confirmed.
+        + NEVER-SMOKER = supp Table 6, NOT Table 4 (§1.8 citation slip —
+          fixed in PLAN.md). Table 6 (n=168,654, quintiles within BMI/WC/
+          BF strata, Model 3): ALL NS (0.75–1.11) — attenuation confirmed.
+        + MAIN TEXT (ScienceDirect search snippet + UK Biobank page):
+          BMI <18.5 EXCLUDED at baseline (illness-related weight loss,
+          n=35,094 bucket with chronic conditions + pregnant); follow-up
+          lagged 2 y (n=1,204); prevalent cancer/CVD excluded (63,193);
+          missing covariates excluded (14,687); CVD/cancer tables are
+          Fine-Gray COMPETING-RISK subdistribution HRs.
+        + BF % CUTOFFS NOT PUBLISHED (main text nor supp): four BF groups
+          are sex-specific distribution-matched quartiles to the BMI
+          category distribution. → 3.3b must use DISCLOSED translated
+          cutoffs (e.g. via a published age/sex BF%-BMI equation), never
+          invented study numbers; note says "our translation, not the
+          paper's".
+        PLAN.md: §1.8 "Verification addendum 2026-08-01 (3.3a)" with full
+        CVD/cancer grids + methods facts + Table-6 correction; §3.3 notes
+        updated (Table 6 fix, underweight EXCLUDED not absent, gated→
+        verified bullet). Source key sanchezlastra2021 added in 3.3b.
+      - [x] 3.3b: factors.js: `mayoCells` joint model (members [bmi,
+        bodyFat], cluster 'adiposity', rows = PA G-bands via regular axis
+        {inputs: [cardio, steps], coeffs [4, 0.21], bands G3 ≤150 / G2
+        ≤1800 / G1 >1800}, cols = adiposity via axis fn (v.bodyFatOn ?
+        r('bodyFat') BF band : r('bmi') BMI band), ratio {axis: 1,
+        referent: 0}, calibrate: true, evidence high, mortality+cvd+cancer
+        grids from the verified tables); bmi/bodyFat marginals retire on
+        covered outputs (cluster-owned; bmi/bodyFat gain cancer data, bodyFat
+        gains CVD data — noData lists shrink); the fitness-absorbs-fatness
+        finding (weeldreyer2025 source key, §1.9 decision (a)) + underweight
+        finding; notes with all disclosures. BF band fn: bodyFatOn must map
+        bodyFat% → 4 BF bands via DISCLOSED translated cutoffs (paper
+        publishes none — sex-specific distribution-matched quartiles; use a
+        published age/sex BF%-BMI equation, e.g. Deurenberg 1991, and say in
+        the note "our translation, not the paper's").
+        DONE 2026-08-01 (factors.js v0.1.10, engine.js v0.1.10): mayoCells
+        shipped as designed — members [bmi, bodyFat], cluster 'adiposity',
+        PA-axis regular {inputs:[cardio,steps], coeffs [4,0.21], bands G3
+        ≤150/G2 ≤1800/G1 >1800}, adiposity-axis fn (bodyFatOn ? BF bands
+        (Deurenberg 1991 translation, disclosed "our translation, not the
+        paper's") : BMI bands incl. underweight→normal-row clamp), ratio
+        {axis:1, referent:0}, calibrate:true, evidence high, source
+        sanchezlastra2021 (verified cells, 3 outputs), interpolate:false;
+        weeldreyer2025 + underweight findings; note carries the
+        overweight-paradox + rank-preserving-PA disclosures. RETIREMENT +
+        COVERAGE: bmi/bodyFat marginals retire on all three outputs;
+        bodyFat gains CVD + cancer coverage and bmi gains cancer coverage
+        via the cluster → noData lists shrink (engine `clusterCovered()`
+        in evaluate() now credits joint-model-covered inputs per output).
+        TWO BUGS FOUND + FIXED in the shakedown (see 3.3e below): Mayo
+        axes transposition + boundsEndpoints dead-JM-group. app.js bmi
+        readout third branch: "counted together with activity via the
+        PA×adiposity cluster (sanchezlastra2021)" when mayoCells covers
+        mortality.
+      - [x] 3.3c: tests — NEW §[26] "Shipped Mayo cells": defaults anchored
+        (raw cluster total == members' product 1.20 at 1e-9 via calibrate),
+        normal-BMI ratio exactly 1.0 at any PA, ratio values at G1×≥35 /
+        G3×≥35 (1.45 / 1.246 after the same shift), bodyFatOn switches to
+        BF rows (cluster total changes), vo2maxOn retires cardio (steps-
+        only PA), cancer/cvd coverage present, no-double-count identity
+        extends to all members incl. bmi+bodyFat × 5 cluster totals; §[17]
+        → 5 clusters at defaults; §[21] member list + redundancy endpoint +
+        citation assertions (sanchezlastra2021 last, duncan2023 second-
+        last); smoke records (lean-active ≈ 1.0, obese-inactive elevated,
+        paradox note); suite green.
+        DONE 2026-08-01: Mayo assertions landed in the EXISTING §[25]
+        ("Shipped Mayo PA×adiposity cluster") rather than a new §[26] —
+        suite still ends at §[25], 1009 ok all green. Coverage: defaults
+        anchored (raw total == 1.20 at 1e-9), ratio values at G1×≥35 /
+        G3×≥35 after the shift, bodyFatOn → BF rows (record tagged
+        viaJoint mayoCells), vo2maxOn retires cardio (steps-only PA),
+        cancer/cvd coverage + noData credit, no-double-count identity
+        incl. bmi+bodyFat × 5 cluster totals, redundancy endpoint, screen
+        time still listed as cancer no-data. §[17]: 5 clusters (diet/
+        ekelund/momma/duncan/mayo) + mayoCells defaults 1.20/1.25/1.00.
+        §[20]: bmi allowed as a DERIVED member (not a real input id).
+        §[23]: formulas retire the bmi marginal (÷) and multiply in the
+        mayo total (mortality/cancer/cvd identities); raw-ratio test now
+        = Ekelund shape × mayoCells PA-axis ratio; redundancy endpoint =
+        pRaw.hr / mprodAll / bmiMarg × diet × ek × mm × dn × mayo.
+        screenTime label assertion fixed ("Recreational screen time").
+      - [x] 3.3d: probe + calibration checks (Mayo default == bmi marginal;
+        anchoring exact at defaults; no double count: cardio 0→300 moves
+        Ekelund + Mayo PA axis — verify the ratio removes the PA share);
+        PLAN.md §3.3 shipped note; mark 3.3 [x] DONE.
+        DONE 2026-08-01: probe re-run + recorded in PLAN.md §3.3 shipped
+        addendum — defaults mayoCells mort/cvd/cancer 1.200000/1.250000/
+        1.000000 (= the retired bmi marginals on mort/cvd; cancer anchors
+        to identity, no bmi cancer marginal existed); calibrate offset
+        constant 1.25882 (= k: 1.25882×1.02/1.07 = 1.20); surface:
+        G3×overweight 1.1556, G2×overweight 1.20, G1×overweight 1.2588,
+        G2×obese-I 1.25882×(1.09/1.07), G1×obese-I 1.25882×1.15 = 1.4476,
+        G2×obese-II 1.25882×(1.43/1.07) = 1.6824, G1×≥35 1.25882×1.45 =
+        1.8253 (no crash), underweight→normal col, BF 40% male
+        1.25882×(1.36/1.05) = 1.6305; anchoring exact
+        (hrAvg 1.0, LE delta 0); PA priced once per output — the ratio
+        divides the PA-row main effect (Mayo contributes interaction +
+        adiposity main effect only; Ekelund owns the PA gradient on
+        mortality; band crossings move the ratio as designed). PLAN.md
+        §3.3 "Shipped 2026-08-01" addendum appended. Marked 3.3 DONE.
+      - [x] 3.3e ENGINE FIXES (surfaced during the 3.3b shakedown, both
+        pre-shipped): (1) mayoCells axes transposition — grids stored rows
+        = PA × cols = adiposity but axes initially declared [adip, pa], so
+        indexGrid walked the transposed grid: wrong cells AND a crash at
+        BMI ≥35 (row index 3 exceeded the 3-row grid) → axes swapped to
+        [pa, adip] on all three outputs (ratio {axis: 1, referent: 0}
+        semantics unchanged — divide by the normal-adiposity column);
+        (2) boundsEndpoints dead-JM-group — mayoCells at defaults has
+        zero ACTIVE candidates (bmi derived, bodyFat gated off) so
+        `candidates.length === 0 → continue` skipped the group and the
+        cluster total never entered the redundancy endpoint (defaults red
+        was 0.2985, ÷1.20 short of the §[23] formula) → dead groups now
+        contribute their cluster total (same pre-seeding as evaluateRaw's
+        jmAcc); defaults red endpoint = 0.3582 = pRaw/mprodAll/bmiMarg×
+        diet×ek×mm×dn×mayo. Both covered by §[23]/§[25] assertions.
+        DONE 2026-08-01.
+- [x] 3.4 Substances: ρ pairs applied where 1.12 failed verification;
       multiplication elsewhere.
-- [ ] 3.5 Psychosocial per-lever-only flag live: no combined number;
+      SUB-STEPS (created 2026-08-01; §1.12 verification complete):
+      - [x] 3.4-plan: record §3.4 implementation notes in PLAN.md — two ρ
+        pairs only (snus↔alcohol 0.15/ρU0.10 tier moderate — byhamre2021
+        adjusts for age+BMI only; vaping↔alcohol 0.10/ρU0.05 tier low —
+        PATH collects no alcohol data, numerically moot while vaping CVD is
+        a null); NO ρ(smoking, alcohol) — both sources mutually adjust
+        (Wood 2018 adjusts smoking, Jha 2013 adjusts alcohol); snus CI
+        CORRECTION (factors.js snus CVD byOption 1.20–1.35 → published
+        1.15–1.41); multiplication elsewhere (no new pairs).
+        DONE 2026-08-01: §3.4 implementation notes written into PLAN.md
+        after the §3.3 shipped addendum (full decision record incl. the
+        silent-at-defaults property: snus 'no' / vaping 'never' / alcohol
+        2.5 all → HR 1.0, so both pairs are inactive at defaults — no
+        anchoring churn; the vaping blend is a no-op on a 1.0 HR —
+        "kept for structure, activates if a future vaping HR turns
+        non-null"). VERIFIED: the snus CVD CI correction is ALREADY in
+        the working tree (factors.js ~line 912: 1.27 (1.15–1.41) —
+        applied during the v0.1.9 verification pass) — 3.4a needs only a
+        pinning test assertion, no data edit.
+      - [x] 3.4a: factors.js — add the two overlaps (snus↔alcohol,
+        vaping↔alcohol, notes citing §1.12), fix the snus CVD CI;
+        nothing else changes (substance marginals stay independent).
+        DONE 2026-08-01 (factors.js v0.1.10): both overlaps appended to
+        the array (snus↔alcohol ρ0.15/ρU0.10 kind residual-confounding
+        tier moderate source byhamre2021; vaping↔alcohol ρ0.10/ρU0.05
+        kind unmeasured-confounding tier low source berlowitz2022 — the
+        no-op-while-null structure is documented in the note); the snus
+        CVD CI was ALREADY corrected in the working tree (no data edit
+        needed — §1.12 correction landed during the v0.1.9 pass).
+        Source walk unchanged: byhamre2021/berlowitz2022 already cited
+        by the snus/vaping input effects → no citation index shift.
+      - [x] 3.4b: tests — §[18] shipped-pairs count 6 → 8 (or new §[26]);
+        blend checks: snus at 0 boxes (HR 1.0, inactive) vs user value +
+        alcohol drinker → weaker side ×(1−ρ); vaping blend; CI correction
+        assertion; suite green.
+        DONE 2026-08-01: §[18] shipped count 6 → 8 + pair-shape pins
+        (rho/rhoU) + NEW 3.4 block: substance pairs inactive at defaults
+        (activeOverlaps filter .active — the raw list carries all pairs,
+        only some flagged active); snus↔alcohol blend via plainModel
+        fixture with the base raw product divided out (plainModel keeps
+        all single-factor marginals at their default values — raw HR ≠
+        1.0 at defaults); alcohol 20 → 1.16 discounted ^0.85 × snus 1.28
+        full; vaping↔alcohol no-op on mortality (no vaping mortality
+        effect) and CVD (1.00^0.9 = 1.00); snus CVD CI pinned to the
+        published 1.27 (1.15–1.41). Suite: 1020 ok, all green.
+      - [x] 3.4c: probe + calibration checks (substance deltas still
+        sensible: smoking −10 y preserved, alcohol curve unchanged;
+        anchoring exact at defaults); PLAN.md §3.4 shipped note; mark
+        3.4 [x] DONE.
+        DONE 2026-08-01: probe recorded in PLAN.md §3.4 shipped addendum
+        — anchoring exact (hrAvg 1.0, LE delta 0); smoker 2.90×/−10.75 y
+        (Jha preserved); alcohol 30 → 1.56×/−4.49 y (Wood unchanged);
+        snus yes + alcohol 20 → 1.4521× = 1.28×1.16^0.85 (weaker side
+        discounted — matches the §[18] synthetic math); smoker+snus+
+        alcohol 20 → 4.21× clamped at ceiling 4.0 (expected);
+        vaper+alcohol 20 → 1.16× mort / 1.12× CVD (pair no-op while
+        vaping is a null — structurally inert, activates if a future HR
+        turns non-null). Marked 3.4 DONE.
+- [x] 3.5 Psychosocial per-lever-only flag live: no combined number;
       contributions shown individually with the conflation label ("cannot be
       separated from the other factors on this card").
-- [ ] 3.6 Completion: Phase-0 regression test ("regular healthy person" not
-      pinned at floor/cap) green; calibration suite green (PURE gradient,
-      Ekelund cells, Momma cells, Li 2018 anchor within tolerance band);
-      attribution probe re-run, results recorded in PLAN.md.
+      SUB-STEPS (created 2026-08-01; engine machinery already exists — §2.1
+      per-Lever-only routing + §2.3 bounds exclusion, both EMPTY until now):
+      - [x] 3.5-plan: record §3.5 implementation notes in PLAN.md — members
+        {purpose, stress, social, sleepRegularity} (PLAN §1.14 line 1305/
+        1456; sleep stays in duncanCells; sleepReg stays per-lever, sleep
+        stays cluster-owned); per-lever-only → blocked from ALL HR products
+        (mortality/cancer/cvd totals) but mind POINTS still accumulate
+        (points outputs have no `acc` entry in the §2.2 accumulation loop);
+        records tagged perLever: true; bounds endpoints exclude them
+        (already, §2.3); chips + contrib list label them individually with
+        the conflation label.
+- [x] 3.5a: factors.js perLeverOnly = [{ cluster: 'psychosocial',
+        members: ['purpose', 'stress', 'social', 'sleepRegularity'] }];
+        annotation comments (PLAN §1.14; purpose↔stress↔social triangle has
+        no joint data — pairwise ρ would double-discount, §1.14 bottom).
+        engine.js needs no change — verify the per-lever points path.
+- [x] 3.5b: tests — per-lever members excluded from the mortality/
+        cancer/cvd totals (HR unchanged when they move), happiness/cognition
+        points still accumulate, contribution records perLever: true, bounds
+        endpoints exclude them, anchoring exact at defaults; no-double-count
+        identity still holds. (plainModel now strips perLeverOnly so single-
+        factor marginals still work; new §[19b] shipped cluster test; the
+        §21/§23 identities use the new plainHrOut() helper that divides the
+        per-lever members out of the plain reference — suite 1020→1029 ok.)
+      - [x] 3.5c: app.js — render the conflation label on per-lever
+        contributions ("per slider — not in the total" on HR cards +
+        "psychosocial slider (points only)" on mind-output cards) + chip
+        treatment (dashed chip-lever border + tag); sources.html "How it
+        works" bullet explains the per-slider-only rule; css for
+        .contrib-lever/.chip-lever. Suite green.
+      - [x] 3.5d: probe + calibration checks (psychosocial levers shut off
+        from the totals; happiness still moves +1.65/−0.75; cognition still
+        moves via stress; anchoring exact at defaults; bounds endpoints
+        exclude the members); PLAN.md §3.5 shipped/probe notes recorded;
+        factors.js v0.1.11; suite 1029 green. 3.5 marked DONE below.
+- [x] 3.6 Completion: Phase-0 regression test ("regular healthy person" not
+      pinned at floor/cap) GREEN — attribution probe re-run: naive ratio
+      pre-clamp 0.3401 (−66%), NO clamp pinning (pre-fix 0.064/−93.6% +
+      floor-pinned 0.45), LE delta +3.5 y. PURE/Ekelund/Momma cluster
+      endpoints verified green. Li 2018 anchor: ratio 0.112 vs
+      pre-registered band [0.22,0.31], Sun 2022 [0.34,0.43] — recorded as
+      honest FAIL per §1.13 rule (record + widen, never silently tuned;
+      coefficients/mapping/bands frozen). Attribution: smoking 0.345, diet
+      0.423, cardio 0.88, BMI ~flat 0.98 (Mayo disclosed) — residual sits
+      in the "fair zone" cross-cluster ρ that §Weaknesses declares
+      not-sourced. Recorded in PLAN.md §1.13 + §3.6; probe moved into
+      `tests/anchor.probe.js`. 3.6 marked done WITH the deviation note.
 
 ## Phase 4 — presentation
 
