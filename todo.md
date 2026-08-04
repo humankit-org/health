@@ -1382,17 +1382,146 @@ the same step + run tests.
 
 ## Phase 4 — presentation
 
-- [ ] 4.1 js/sources.js: render joint models (components, gradient, cells)
+- [x] 4.1 js/sources.js: render joint models (name, components, gradient, cells)
       + conflation table (pairs, ρ, classification, citation) generated from
       `jointModels`/`overlaps`.
-- [ ] 4.2 js/app.js + index.html: per-slider disclosures ("counted at X% —
+- [x] 4.2 js/app.js + index.html: per-slider disclosures ("counted at X% —
       overlaps Y"); psychosocial card copy ("no reliable way to combine these
       yet — shown individually"); per-lever "what this lever does" section.
-- [ ] 4.3 Methodology copy (sources.html): fair/unfair boundary table
+      SUB-STEPS:
+      - [x] 4.2a app.js helpers: input-jm-backed `nameOf(id)` (input label
+        or joint-model title) + disclosure builders — chip tags + contrib
+        notes for: `overlapBlend` ("counted at X% — overlaps Y"), `viaJoint`
+        ("counted via the … joint model"), and perLever (psychosocial).
+        (No partialCredit chip needed — the diet-score chips already show
+        the per-input delta; the joint "via" tag covers it.)
+      - [x] 4.2b updateChips: emitted the tags (`.chip-tags` as `.confl-tag`
+        spans); perLever tooltips + eyebrow now say "no reliable way to
+        combine these yet — shown individually" / "(shown individually)".
+      - [x] 4.2c updateContrib: same disclosure in the lever note; HR cards
+        get "psychosocial — shown individually, not in the total" and
+        points cards "psychosocial — points only".
+      - [x] 4.2d index.html: static "What each lever does" note (per-lever
+        framing, the "counted at … overlaps …" language, psychosocial
+        no-combination rule); css `.lever-note` + `.confl-tag` added.
+      - [x] 4.2e checks: `node --check` on app.js/sources.js/factors.js, full
+        suite green, sources conflation render re-verified (5 blocks / 8
+        rows via the shared DOM-stub script), app boot smoke-passed in a
+        stub DOM. NOTE: joint-model titles now come from `jm.title`
+        (presentation metadata added to each jointModel in factors.js) so
+        sources.html and index chips share one source of truth.
+      DONE 2026-08-02 (4.2 complete).
+- [x] 4.3 Methodology copy (sources.html): fair/unfair boundary table
       verbatim; Ezzati 2003 independence qualifier; bounds labeled as
       assumption-space; ρ named as a model parameter.
-- [ ] 4.4 Mind outputs: psychosocial blends nothing in points space; fuzz +
+      SUB-STEPS:
+      - [x] 4.3a read the current sources.html methodology section in full.
+      - [x] 4.3b fair/unfair boundary table verbatim (PLAN.md draft).
+      - [x] 4.3c Ezzati 2003 independence qualifier + bounds=assumption-space.
+      - [x] 4.3d ρ named as a model parameter (not a published number).
+      - [x] 4.3e checks: `node --check` + suite green.
+      DONE 2026-08-02: "How it works" rewritten around the joint-estimate
+      first / multiplicative-fallback framing with the clamp; new subsection
+      "Where multiplying risks is fair — and where it isn't" carrying the
+      verbatim 4-row fair/unfair boundary table (`#fair-boundary`, styled
+      with the existing `.jm-tbl.conflation`), the Ezzati 2003 qualifier
+      paragraph (Lancet 362:271–80, DOI link; web-verified 2026-08-02:
+      PMID 12892956, text reads "valid when the factors are weakly
+      correlated and do not share pathways"), the ρ-as-model-parameter
+      sentence, and range/band wording relabeled "assumption-space bounds".
+      Old psychosocial bullet updated to "per lever — shown individually,
+      not in the total" to match 4.2 language. No JS changed; `node --check`
+      green, full suite green, sources_check.js still 5 jm blocks + 8
+      overlap rows.
+- [x] 4.4 Mind outputs: psychosocial blends nothing in points space; fuzz +
       badges unchanged; copy updated.
+      DONE 2026-08-02: verified no overlap pair involves any psychosocial
+      input (`members` check), so the points-space ρ blend (engine
+      POINTS_OUTPUTS loop) can never fire on purpose/stress/social/
+      sleepRegularity — psychosocial points accumulate individually and
+      unblended. FIX: engine now sets `record.perLever = true` for PER-LEVER
+      records regardless of output (previously only the HR branch at the
+      old line 748 set it), so the psychological-points contributions in
+      cognition/happiness carry the flag — the app.js "psychosocial — shown
+      individually / points only" chip + contribution disclosures now
+      actually render for mind outputs instead of silently never firing.
+      COPY: index.html "What each lever does" now says psychological factors
+      never multiply into mortality/cancer/CVD totals but still nudge their
+      band individually (old "never summed into a total" overclaimed, since
+      points DO accumulate into the bands); sources.html psychosocial bullet
+      reconciled to the same nuance. Tests: [19b] extended with overlap-
+      exclusion + points perLever/no-blend assertions. Suite green,
+      `node --check` green, app boot smoke green.
+
+## Phase 4.5 — UI disclosure of conflation (chips / More panels)
+
+- [x] 4.5.1 Audit current main-page disclosure (probe 2026-08-03,
+      `/tmp/opencode/ui_probe.js`). Findings: (a) per-slider chips and the
+      More-panel contribution rows already render CONFLATION-ADJUSTED values
+      (never raw study marginals): overlap-blended inputs show the ρ-discount
+      value tagged "counted at X% — overlaps Y" (app.js:481), joint-model
+      members show their attributed share tagged "counted via JointName"
+      (app.js:482), psychosocial per-lever rows are tagged "shown
+      individually, not in the total". (b) Member shares are consistent with
+      the isolated marginal (cardio 300 alone = 0.787 = cardio inside the
+      ekelundTable cluster). (c) GAP: when a joint model is live, the output
+      total is the cluster's joint estimate, NOT the product of the member
+      chips — probe: chips 0.787 × 0.883 × 0.909 = 0.632 naive vs cluster
+      total 0.433; that redundancy is invisible on the main page. (d) The
+      More panel has no header explaining values are already adjusted, and
+      the output area never links to sources.html#conflation (anchor exists,
+      sources.html:127; `activeJoint` already exports per-cluster totals and
+      is tested at tests/engine.test.js:735).
+- [ ] 4.5.2 Card-level cluster note (js/app.js): for each output card, when
+      `engine.activeJoint(model, state)` returns a cluster covering that
+      output, render inside the card's More panel (above the contrib list) a
+      note of the form: "cardio + steps + sitting are counted as ONE joint
+      estimate (Ekelund 2019): combined effect 0.433 (range 0.415–0.433).
+      Each slider's chip is a share of this one estimate — they don't
+      multiply." Data: activeJoint() per-output {hr, hrLow, hrHigh}, jmById
+      for label/ref (app.js:42), member labels from the cluster definition.
+      No engine change needed.
+- [ ] 4.5.3 More-panel header note (js/app.js): one shared note (build once,
+      reuse in all five contrib panels) — "The percentages below are already
+      adjusted for overlaps: joint-model members are shares of one estimate,
+      overlap pairs are counted at partial strength. Full breakdown:
+      conflation on the methodology page." Link to sources.html#conflation.
+      Also add a footer link to that anchor from the output grid whenever any
+      overlap/cluster is active.
+- [ ] 4.5.4 sources.html copy (js/sources.js): one sentence at the top of
+      the conflation section tying it to the main page ("every chip and
+      More-row on the main page gets its overlap discount / joint-model
+      share from the tables below") — doubles as the intro of the new
+      per-input table from 4.5.7. No new tables beyond 4.5.7; ids
+      #conflation, #overlap-list, #fair-boundary already exist.
+- [ ] 4.5.7 sources.html per-input transparency table — the "what we use,
+      where, why" ask. New section under #conflation, generated from the
+      model (drift-proof, like everything else): one row per input, columns:
+      input; which outputs it feeds (mortality / cancer / cvd / cognition /
+      happiness); HOW it is counted per output (marginal HR / share of
+      <joint model> / overlap ρ with <pair> / per-lever only, not in total /
+      no data yet / none); evidence tier; source [n]. Implement:
+      (a) engine helper `engine.inputDisclosure(model)` (pure, node-
+      testable, in engine.js): for each input nudge it off-default,
+      evaluateRaw once, collect its records per output from
+      contributions (viaJoint / overlapBlend / perLever / evidence /
+      source) and mark outputs listed in result.noData as "no data yet";
+      gate inputs (vo2maxOn / bodyFatOn) marked "replaces X when enabled";
+      (b) rendering in sources.js reusing inputName / evBadge / citeKeys /
+      refLink / jmTitle (sources.js:22-47); (c) tests: rows == model.inputs
+      length, every row has a source, no-data outputs only appear where
+      engine says so.
+- [ ] 4.5.5 Tests (tests/engine.test.js): assert the note's premise — with a
+      joint model active, the naive product of the member hrDeltas differs
+      from the cluster total (redundancy exists and is carried by the
+      cluster, not hidden in member shares). Suite: `node tests/engine.test.js`.
+- [ ] 4.5.6 Verification: `node --check js/app.js` (+ js/sources.js),
+      full suite green, serve and manually check four scenarios: (a) PA
+      cluster active (cardio+steps+sitting) → cluster note + header note
+      visible; (b) overlap pair active (magnesium + diet) → "counted at X%"
+      tags on chip and row, header note visible; (c) all defaults → no
+      conflation UI rendered anywhere; (d) sources.html per-input table
+      renders every input with a where/how/why for each output.
 
 ## Phase 5 — deferred (not now)
 

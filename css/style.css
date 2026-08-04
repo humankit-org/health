@@ -221,6 +221,18 @@ input[type="range"] {
 .switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* impact chips */
+.lever-note {
+  max-width: 34rem;
+  margin: 0.75rem auto 1.25rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--card);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.lever-note h2 { margin: 0 0 0.35rem; font-size: 0.95rem; }
+.lever-note p { margin: 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
 .chips:empty { display: none; }
 .chip {
@@ -514,6 +526,14 @@ summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--ac
 }
 .chip.chip-lever { border: 1px dashed var(--accent); }
 .chip-lever-tag { font-size: 0.8em; opacity: 0.8; }
+.confl-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-size: 0.75em;
+  font-style: italic;
+  color: var(--ink-soft);
+  cursor: help;
+}
 
 /* -------------------------------------------------- methodology + refs */
 
@@ -537,6 +557,35 @@ summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--ac
 #ref-list li { margin-bottom: 0.45rem; padding: 0.15rem 0.4rem; scroll-margin-top: 1.5rem; }
 #ref-list li:target {
   background: var(--accent-soft);
+  border-radius: 6px;
+  color: var(--ink);
+}
+
+/* --------------------------------------------- conflation (sources.html) */
+
+.jm-block { margin: 0.7rem 0; border-top: 1px solid var(--line); padding-top: 0.6rem; }
+.jm-block summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+.jm-block summary .ev { margin-left: 0.3rem; }
+.jm-block summary a { font-weight: 400; font-size: 0.8rem; color: var(--ink-soft); text-decoration: none; }
+.jm-note { color: var(--ink-soft); font-size: 0.85rem; margin: 0.3rem 0; }
+.jm-comps { margin: 0.3rem 0 0.5rem 1.2rem; font-size: 0.88rem; }
+.jm-comps code { background: var(--accent-soft); border-radius: 4px; padding: 0 0.3rem; }
+.jm-block h4 { font-size: 0.82rem; margin: 0.5rem 0 0.2rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-soft); }
+.jm-block h5 { font-size: 0.9rem; margin: 0.75rem 0 0.2rem; }
+
+.jm-tbl { border-collapse: collapse; font-size: 0.82rem; margin: 0.2rem 0 0.6rem; }
+.jm-tbl th, .jm-tbl td { border: 1px solid var(--line); padding: 0.25rem 0.6rem; text-align: left; }
+.jm-tbl.cells th, .jm-tbl.cells td { text-align: center; }
+.jm-tbl.cells thead th { font-weight: 600; background: #f3f6f4; }
+.jm-axes { color: var(--ink-soft); font-size: 0.78rem; margin: 0; }
+
+.jm-tbl.conflation { border-collapse: collapse; width: 100%; margin-top: 0.4rem; }
+.jm-tbl.conflation th, .jm-tbl.conflation td { text-align: left; border: 1px solid var(--line); padding: 0.35rem 0.6rem; vertical-align: top; }
+.jm-tbl.conflation thead { background: #f3f6f4; }
+.jm-tbl.conflation code { font-size: 0.85rem; }
+.jm-tbl.conflation .rho { white-space: nowrap; }
+.rho-small { font-size: 0.72rem; color: var(--ink-soft); }
+.jm-tbl.conflation .jm-note { font-size: 0.78rem; }
   border-radius: 6px;
   color: var(--ink);
 }

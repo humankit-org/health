@@ -742,10 +742,10 @@
         const record = out.record;
         if (jm) record.cluster = jm.cluster;
         else if (perLeverCluster) record.cluster = perLeverCluster;
+        if (perLeverCluster) record.perLever = true;
         if (out.hr !== undefined) {
           record.hr = out.hr; // blended point estimate
           record.hrDelta = out.hr / out.rdHr;
-          if (perLeverCluster) record.perLever = true;
         }
         if (out.points !== undefined) {
           record.points = out.points; // blended

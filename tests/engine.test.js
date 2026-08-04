@@ -771,6 +771,22 @@ console.log('\n[19b] Shipped psychosocial per-lever-only cluster (§3.5)');
   // Anchoring intact: reset is exactly the average person even with the cluster populated.
   const ev = engine.evaluate(model, d);
   ok(Math.abs(ev.mortality.hrAvg - 1.0) < 1e-9 && ev.lifeExpectancy.delta === 0, 'anchoring exact at defaults (per-lever sliders contribute nothing)');
+
+  // Phase 4.4 — mind outputs: psychosocial NEVER blends in points space.
+  const psy = new Set(members);
+  ok(model.overlaps.every((o) => !psy.has(o.a) && !psy.has(o.b)), 'no overlap pair involves any psychosocial input (nothing to blend in points space)');
+  const v2 = { ...d, purpose: 10, stress: 10, social: 0, sleepRegularity: 5 };
+  const rP = engine.evaluate(model, v2);
+  for (const out of ['cognition', 'happiness']) {
+    for (const c of rP.contributions[out]) {
+      if (psy.has(c.inputId)) {
+        ok(c.perLever === true, `${c.inputId} ${out} points record flagged perLever`);
+        ok(!c.overlapBlend, `${c.inputId} ${out} points never blended (no overlapBlend)`);
+      }
+    }
+  }
+  const psyPoints = rP.contributions.happiness.filter((c) => psy.has(c.inputId));
+  ok(psyPoints.every((c) => c.overlapBlend === undefined), 'happiness contributions from psychosocial have no blend');
 }
 
 console.log('\n[20] Overlap/joint audit + pair symmetry (Phase 2 — data integrity)');

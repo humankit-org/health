@@ -2293,6 +2293,7 @@ const HEALTH_MODEL = {
       // cluster, here: the 4 inputs with PURE score components mapped onto
       // our sliders (fiber, fruitVeg, nuts, fish).
       id: 'dietScore',
+      title: 'Diet score (PURE)',
       cluster: 'diet',
       members: ['fiber', 'fruitVeg', 'nuts', 'fish'],
       model: 'score',
@@ -2338,6 +2339,7 @@ const HEALTH_MODEL = {
       // superseded for mortality; cancer/CVD have no coverage here and fall
       // back to the members' marginals.
       id: 'ekelundTable',
+      title: 'PA × sitting cluster',
       cluster: 'movement',
       members: ['cardio', 'steps', 'sitting'],
       model: 'table',
@@ -2383,6 +2385,7 @@ const HEALTH_MODEL = {
       // `cardio` stays owned by ekelundTable —
       // this axis only reads it to select the aerobic row.
       id: 'mommaCells',
+      title: 'Aerobic × strength cluster',
       cluster: 'movement',
       members: ['strength'],
       model: 'table',
@@ -2455,6 +2458,7 @@ const HEALTH_MODEL = {
       // clusters and would double-count if multiplied. The `sleep` slider's
       // marginal (Cappuccio 2010) is superseded for mortality only.
       id: 'duncanCells',
+      title: 'PA × sleep cluster',
       cluster: 'movement',
       members: ['sleep'],
       model: 'table',
@@ -2527,6 +2531,7 @@ const HEALTH_MODEL = {
       // the grid follows the axis mode (the BF quartile rows are a separate
       // published table — same study, different adiposity measure).
       id: 'mayoCells',
+      title: 'PA × body weight cluster',
       cluster: 'adiposity',
       members: ['bmi', 'bodyFat'],
       model: 'table',

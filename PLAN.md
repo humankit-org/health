@@ -1573,6 +1573,34 @@ qualifier, bounds labeled as assumption-space; psychosocial card copy: "no
 reliable way to combine these yet — shown individually"; the per-lever
 "what this lever does" section (option I) ships here.
 
+**Phase 4.5 — main-page conflation disclosure (audited 2026-08-03).** Audit
+probe (`/tmp/opencode/ui_probe.js`) showed the per-slider chips and More
+panels already render conflation-ADJUSTED values — overlap blends tagged
+"counted at X% — overlaps Y", joint-model members tagged "counted via …",
+psychosocial per-lever flagged — so there is no raw-vs-blended display bug.
+The remaining honesty gap is the invisible redundancy inside an active joint
+model: with ekelundTable live the chips read 0.787 × 0.883 × 0.909 (= 0.632
+naive product) while the card total uses the cluster's joint estimate 0.433;
+nothing on the main page explains the difference. Decision: no engine
+change — `activeJoint()` already returns per-cluster totals. UI adds (a) a
+per-card cluster note in the More panel ("counted as ONE joint estimate —
+the chips are shares, they don't multiply" + link to sources.html#conflation)
+and (b) a shared More-panel header note that listed percentages are already
+overlap-adjusted, plus a footer link to the conflation anchor. Tracked in
+todo.md Phase 4.5.
+
+**Transparency addition (2026-08-03).** The conflation section on
+sources.html currently shows joint models and overlap pairs but has no
+per-input registry: a visitor cannot see, for a single input, which outputs
+it feeds, how it is counted (marginal / joint-model share / ρ-blended /
+per-lever-only / no-data), and its evidence. Add a generated per-input table
+under #conflation ("what we use, where, why") via a new pure, node-tested
+engine helper `engine.inputDisclosure(model)` (nudge each input off-default,
+collect its per-output records from evaluateRaw contributions + noData
+lists; gates marked "replaces X when enabled"), rendered in sources.js with
+the existing inputName/evBadge/citeKeys/refLink helpers. Drift-proof by the
+same argument as every other generated table. Tracked in todo.md 4.5.7.
+
 **Phase 5 — deferred:** GBD pathway layer (H), age-conditional actuarial
 engine (E), own-cohort analysis (P) only if a Phase-1 gap demands it, full
 Q1/Q2 split if the per-lever section ships in Phase 4, Monte Carlo default

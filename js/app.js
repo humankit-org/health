@@ -25,10 +25,70 @@
     { id: 'advanced', title: 'Advanced — if you\'ve measured these' },
   ];
 
-  const EVIDENCE_TITLE = {
+const EVIDENCE_TITLE = {
     high: 'High confidence: large, consistent meta-analyses / pooled cohorts (still mostly observational).',
     moderate: 'Moderate confidence: meta-analytic but heterogeneous, small trials, or approximate conversions.',
     low: 'Low confidence: single cohorts, cross-sectional or indirect evidence. Directionally suggestive only.',
+  };
+
+  // -------------------------------------------------- conflation disclosure
+  // Per-slider / per-lever notes generated from the engine's tags — the same
+  // fields the conflation table on sources.html renders (overlaps + joint
+  // models), so the copy can never drift from the data.
+  const inputLabels = {};
+  for (const input of model.inputs) inputLabels[input.id] = input.label;
+  if (model.bmi && model.bmi.label) inputLabels.bmi = model.bmi.label;
+  const jmById = new Map();
+  for (const jm of model.jointModels || []) jmById.set(jm.id, jm);
+
+  const shortName = (s) => {
+    const stripped = String(s || '').replace(/\(.*?\)/g, '').trim();
+    return stripped || s;
+  };
+  // A pair may name an input OR a joint model (e.g. `dietScore`,
+  // `ekelundTable`) — resolve both.
+  const nameOf = (id) => {
+    if (inputLabels[id]) return shortName(inputLabels[id]);
+    const jm = jmById.get(id);
+    if (jm) return jm.title || shortName(jm.cluster || jm.id);
+    return id;
+  };
+  const blendPct = (rho) => Math.max(0, Math.round((1 - Number(rho)) * 100));
+
+  // "counted at X% — overlaps Y"; only present on the weaker side of an
+  // active overlap pair (engine sets c.overlapBlend).
+  const overlapNote = (c) => {
+    const b = c.overlapBlend;
+    if (!b) return '';
+    const other = nameOf(b.pair);
+    return {
+      pct: blendPct(b.rho),
+      other,
+      title: `Overlaps ${other} — its effect is shared, so the weaker one is counted at ${blendPct(b.rho)}% instead of being added in full.`,
+    };
+  };
+  // "counted with the … joint model" — the input's marginal is replaced by
+  // its cluster's published joint estimate (never multiplied separately).
+  const jointNote = (c) => {
+    if (!c.viaJoint) return '';
+    const name = nameOf(c.viaJoint);
+    return {
+      name,
+      title: `Counted via the published ${name} joint model — this slider does not get multiplied separately.`,
+    };
+  };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+  // Chip footnotes: "counted at 70% — overlaps cardio" (blend) and "counted
+  // via the PURE diet-score joint model" — the disclosure copy for a single
+  // contribution. psychosocial per-lever chips get their own tag in updateChips.
+  const chipTags = (c) => {
+    const ov = overlapNote(c);
+    const jn = jointNote(c);
+    const parts = [];
+    if (jn) parts.push(`<span class="confl-tag" title="${esc(jn.title)}">via ${esc(jn.name)}</span>`);
+    if (ov) parts.push(`<span class="confl-tag" title="${esc(ov.title)}">counted at ${ov.pct}% — overlaps ${esc(ov.other)}</span>`);
+    return parts.join(' ');
   };
 
   // ------------------------------------------------------------- rendering
@@ -303,12 +363,18 @@
         if (c.hrDelta !== undefined && Math.abs(c.hrDelta - 1) > 0.005) {
           const which = result.contributions.cancer.includes(c) ? 'cancer' : result.contributions.cvd.includes(c) ? 'cvd' : 'mortality';
           const lever = c.perLever ? ' chip-lever' : '';
-          chips.push(`<span class="chip ${c.hrDelta < 1 ? 'good' : 'bad'}${lever}" title="${c.perLever ? 'Shown for this slider only — ' + c.note + ' It is NOT counted into the ' + which + ' total (the research can\'t separate it from the other factors on that card).' : c.note}">${which} ${fmtPctFromHr(c.hrDelta)} ${refLink(c.source)}${c.perLever ? ' <span class="chip-lever-tag" title="Not counted into the card total — shown per slider only.">(per slider)</span>' : ''}</span>`);
+          const title = c.perLever
+            ? `Psychosocial: no reliable way to combine these yet — shown individually. It does NOT count into the ${which} total. ${c.note}`
+            : c.note;
+          chips.push(`<span class="chip ${c.hrDelta < 1 ? 'good' : 'bad'}${lever}" title="${esc(title)}">${which} ${fmtPctFromHr(c.hrDelta)} ${refLink(c.source)}${c.perLever ? ' <span class="chip-lever-tag" title="Not counted into the card total — psychosocial factors can\'t be combined yet, so this is shown per slider only.">(shown individually)</span>' : ''}${chipTags(c)}</span>`);
         }
         if (c.pointsDelta !== undefined && Math.abs(c.pointsDelta) > 0.001) {
           const out = result.contributions.cognition.includes(c) ? 'cognition' : 'happiness';
           const lever = c.perLever ? ' chip-lever' : '';
-          chips.push(`<span class="chip ${c.pointsDelta > 0 ? 'good' : 'bad'}${lever}" title="${c.perLever ? 'Shown for this slider only — ' + c.note + ' ' + 'Mind-output points still count into the ' + out + ' band.' : c.note}">${out} ${fmtSigned(c.pointsDelta)} ${refLink(c.source)}${c.perLever ? ' <span class="chip-lever-tag">(per slider)</span>' : ''}</span>`);
+          const title = c.perLever
+            ? `Psychosocial: no reliable way to combine these yet — shown individually. Points still count into the ${out} band. ${c.note}`
+            : c.note;
+          chips.push(`<span class="chip ${c.pointsDelta > 0 ? 'good' : 'bad'}${lever}" title="${esc(title)}">${out} ${fmtSigned(c.pointsDelta)} ${refLink(c.source)}${c.perLever ? ' <span class="chip-lever-tag">(shown individually)</span>' : ''}${chipTags(c)}</span>`);
         }
       }
       host.innerHTML = chips.join('');
@@ -410,16 +476,22 @@
     host.innerHTML = nonzero.map((c) => {
       const effect = field === 'hr' ? `mortality ${fmtPctFromHr(c.hrDelta)}` : fmtSigned(c.pointsDelta);
       const dir = field === 'hr' ? (c.hrDelta < 1 ? 'good' : 'bad') : (c.pointsDelta > 0 ? 'good' : 'bad');
+const ov = overlapNote(c);
+      const jn = jointNote(c);
+      const conflNote = ov ? `<span class="contrib-lever" title="${esc(ov.title)}">counted at ${ov.pct}% — overlaps ${esc(ov.other)}</span>`
+        : jn ? `<span class="contrib-lever" title="${esc(jn.title)}">counted via ${esc(jn.name)}</span>`
+        : '';
       const leverNote = c.perLever && field === 'hr'
-        ? `<span class="contrib-lever" title="The research can't separate this effect from the other factors on this card, so it is shown here individually and is NOT counted into the ${outputId} total.">per slider — not in the total</span>`
+        ? `<span class="contrib-lever" title="Psychosocial: no reliable way to combine these yet — the research can't separate this effect from the other factors on this card, so it is shown individually and is NOT counted into the ${outputId} total.">psychosocial — shown individually, not in the total</span>`
         : c.perLever
-          ? `<span class="contrib-lever" title="Mind-output points from psychosocial sliders still count into this band; only their mortality/CVD effects are not attributed to a total.">psychosocial slider (points only)</span>`
-          : '';
+          ? `<span class="contrib-lever" title="Psychosocial: no reliable way to combine these yet — shown individually. Points from these sliders still count into this band.">psychosocial — points only</span>`
+          : conflNote;
       return `<li>
         <span class="contrib-effect ${dir}">${effect}</span>
         <span class="contrib-label">${c.label}</span>
         ${Array.isArray(c.source) ? c.source.map((key) => `<a class="contrib-ref" href="sources.html#ref-${refs[key]}" title="${c.note}">[${refs[key]}]</a>`).join(' ') : `<a class="contrib-ref" href="sources.html#ref-${refs[c.source]}" title="${c.note}">[${refs[c.source]}]</a>`}
         <span class="ev small" data-ev="${c.evidence}" title="${EVIDENCE_TITLE[c.evidence]}">${c.evidence}</span>
+        ${conflNote}
         ${leverNote}
       </li>`;
     }).join('');

@@ -34,12 +34,67 @@
 
     <h3>How it works</h3>
     <p>Each input maps to a <strong>hazard ratio (HR)</strong> from a published study, e.g.
-    meeting exercise guidelines corresponds to HR 0.69, a 31% lower mortality hazard. HRs
-    are combined <strong>multiplicatively, assuming independence</strong>. Sometimes the numbers differ from the study, as we try to get our reference points (HR = 1) to be the average value for a given input. For example, 20 BMI = 1.0 HR, and 30 BMI = 1.07, but we instead divide and get 20 BMI = 0.93 and 30 BMI = 1.0 as 30 BMI is closer to the average.
-    We <strong>cap the total</strong>
-    at a 55% hazard reduction (HR 0.45) and a 4× increase (HR 4.0)</p>
-    <p>HR → years of life expectancy uses a Gompertz approximation (adult
-    mortality risk doubles roughly every 7 years).</p>
+    meeting exercise guidelines corresponds to HR 0.69, a 31% lower mortality hazard.
+    Sometimes the numbers differ from the study, as we try to get our reference points
+    (HR = 1) to be the average value for a given input. For example, 20 BMI = 1.0 HR, and
+    30 BMI = 1.07, but we instead divide and get 20 BMI = 0.93 and 30 BMI = 1.0 as 30 BMI
+    is closer to the average.</p>
+    <p>Where the studies give a <strong>joint estimate</strong> — several inputs combined in
+    one published model — we use that directly. Where they don't, we combine HRs
+    <strong>multiplicatively, assuming independence</strong>, and we are strict about where
+    that assumption is fair: the table below is the boundary. We <strong>clamp the total</strong>
+    to the range HR 0.45–4.0 so no combination can claim more than the studies support.</p>
+    <p>HR → years uses a Gompertz approximation (adult mortality risk doubles roughly every
+    7 years).</p>
+
+    <h3>Where multiplying risks is fair — and where it isn't</h3>
+    <p>Combining HRs under an independence assumption is a published WHO/GBD-family
+    comparative-risk-assessment method — valid <em>when the factors are weakly correlated
+    and do not share pathways</em> (Ezzati 2003, Lancet 362:271–80;
+    <a href="https://doi.org/10.1016/S0140-6736(03)13968-2">DOI</a>). That qualifier <b>is</b>
+    the whole conflation problem, so we hold every combination we make against it:</p>
+    <table class="jm-tbl conflation" id="fair-boundary">
+      <thead>
+        <tr>
+          <th>Zone</th>
+          <th>Rule</th>
+          <th>Where it applies</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Fair multiplication</strong></td>
+          <td>multiply marginal HRs, uncertainty only</td>
+          <td>across clusters (movement × diet × mind × substances × sleep: different exposure domains, modestly correlated)</td>
+          <td>keep as-is</td>
+        </tr>
+        <tr>
+          <td><strong>Fair multiplication</strong></td>
+          <td>coefficients from the published joint model (no per-slider multiplication)</td>
+          <td>within clusters <em>inside</em> published joint models (PURE diet-score components; PA×strength cells)</td>
+          <td>Phase 1/3: replace</td>
+        </tr>
+        <tr>
+          <td><strong>Unfair multiplication</strong></td>
+          <td>within clusters with no joint model — marginal HRs multiplied</td>
+          <td>diet sliders outside the chosen score (coffee, magnesium), movement once Ekelund/Momma cells are in, until then the whole cluster</td>
+          <td>must be replaced by joint estimates</td>
+        </tr>
+        <tr>
+          <td><strong>No combination</strong></td>
+          <td>per-lever only; no cluster total, no combined claim</td>
+          <td>psychosocial (purpose, stress, social, sleepReg) unless Phase 1 finds joint evidence; screen→happiness already treated this way</td>
+          <td>adopted</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Where no joint evidence exists but two inputs still overlap on a pathway, the weaker
+    one is counted at a discounted rate with a residual set of pair parameters
+    (<code>ρ</code>, a model parameter — its values are next to each pair in the overlap
+    table below). Ranges and bands are <strong>assumption-space bounds</strong>: how far the
+    model's answer spreads under its independence + quadrature assumptions — the honest
+    width of the estimate, not a prediction about any one person.</p>
     <p>In an attempt to be more accurate, some math is applied. Exactly how can be seen in the <a href="https://github.com/humankit-org/health">source code</a>.</p>
     <ul><li>
     Studies also give confidence intervals, which we combine in log quadrature.
@@ -50,8 +105,10 @@
     <li>
     Psychosocial factors (purpose in life, stress, social connection, sleep regularity) are shown
     <strong>per slider only</strong> — the studies give no joint estimate for them together, and the
-    pairwise correlations are far too tangled to multiply, so they never enter a combined total. On the
-    main page their effects are labelled "per slider — not in the total".
+    pairwise correlations are far too tangled to multiply, so there is no reliable way to combine
+    them yet. They never multiply into the mortality / cancer / CVD totals; only on the cognition
+    &amp; wellbeing bands their (weak, correlational) points each contribute individually. On the
+    main page they are labelled "per lever — shown individually".
     </li>
 
     </ul>
@@ -65,6 +122,33 @@
     <p>The reference attempts to be the "average citizen", meaning better than the reference is only better than average, not necessarily "good".</p>
     <p>The goal of the website is only to give a collected overview of insights into what kind of lifestyle factors affect your health and by how much, whilst maybe sharing some new information. Is a daily multivitamin 'healthy' enough to offset never exercising? (no).</p>
 
+  </section>
+
+  <section class="page-section" id="conflation">
+    <h2>How inputs are combined</h2>
+    <p>Where published research reports how factors combine, we use a
+    <strong>joint model</strong> (a cluster total from one study) instead of
+    multiplying each slider's effect separately. Where no joint evidence
+    exists but two inputs clearly overlap, we price the residual overlap with a
+    discount ρ (a model parameter, not a published number). The tables below are
+    generated from the same data the calculator uses.</p>
+    <div id="jm-list"></div>
+
+    <h3>Overlapping inputs</h3>
+    <p>Pairs that share a pathway or a corrupting variable. When both members
+      are active on an output, the weaker one is counted at <tt>(1−ρ)</tt> so
+      shared variance is not charged twice.</p>
+    <table class="jm-tbl conflation" id="overlap-list">
+      <thead>
+        <tr>
+          <th>Pair</th>
+          <th>ρ</th>
+          <th>Classification</th>
+          <th>Citation</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </section>
 
   <section class="page-section" id="references">
