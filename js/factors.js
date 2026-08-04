@@ -19,6 +19,25 @@
  * - `steps` effects: first entry whose `max` >= input value applies.
  * - `perUnit` effects: HR scales as hr^(value/per), benefit capped at `capAt`.
  * - `byOption` effects: lookup by the segmented control's option value.
+ *
+ * FILE MANIFEST (line numbers approximate — re-grep if they drift)
+ * -----------------------------------------------------------------
+ * Line 24 cont. HEALTH_MODEL = { ... } — the single canonical model object.
+ *   meta:24        name/version/updated
+ *   constants:31   combo bounds, years caps, uncertainty widening, bands
+ *   baseline:67    US life-expectancy anchor + life table source
+ *   outputs:86     output cards' blurb/unit metadata (does NOT drive math)
+ *   inputs:131     every slider/segmented/toggle; effects per input (~1500)
+ *   bmi:2016       derived BMI effect (mortality + cvd steps)
+ *   findings:2056  sourced non-slider facts; shown when `when(values)` true
+ *   jointModels:2290  the conflation joint estimates (score/table lookups)
+ *   overlaps:2764     conflation ρ pairs (input↔input / cluster↔input)
+ *   perLeverOnly:2887 psychosocial levers shown individually, not summed
+ *   sources:2897     citation map (key -> {authors,title,journal,url,pmid})
+ *
+ * The conflation machinery lives in engine.js; the structures above are its
+ * data. The safest READ for a new agent is engine.js's own file manifest
+ * first, then the jointModels/overlaps sections here.
  */
 
 const HEALTH_MODEL = {

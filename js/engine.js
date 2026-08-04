@@ -11,6 +11,43 @@
  *   on the page), clamped to sane bounds, and translated into years of life
  *   expectancy via a Gompertz approximation. Mind outputs (cognition,
  *   happiness) accumulate unitless points that map onto qualitative bands.
+ *
+ * FILE MANIFEST (line numbers approximate — re-grep if they drift)
+ * -----------------------------------------------------------------
+ * fx builders:        evalEffect:39  evalEffects:383  pick:77  computeBmi:86
+ * cluster machinery:  bandIndex:125  indexGrid:130  axisValue:146
+ *                     gridForLookup:171  gridTotal:181  ratioTotal:238
+ *                     scoreTotal:259  calibrateOffsets:291  shifted:335
+ *                     clusterTotalFor:344  makeResolver:350
+ * overlap machinery:  effectSide:427  clusterForMember:436  computeJmTotals:447
+ *                     applyOverlaps:481  activeOverlaps:526
+ * endpoints:          boundsEndpoints:543  sigma2:369  widenBound:110
+ * main entry points:  evaluateRaw:687  averageEval:916(evaluate:926)
+ * findings:           evaluateFindings:1082  defaults:1092
+ * conflation display: sourceIndex:1103  sourceTags:1123  clusterTotals:1164
+ *                     activeJoint:1187
+ * exports: bottom of file (alpha, evaluate, evaluateRaw, sourceIndex, …).
+ *
+ * THE CENTRAL DATA FLOW (the part new agents struggle with):
+ *   evaluateRaw(model, values) runs THREE passes over the effects:
+ *     1. evalEffects       -> fx map (input -> output -> {hr, logHr, sigma2,
+ *                                points, record, rdHr/rdPoints})
+ *     2. applyOverlaps     -> BLENDS weaker member of each active ρ pair in
+ *                                log space (MUTATES fx + jmTotals in place —
+ *                                see B1). Produces the per-pair report + a
+ *                                jmBlend map for blended cluster totals.
+ *     3. accumulate        -> routes each input's HR: per-lever (excluded),
+ *                                joint-model member (per-cluster product),
+ *                                or marginal (multiplies directly). Then
+ *                                joint-model totals replace cluster products,
+ *                                covariance (2·ρU·σᵢ·σⱼ) is added, the derived
+ *                                BMI effect folds in, and bounds wrap the
+ *                                output. boundsEndpoints independently
+ *                                recomputes the assumption-space endpoints.
+ *   A single evaluate() then normalizes raw HRs against the average profile
+ *   (defaults) so 1.0× = the average person, and clamps to [hrFloor, hrCeiling].
+ *   mutable-shared Maps are computed fresh per evaluate() call and are NOT
+ *   reused across calls — treat them as ephemeral.
  */
 
 (function (root, factory) {

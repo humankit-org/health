@@ -1448,7 +1448,7 @@ the same step + run tests.
       COPY: index.html "What each lever does" now says psychological factors
       never multiply into mortality/cancer/CVD totals but still nudge their
       band individually (old "never summed into a total" overclaimed, since
-      points DO accumulate into the bands); sources.html psychosocial bullet
+      points DO accumulate into the/ bands); sources.html psychosocial bullet
       reconciled to the same nuance. Tests: [19b] extended with overlap-
       exclusion + points perLever/no-blend assertions. Suite green,
       `node --check` green, app boot smoke green.
@@ -1522,6 +1522,136 @@ the same step + run tests.
       tags on chip and row, header note visible; (c) all defaults → no
       conflation UI rendered anywhere; (d) sources.html per-input table
       renders every input with a where/how/why for each output.
+
+## Phase 5.5 — Simple/Advanced model toggle (created 2026-08-04)
+
+Feature: a toggle at the top of the calculator switching between the ADVANCED
+model (current, conflation-corrected: joint models, overlap ρ blends,
+per-lever-only psychosocial) and a SIMPLE model ("without any conflation
+fixing, approx commit ee1c3a4"). The toggle swaps the model driving the
+outputs AND gates the upcoming conflation-clarity UI (cluster notes,
+subcategorised More panels, per-lever labels) so future presentation work
+knows which mode it belongs to.
+
+### Design decisions (from the planning pass — read before coding)
+
+- **SIMPLE = same audited data, pre-conflation combination math. NOT a data
+  rollback.** ee1c3a4's factors.js contains numbers the 0.9 sweep has since
+  FIXED or nulled (fabricated citations like li2020, unsourced CVD columns,
+  invented CIs). Restoring them would break the sources-first hard rule. The
+  simple model uses today's corrected marginals multiplied naively — which is
+  what the site did before the conflation fix. The toggle's caption says so.
+- **The engine already implements both modes.** `js/engine.js` is a superset:
+  with `jointModels: [], overlaps: [], perLeverOnly: []` every number is
+  byte-identical to the old engine (engine.js:115–121 header; the suite's
+  `plainModel` proves it, tests/engine.test.js:15). Do NOT restore the old
+  engine.js file — its `evaluate()` return shape lacks `bounds` and other
+  fields app.js now reads. Current engine + empty structures IS the simple
+  model. **No engine math change needed.**
+- **Mode = which model object is active.** factors.js exports the canonical
+  `HEALTH_MODEL` plus a derived `SIMPLE_HEALTH_MODEL = { ...HEALTH_MODEL,
+  jointModels: [], overlaps: [], perLeverOnly: [] }` (shallow spread only —
+  nested inputs/sources are read-only; a distinct object identity is REQUIRED
+  because `calibrateCache`/`_avgCache` are WeakMaps keyed by model object).
+  `engine.evaluate(model, state)` does all the work; no mode flag is threaded
+  through the engine.
+- **The UI self-neutralises.** Every conflation disclosure in app.js
+  (chipTags, overlapNote, jointNote, per-lever labels) renders from flags the
+  engine sets on contribution records (`viaJoint`, `overlapBlend`, `perLever`)
+  — those flags only appear when the structures are non-empty, so the simple
+  model renders the flat pre-conflation look with ZERO branch code.
+- **Citation numbering stays canonical.** Both pages compute
+  `refs = engine.sourceIndex(HEALTH_MODEL)` (advanced) regardless of mode.
+  The joint-model/overlap-only sources (mente2023, ekelund2016, duncan2023,
+  sanchezlastra2021) sit at the END of the numbering (sourceIndex appends them
+  after the baseline), so simple mode simply never links to them and nothing
+  renumbers. sources.html keeps rendering the full advanced reference list.
+- **Cluster-referencing findings get a `mode` field.** Two findings reference
+  the Mayo adiposity cluster and mislead in simple mode: the vo2maxOn
+  "fitness absorbs fatness" finding (weeldreyer2025, factors.js:2183) and the
+  underweight/Mayo caveat (factors.js:2187). Add `mode: 'advanced'` to them;
+  the engine's `evaluateFindings` passes the field through (one-line change at
+  engine.js:1088) and app.js filters by active mode. Numbers/behavior stay in
+  factors.js (golden rule).
+- **sources.html stays advanced-only.** It is the methodology page for the
+  conflation model. Simple mode's "Full method" link still lands there; the
+  toggle's caption covers the mismatch.
+- **Mode is session-only** (in-memory, no localStorage) — consistent with the
+  site's nothing-is-stored ethos. Default mode = Advanced (the honest one).
+- **Future-dev convention (record in AGENTS.md + file headers):** any UI that
+  explains HOW inputs combine (cluster notes, subcategorised More panels,
+  per-lever labels, bounds display) is an ADVANCED-mode feature; SIMPLE mode is
+  the flat, naive-independence look. When adding UI, ask "does this describe
+  conflation?" — if yes, gate it on advanced mode. This is the requirement
+  "future development needs to know whether a change is advanced or simple".
+
+### Steps
+
+- [ ] 6.0 Record the design above in PLAN.md (new note after the Phase 4.5
+      section, "§5.5 — Simple/Advanced mode toggle"). No code.
+- [ ] 6.1 factors.js: add `SIMPLE_HEALTH_MODEL` + a comment block explaining
+      the two-mode architecture (decisions above). Dual export: keep
+      `module.exports = HEALTH_MODEL` (tests require it directly) and attach
+      `module.exports.SIMPLE_HEALTH_MODEL = SIMPLE_HEALTH_MODEL`; browser:
+      `globalThis.SIMPLE_HEALTH_MODEL = SIMPLE_HEALTH_MODEL`. Run tests —
+      suite must stay green (advanced model untouched).
+- [ ] 6.2 factors.js: add `mode: 'advanced'` to the two cluster-referencing
+      findings (factors.js:2183 weeldreyer2025/vo2maxOn, factors.js:2187
+      underweight/Mayo). All other findings stay mode-agnostic. Tests green.
+- [ ] 6.3 index.html: add the toggle to the `.topbar` (or a new row under the
+      tagline) — a labelled segmented control `Simple | Advanced` (use the
+      same radiogroup pattern as `.segmented`, id="mode-toggle"), default
+      Advanced, plus a one-line caption: "Simple multiplies each factor's
+      effect as if independent — it overstates combinations. Advanced
+      corrects overlapping effects using published joint studies." Place it
+      ABOVE the calculator inputs so it reads as a site-level control.
+- [ ] 6.4 css/style.css: `.mode-toggle` styles reusing the existing
+      `.segmented`/`.switch` aesthetic (css/style.css:179–221); a clear
+      "active mode" state so the current mode is obvious.
+- [ ] 6.5 app.js: two-model refactor.
+      (a) Keep `const model = HEALTH_MODEL` for one-time data-derived
+      structures (GROUPS, inputLabels, jmById, renderInputs, updateGates) —
+      inputs are identical in both modes.
+      (b) Add `let activeModel = HEALTH_MODEL; let mode = 'advanced';` and a
+      `recompute()` that runs `engine.evaluate(activeModel, state)` + the
+      existing `update()`.
+      (c) Wire the toggle: on change set `activeModel`/`mode` then
+      `recompute()`. Do NOT reset `state` — slider values carry across modes.
+      (d) `refs` stays `engine.sourceIndex(HEALTH_MODEL)` (canonical).
+      (e) `updateFindings`: filter records with `mode === 'advanced'` when
+      `mode === 'simple'` (needs the engine pass-through from 6.2).
+      (f) `updateChips`/`updateContrib` need NO branch code — the missing
+      flags render the flat look automatically; verify rather than add code.
+      (g) engine.js: `evaluateFindings` map gains `mode: f.mode` (engine.js:
+      1088). `node --check js/app.js js/engine.js`.
+- [ ] 6.6 app.js copy: render the mode caption + a small mode badge near the
+      outputs so a viewer in simple mode is reminded the numbers are naive
+      (honesty rule). No new numbers — copy only.
+- [ ] 6.7 tests (tests/engine.test.js): new §[27] "Simple vs advanced mode":
+      (a) SIMPLE_HEALTH_MODEL at defaults → hrAvg exactly 1.0, LE delta 0
+      (same invariant as advanced);
+      (b) on a healthy profile the simple total == the naive marginal product
+      (no cluster replacement; recompose via plainModel if needed) and DIFFERS
+      from the advanced total (redundancy really removed);
+      (c) no contribution record in simple mode carries `viaJoint`,
+      `overlapBlend`, or `perLever`;
+      (d) `sourceIndex(SIMPLE_HEALTH_MODEL)` is a subset of
+      `sourceIndex(HEALTH_MODEL)` with identical numbers for shared keys
+      (append-order invariant);
+      (e) the two `mode: 'advanced'` findings exist, are the only findings
+      flagged, and their `when()` matches the original (data audit);
+      (f) a findings-mode filter check (engine passes mode through). Suite green.
+- [ ] 6.8 Verification: `node --check` on all JS, full suite green, serve and
+      manually check: defaults show 1.0× in BOTH modes; a healthy profile
+      shows advanced LESS protective than simple (overclaim removed) with
+      conflation tags in advanced and absent in simple; toggle preserves
+      slider values; the two cluster findings vanish in simple; simple-mode
+      chip [n] links still resolve on sources.html (canonical numbering); no
+      console errors toggling rapidly.
+- [ ] 6.9 AGENTS.md + file headers: add the mode convention line to AGENTS.md's
+      design decisions and a short note atop js/app.js and js/factors.js so
+      future work tags its feature's mode (advanced = conflation-clarity UI /
+      simple = flat naive). Human reviews this diff.
 
 ## Phase 5 — deferred (not now)
 
