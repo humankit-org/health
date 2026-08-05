@@ -35,10 +35,19 @@ sources.html        method, limitations, full disclaimer, reference list
 PLAN.md             current model, design decisions, roadmap, candidate backlog
 research.md         verified evidence base (primary-source cells, ρ justifications, sweep audit) — read before changing any number
 css/style.css       all styling
-js/factors.js       THE MODEL — every number + its citation (see below)
+js/factors.js       THE BASE SIMPLE MODEL — every number + its citation (see below)
 js/schema.js        conflation schema/API: OUTPUTS, conflationGroups,
                     displayName/esc/shortLabel, auditModel (read by all JS)
 js/engine.js        pure math: values -> estimates (no DOM; also runs in node)
+js/joint/joint-models.js  the conflation joint estimates (dietScore, ekelundTable,
+                    mommaCells, duncanCells, mayoCells) — ADVANCED-model layer
+js/joint/overlaps.js      the overlap ρ pairs (input↔input / cluster↔input)
+js/joint/per-lever-only.js  psychosocial levers shown individually, not summed
+js/joint/joint-sources.js  the 5 joint-only citations (mente2023, duncan2023,
+                    ekelund2016, sanchezlastra2021, weeldreyer2025)
+js/joint/findings.js      the 2 cluster-referencing findings (vo2maxOn, underweight)
+js/joint/index.js         assembles the ADVANCED HEALTH_MODEL = factors.js (SIMPLE)
+                    + the joint layer; sets globalThis.HEALTH_MODEL + SIMPLE_HEALTH_MODEL
 js/app.js           main-page DOM rendering/wiring only; no numbers in this file
 js/sources.js       renders the reference list on sources.html
 tests/engine.test.js  dependency-free smoke tests: `node tests/engine.test.js`
@@ -50,12 +59,14 @@ the repo root and it's deployed.
 
 ## The golden rule of the data model
 
-**Every number lives in `js/factors.js`, right next to the study it came
-from.** Never put a coefficient in `engine.js` or `app.js`. Each effect has:
+**Every number lives in `js/factors.js` (the base SIMPLE model) or the
+`js/joint/` conflation layer, right next to the study it came from.** Never
+put a coefficient in `engine.js` or `app.js`. Each effect has:
 `source` (key into the `sources` map with DOI/PMID), `note` (what the study
 actually found + any approximation we made), `evidence` (high|moderate|low),
 and CI bounds where published. The reference list on sources.html and the
-per-estimate citations on index.html are generated from this file, so sources
+per-estimate citations on index.html are generated from the ASSEMBLED model
+(`js/joint/index.js` = base + joint layer), so sources
 can never drift away from the numbers. Citation numbers come from
 `engine.sourceIndex(model)` — both pages use it, and every `[n]` on the main
 page deep-links to `sources.html#ref-n`. The topic chips on sources.html are
@@ -147,17 +158,20 @@ integrity: sorted steps, bracketing CIs, existing sources).
   way; justify any library added later.
 - Model the estimates as a small, readable, cited data structure (e.g. a JSON
   of factors with study references) rather than burying magic numbers in code.
-- `factors.js`/`schema.js`/`engine.js` use a dual-export pattern (browser
-  global + CommonJS) so the tests can require them without a bundler. Script
-  load order on both pages: factors.js → schema.js → engine.js → page script.
+- `factors.js`/`schema.js`/`engine.js` and the `js/joint/` files use a
+  dual-export pattern (browser global + CommonJS) so the tests can require
+  them without a bundler. Script load order on both pages: factors.js →
+  schema.js → engine.js → joint-models.js → overlaps.js → per-lever-only.js →
+  joint-sources.js → findings.js → index.js → page script (index.js assembles
+  the ADVANCED `HEALTH_MODEL` and sets the SIMPLE_HEALTH_MODEL global).
 
 ## Local development
 
 - Serve: `python3 -m http.server 8000` (or any static server) →
   http://localhost:8000. Opening `index.html` directly also works (no modules,
   no fetch).
-- Test: `node tests/engine.test.js` — run after any change to `js/factors.js`
-  or `js/engine.js`.
+- Test: `node tests/engine.test.js` — run after any change to `js/factors.js`,
+  `js/engine.js`, or the `js/joint/` layer.
 
 ## Related
 

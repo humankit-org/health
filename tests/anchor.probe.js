@@ -1,6 +1,6 @@
 // anchor_probe.js — Li 2018 / Sun 2022 calibration ratio (PLAN §1.13).
 // Reusable completion probe for Phase 3.6. Run: node /tmp/opencode/anchor_probe.js
-const model = require('../js/factors.js');
+const model = require('../js/joint/index.js');
 const engine = require('../js/engine.js');
 const d = engine.defaults(model);
 

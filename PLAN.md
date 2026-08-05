@@ -58,7 +58,17 @@ research.md for the full verified evidence.
 | **Unfair multiplication** | within clusters with no joint model — marginal HRs multiplied | must be replaced by a joint estimate or moved to per-lever |
 | **No combination** | per-lever only; no cluster total, no combined claim | psychosocial (purpose, stress, social, sleepRegularity); screen→happiness already treated this way |
 
-### Live structures (source of truth: `js/factors.js`; rendered by sources.html)
+### Live structures (source of truth: `js/factors.js` + `js/joint/`; rendered by sources.html)
+
+Under **Phase 7** (in progress — Working TODO at the bottom) the conflation
+structures will live in `js/joint/` (joint-models.js / overlaps.js /
+per-lever-only.js, plus the conflation-only sources and the two
+cluster-referencing findings); `js/factors.js` is the base SIMPLE model
+(inputs, effects, sources, bmi, baseline, constants, findings).
+`js/joint/index.js` assembles `HEALTH_MODEL` (advanced) = base + joint layer and
+exposes `SIMPLE_HEALTH_MODEL` (the base object). The engine stays a superset
+over the assembled model — empty/absent conflation structures ⇒ byte-identical
+plain multiplication (see Phase 7).
 
 - **`jointModels`** (5, each owns a cluster; first-owner rule — an input's HR
   is counted by at most one joint model; cluster totals replace member
@@ -151,6 +161,8 @@ that cluster**; edit the number + its note/source in the same commit, run
 - **Phase 4.5** — main-page conflation disclosure: card-level cluster notes,
   More-panel header note, per-input transparency table on sources.html.
 - **Phase 5.5** — Simple/Advanced model toggle.
+- **Phase 7** — refactor: extract the joint model into `js/joint/` (separate
+  the base SIMPLE model from the conflation layer; steps below).
 
 ### Next (needs sourcing/design)
 - Replace indirect citations for mind outputs with dedicated sources.
@@ -239,6 +251,8 @@ Dev gotchas (learned the hard way):
   renumbered to 26 sections with headers.
 - **Phase 4.5 [~]** — main-page conflation disclosure: audit done; steps below.
 - **Phase 5.5 [ ]** — Simple/Advanced model toggle; steps below.
+- **Phase 7 [x]** — refactor: extract the joint model into its own files
+  (`js/joint/`); plan written; steps below.
 - **Phase 5** — deferred (list at the end).
 
 ## Phase 4.5 — UI disclosure of conflation (chips / More panels)
@@ -330,11 +344,13 @@ labels) so future presentation work knows which mode it belongs to.
   NOT restore the old engine.js file — its `evaluate()` return shape lacks
   `bounds` and other fields app.js now reads. Current engine + empty
   structures IS the simple model. **No engine math change needed.**
-- **Mode = which model object is active.** factors.js exports the canonical
-  `HEALTH_MODEL` plus a derived `SIMPLE_HEALTH_MODEL = { ...HEALTH_MODEL,
-  jointModels: [], overlaps: [], perLeverOnly: [] }` (shallow spread only —
-  nested inputs/sources are read-only; a distinct object identity is REQUIRED
-  because `calibrateCache`/`_avgCache` are WeakMaps keyed by model object).
+- **Mode = which model object is active.** AFTER Phase 7 this is free:
+  factors.js IS the base/simple model and exports it as `SIMPLE_HEALTH_MODEL`
+  (conflation keys DELETED, not emptied — absence === empty for every
+  consumer's `|| []` guard); js/joint/index.js assembles the distinct
+  advanced `HEALTH_MODEL`. Distinct top-level object identity is REQUIRED
+  because the engine caches by model object (`calibrateCache` Map at
+  engine.js:353, `_avgCache` WeakMap at engine.js:1021).
   `engine.evaluate(model, state)` does all the work; no mode flag is threaded
   through the engine.
 - **The UI self-neutralises.** Every conflation disclosure in app.js
@@ -350,11 +366,14 @@ labels) so future presentation work knows which mode it belongs to.
   nothing renumbers. sources.html keeps rendering the full advanced list.
 - **Cluster-referencing findings get a `mode` field.** Two findings reference
   the Mayo adiposity cluster and mislead in simple mode: the vo2maxOn
-  "fitness absorbs fatness" finding (weeldreyer2025, factors.js:2183) and the
-  underweight/Mayo caveat (factors.js:2187). Add `mode: 'advanced'` to them;
-  the engine's `evaluateFindings` passes the field through (one-line change
-  at engine.js:1088) and app.js filters by active mode. Numbers/behavior stay
-  in factors.js (golden rule).
+  "fitness absorbs fatness" finding (weeldreyer2025) and the underweight/Mayo
+  caveat (sanchezlastra2021). AFTER Phase 7 they live in **js/joint/
+  findings.js** (not factors.js:2183/2187). Add `mode: 'advanced'` to them;
+  the engine's `evaluateFindings` passes the field through (one-line change at
+  engine.js:1178–1185). app.js does NOT need to filter by mode (Phase 7: the
+  base model simply lacks these findings) — the field is for
+  self-documentation and the data audit test. Numbers/behavior stay in the
+  data files (golden rule).
 - **sources.html stays advanced-only.** It is the methodology page for the
   conflation model. Simple mode's "Full method" link still lands there; the
   toggle's caption covers the mismatch.
@@ -376,9 +395,13 @@ labels) so future presentation work knows which mode it belongs to.
       `module.exports.SIMPLE_HEALTH_MODEL = SIMPLE_HEALTH_MODEL`; browser:
       `globalThis.SIMPLE_HEALTH_MODEL = SIMPLE_HEALTH_MODEL`. Run tests —
       suite must stay green (advanced model untouched).
-- [ ] 6.2 factors.js: add `mode: 'advanced'` to the two cluster-referencing
-      findings (factors.js:2183 weeldreyer2025/vo2maxOn, factors.js:2187
-      underweight/Mayo). All other findings stay mode-agnostic. Tests green.
+      NOTE (Phase 7 supersedes this): the `js/joint/` split makes factors.js
+      the base model and exports it as `SIMPLE_HEALTH_MODEL` already — verify
+      the export shape exists and skip the code part of this step.
+- [ ] 6.2 Add `mode: 'advanced'` to the two cluster-referencing findings —
+      AFTER Phase 7 they live in **js/joint/findings.js** (weeldreyer2025/
+      vo2maxOn + sanchezlastra2021/underweight), not factors.js. All other
+      findings stay mode-agnostic. Tests green.
 - [ ] 6.3 index.html: add the toggle to the `.topbar` (or a new row under the
       tagline) — a labelled segmented control `Simple | Advanced` (use the
       same radiogroup pattern as `.segmented`, id="mode-toggle"), default
@@ -399,16 +422,26 @@ labels) so future presentation work knows which mode it belongs to.
       (c) Wire the toggle: on change set `activeModel`/`mode` then
       `recompute()`. Do NOT reset `state` — slider values carry across modes.
       (d) `refs` stays `engine.sourceIndex(HEALTH_MODEL)` (canonical).
-      (e) `updateFindings`: filter records with `mode === 'advanced'` when
-      `mode === 'simple'` (needs the engine pass-through from 6.2).
+      (e) `updateFindings`: AFTER Phase 7 this filter is a NO-OP and can be
+      dropped — the base/simple model has no joint findings at all (they live
+      in js/joint/findings.js and are only merged into the advanced model), so
+      evaluating the base never returns them. Keep the `mode: 'advanced'`
+      data field (6.2) for self-documentation + test 6.7(e); the filter was
+      only needed because the pre-Phase-7 derived SIMPLE shared the findings
+      array.
       (f) `updateChips`/`updateContrib` need NO branch code — the missing
       flags render the flat look automatically; verify rather than add code.
-      (g) engine.js: `evaluateFindings` map gains `mode: f.mode` (engine.js:
-      1088). `node --check js/app.js js/engine.js`.
+      (g) engine.js: `evaluateFindings` map gains `mode: f.mode`
+      (engine.js:1178–1185, NOT :1088 — that line drifted). `node --check
+      js/app.js js/engine.js`.
 - [ ] 6.6 app.js copy: render the mode caption + a small mode badge near the
       outputs so a viewer in simple mode is reminded the numbers are naive
       (honesty rule). No new numbers — copy only.
-- [ ] 6.7 tests (tests/engine.test.js): new §[27] "Simple vs advanced mode":
+- [ ] 6.7 tests (tests/engine.test.js): new §[27] "Simple vs advanced mode"
+      (AFTER Phase 7: `SIMPLE_HEALTH_MODEL` comes from
+      `require('../js/joint/index.js').SIMPLE_HEALTH_MODEL`, or just
+      `require('../js/factors.js')`; `HEALTH_MODEL` from
+      `require('../js/joint/index.js')`):
       (a) SIMPLE_HEALTH_MODEL at defaults → hrAvg exactly 1.0, LE delta 0
       (same invariant as advanced);
       (b) on a healthy profile the simple total == the naive marginal product
@@ -416,9 +449,15 @@ labels) so future presentation work knows which mode it belongs to.
       really removed);
       (c) no contribution record in simple mode carries `viaJoint`,
       `overlapBlend`, or `perLever`;
-      (d) `sourceIndex(SIMPLE_HEALTH_MODEL)` is a subset of
-      `sourceIndex(HEALTH_MODEL)` with identical numbers for shared keys
-      (append-order invariant);
+      (d) `sourceIndex(SIMPLE_HEALTH_MODEL)` keys are a SUBSET of
+      `sourceIndex(HEALTH_MODEL)` keys, and the shared-prefix numbering
+      matches: every shared key numbered BEFORE the first advanced-only source
+      (weeldreyer2025/sanchezlastra2021/mente2023/ekelund2016/duncan2023) has
+      the SAME number in both maps; keys at/after that point (the derived BMI
+      + life-expectancy baseline) shift by the count of joint-finding sources,
+      which is fine because BOTH pages always compute refs from the advanced
+      model — simple mode never renumbers anything (canonical-numbering
+      invariant);
       (e) the two `mode: 'advanced'` findings exist, are the only findings
       flagged, and their `when()` matches the original (data audit);
       (f) a findings-mode filter check (engine passes mode through). Suite
@@ -434,6 +473,160 @@ labels) so future presentation work knows which mode it belongs to.
       design decisions and a short note atop js/app.js and js/factors.js so
       future work tags its feature's mode (advanced = conflation-clarity UI /
       simple = flat naive). Human reviews this diff.
+
+## Phase 7 — extract/isolate the joint/advanced model into its own files (`js/joint/`) (created 2026-08-05)
+
+Goal: physically separate the two models. `js/factors.js` becomes the base
+SIMPLE model with the conflation structures REMOVED (not emptied); the
+conflation layer moves to `js/joint/` (five data files + one assembler). The
+engine stays a superset over the ASSEMBLED model, so no engine math changes.
+This is a pure move+assemble refactor — citation numbers, the reset invariant
+and both pages' output must be byte-identical afterwards (the test suite
+proves it: zero assertion edits allowed). The goal is easier future maintenance by separating the joint model into its own files, more modular.
+
+### Design decisions (from the planning pass — read before coding)
+
+- **factors.js = the base SIMPLE model.** Keeps `meta`/`constants`/`baseline`/
+  `outputs`/`inputs`/`bmi`/`findings`(minus the 2 cluster ones)/`sources`
+  (minus the 5 joint-only ones). The `jointModels`/`overlaps`/`perLeverOnly`
+  keys are DELETED entirely — absence === empty for engine/schema/app (every
+  consumer guards with `model.jointModels || []`). Internal `const HEALTH_MODEL`
+  name stays (it is THE model file); tail exports become
+  `module.exports = HEALTH_MODEL` + `globalThis.SIMPLE_HEALTH_MODEL =
+  HEALTH_MODEL` (drop the `globalThis.HEALTH_MODEL` line — that global now
+  belongs to the assembled advanced model, set by js/joint/index.js).
+- **js/joint/index.js assembles the ADVANCED model.**
+  `HEALTH_MODEL = Object.assign({}, base, { jointModels, overlaps,
+  perLeverOnly, findings: base.findings.concat(jointFindings),
+  sources: Object.assign({}, base.sources, jointSources) })`. Distinct top-level
+  object identity is REQUIRED (engine WeakMaps `calibrateCache`/`_avgCache` key
+  by model object). Sets `globalThis.HEALTH_MODEL` (browser default =
+  advanced) and `globalThis.SIMPLE_HEALTH_MODEL` (re-export of base); node:
+  `module.exports = HEALTH_MODEL`, `module.exports.SIMPLE_HEALTH_MODEL = base`.
+  Bump `meta.version`/`meta.updated` on the assembled model.
+- **Shared vs joint-only sources.** `momma2022` STAYS in factors.js — the
+  strength input marginals (factors.js:306/332/342) and a base finding (:2097)
+  cite it. Only `mente2023`, `duncan2023`, `ekelund2016`, `sanchezlastra2021`,
+  `weeldreyer2025` move to js/joint/joint-sources.js. In `sourceIndex` they are
+  only reachable via jointModels/overlaps/findings-appended-last, so the
+  append-order invariant (§[26]) survives unchanged.
+- **findings split.** Base keeps findings :2075–:2199. The LAST TWO entries
+  (:2201–:2208 — vo2maxOn/weeldreyer2025, underweight/sanchezlastra2021) move
+  to js/joint/findings.js; the assembler appends them AFTER base findings
+  (same relative order as today, so the `findings`-walk numbering in
+  sourceIndex/sourceTags is unchanged).
+- **Dual-export per file**, same pattern as factors/schema/engine: each data
+  file does `module.exports = DATA` + `root.HEALTH_<X> = DATA`. index.js picks
+  `root.HEALTH_<X> || require('./<x>.js')` (engine.js:82 pattern). Globals:
+  `HEALTH_JOINT_MODELS`, `HEALTH_OVERLAPS`, `HEALTH_PER_LEVER_ONLY`,
+  `HEALTH_JOINT_SOURCES`, `HEALTH_JOINT_FINDINGS`.
+- **Script order (both pages):** factors.js → schema.js → engine.js →
+  joint-models.js → overlaps.js → per-lever-only.js → joint-sources.js →
+  findings.js → index.js → app.js (or sources.js). index.js must run after all
+  data files and before the page scripts.
+- **No schema.js / engine.js / app.js / sources.js changes.** `auditModel`
+  uses `model.jointModels || []` (safe on the base too). app.js/sources.js read
+  `globalThis.HEALTH_MODEL` (advanced). `refs = engine.sourceIndex(model)`
+  stays canonical on both pages.
+- **Tests/probes point at the assembler.** `model` (advanced) becomes
+  `require('../js/joint/index.js')` in engine.test.js:9, audit.js:29,
+  anchor.probe.js:3, attribution.probe.js:15. `plainModel` (engine.test.js:15)
+  becomes `require('../js/factors.js')` — the base IS the plain model.
+  `plainHrOut` still works: `perLeverIds` come from the advanced model, and the
+  base product still includes the psychosocial marginals the advanced
+  perLeverOnly cluster excludes (same recomposition math as today).
+- **Phase 5.5 synergy:** the toggle's `SIMPLE_HEALTH_MODEL` now comes free from
+  the split (step 6.1 → no-op, noted above); step 6.2's `mode: 'advanced'`
+  fields still apply to the two joint findings, which now live in
+  js/joint/findings.js.
+
+### Phase 7 × Phase 5.5 compatibility (cross-checked 2026-08-05)
+
+The two plans are compatible; Phase 7 must land FIRST (it is a pure refactor
+proven green with zero assertion edits), then Phase 5.5 adds the toggle UI.
+Verified against the code:
+
+- **SIMPLE comes free.** Phase 5.5's derived
+  `{ ...HEALTH_MODEL, jointModels: [], overlaps: [], perLeverOnly: [] }` is
+  exactly the Phase 7 base object (keys absent instead of empty — every
+  consumer guards with `|| []`: engine.js:181/355/498/513/544/814/1051/
+  1211–1212/1264/1287, schema.js:110/127/132/139/165/185/206, sources.js:36/100).
+  Behavior identical.
+- **Distinct object identity holds.** Advanced = `Object.assign({}, base,
+  …)`; caches key by model object (`calibrateCache` Map engine.js:353,
+  `_avgCache` WeakMap engine.js:1021). Base and advanced share nested
+  inputs/sources references (read-only) — toggle never cross-contaminates
+  caches because each evaluate call passes exactly one model object.
+- **Findings.** The two joint findings move to js/joint/findings.js (Phase 7
+  step 7.4); simple mode can't show them because the base has no `mode:
+  'advanced'` entries at all. Phase 5.5's app.js mode-filter is therefore
+  unnecessary (kept only as a defensive no-op if ever evaluating the advanced
+  model in simple mode). `mode: 'advanced'` fields + engine pass-through still
+  wanted for self-documentation and test 6.7(e).
+- **Citations.** Both pages compute `refs` from `globalThis.HEALTH_MODEL`
+  (advanced, set by js/joint/index.js) regardless of toggle state, so chip
+  [n] numbers never change when toggling. NOTE (verified 2026-08-05): the
+  base's own `sourceIndex` is a subset of advanced BY KEYS, but NOT identical
+  on every shared key — the 2 joint findings cite weeldreyer2025 +
+  sanchezlastra2021 in the findings-walk BEFORE bmi/baseline, so the base
+  pushes diangelantonio2016 (BMI) and nchs2023 (baseline) 2 positions
+  EARLIER (simple 93/94 vs advanced 95/96). Harmless for the UI (pages use
+  advanced refs); test 6.7(d) asserts the correct shared-prefix invariant
+  instead of full equality.
+- **Reset invariant.** `engine.evaluate` normalizes by `averageEval(model)`
+  (= raw at defaults). Base at defaults → ratio exactly 1.0 → test 6.7(a)
+  holds without any calibrate offset (calibrate lives only in the advanced
+  joint models, where it already preserves the invariant).
+- **Tests.** Phase 7 step 7.6 already repoints `plainModel` →
+  `require('../js/factors.js')` (the base IS the naive product, incl.
+  psychosocial marginals) — exactly what Phase 5.5 §6.7(b) needs.
+- **Docs.** Phase 5.5 §6.9's mode convention goes into AGENTS.md + headers;
+  it references factors.js — after Phase 7, also add a line for js/joint/
+  files (any file defining joint data is advanced-layer by definition).
+
+### Steps (one at a time; steps 7.0–7.5 are additive and safe in isolation,
+7.6 must land atomically with its test-require swap)
+
+- [x] 7.0 `js/joint/joint-models.js` — move the jointModels schema-comment
+      block (factors.js:2211–2308) + data array (:2309–:2782) verbatim into a
+      dual-export file (`root.HEALTH_JOINT_MODELS`). Header comment: "part of
+      the assembled advanced model — see js/joint/index.js".
+- [x] 7.1 `js/joint/overlaps.js` — move the overlaps array (factors.js:
+      2783–:2904) + its leading comment; `root.HEALTH_OVERLAPS`.
+- [x] 7.2 `js/joint/per-lever-only.js` — move the perLeverOnly array
+      (factors.js:2906–:2911); `root.HEALTH_PER_LEVER_ONLY`.
+- [x] 7.3 `js/joint/joint-sources.js` — move the 5 joint-only source keys
+      (mente2023 :2925, duncan2023 :2934, ekelund2016 :2943,
+      sanchezlastra2021 :2961, weeldreyer2025 :2970); `root.HEALTH_JOINT_SOURCES`.
+      KEEP momma2022 in factors.js.
+- [x] 7.4 `js/joint/findings.js` — move the 2 cluster-referencing findings
+      (factors.js:2201–:2208); `root.HEALTH_JOINT_FINDINGS`.
+- [x] 7.5 `js/joint/index.js` — the assembler (design decision above).
+      `node --check js/joint/index.js`.
+- [x] 7.6 Slim `js/factors.js` AND swap all test/probe requires to
+      index.js/factors.js IN THE SAME EDIT: delete the moved blocks (findings
+      tail, joint schema comment, jointModels, overlaps, perLeverOnly, 5 source
+      keys); change the tail to export the base as `SIMPLE_HEALTH_MODEL` (no
+      HEALTH_MODEL global); bump meta.version/updated; update the FILE MANIFEST
+      header (factors.js:23–41). Requires: engine.test.js:9 → index.js,
+      :15 plainModel → factors.js; audit.js:29 → index.js; anchor.probe.js:3
+      and attribution.probe.js:15 → index.js. Then `node --check` on all
+      edited JS + `node tests/engine.test.js` + `node tests/audit.js` + both
+      probes — suite must stay green with ZERO assertion edits (this proves
+      the assembled advanced model is byte-identical to the monolith).
+- [x] 7.7 Pages — index.html + sources.html: add the 6 new script tags in the
+      order above (after engine.js, before app.js/sources.js). No other HTML
+      change.
+- [x] 7.8 Docs — AGENTS.md file map: add the `js/joint/` files + adjust the
+      factors.js line; engine.js:38–40 manifest comment stays accurate (no
+      change); PLAN.md "Live structures" already updated. Human reviews the
+      AGENTS.md diff.
+- [x] 7.9 Verification — serve and smoke both pages: advanced renders
+      IDENTICAL to pre-refactor (spot-check citation numbers [n] on chips,
+      conflation tables + topic chips on sources.html, reset ⇒ 1.0× / baseline
+      LE, all joint models/overlaps still listed); toggle-free pages have no
+      console errors. Confirm `node tests/engine.test.js` + `node tests/audit.js`
+      still green.
 
 ## Phase 5 — deferred (not now)
 

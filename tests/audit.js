@@ -4,7 +4,8 @@
  *
  * The audit itself (auditModel) lives in js/schema.js — it is a read-only
  * STRUCTURAL validator: it cross-references ids, bands, grids, sources and
- * field shapes in js/factors.js against the conflation schema (jointModels /
+ * field shapes in the ADVANCED model (js/joint/index.js: base js/factors.js +
+ * the js/joint/ conflation layer) against the conflation schema (jointModels /
  * overlaps / perLeverOnly). engine.test.js pins *shipped numbers*; this
  * catches structurally-broken edits with a precise message instead of a
  * confusing number mismatch later.
@@ -26,7 +27,7 @@
 
   // Run directly: print each problem and exit nonzero on any failure.
   if (typeof require !== 'undefined' && require.main === module) {
-    const model = require('../js/factors.js');
+    const model = require('../js/joint/index.js');
     const problems = auditModel(model);
     if (problems.length === 0) {
       console.log('audit.js: model structure OK');

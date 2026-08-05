@@ -3,16 +3,17 @@
  *
  * These check the model math AND audit the data file (every effect must cite
  * an existing source, steps must be sorted, bounds must bracket the central
- * estimate). If you edit js/factors.js, run this.
+ * estimate). If you edit js/factors.js or the js/joint/ layer, run this.
  */
 
-const model = require('../js/factors.js');
+const model = require('../js/joint/index.js');
 const engine = require('../js/engine.js');
-// Phase-2 plain model: the same data with the joint models and overlap pairs
-// (and the per-lever-only clusters) stripped — used wherever a test exercises
-// a SINGLE factor's marginal math (the shipped clusters are tested in
-// §[17]/§[18]/§[19]/§[21], and the shipped per-lever cluster in §[19b]).
-const plainModel = { ...model, jointModels: [], overlaps: [], perLeverOnly: [] };
+// Phase-2 plain model: the BASE simple model (js/factors.js) — the same data
+// with NO conflation structures at all (Phase 7 split the joint layer out of
+// factors.js into js/joint/). Used wherever a test exercises a SINGLE factor's
+// marginal math (the shipped clusters are tested in §[17]/§[18]/§[19]/§[21],
+// and the shipped per-lever cluster in §[19b]).
+const plainModel = require('../js/factors.js');
 
 // Shipped per-lever-only members (§3.5, psychosocial). They are EXCLUDED from
 // the shipped HR products by design, so every "plain model" identity that

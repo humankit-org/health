@@ -5,14 +5,14 @@
  *
  * Run: `node tests/attribution.probe.js`
  *
- * Reads js/factors.js + js/engine.js only. No DOM, no network.
+ * Reads js/joint/index.js (advanced model) + js/engine.js only. No DOM, no network.
  *
  * Profile (PLAN.md Phase 0): 300 min/wk cardio, 2x/wk strength, 10k steps,
  * decent diet, good sleep, low stress. Everything else sits at its
  * study-reference (no-effect) level.
  */
 
-const model = require('../js/factors.js');
+const model = require('../js/joint/index.js');
 const engine = require('../js/engine.js');
 
 // Reference profile: every input at its study-reference (no-effect) level.
