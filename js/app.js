@@ -11,6 +11,7 @@
 
   const model = globalThis.HEALTH_MODEL;
   const engine = globalThis.HEALTH_ENGINE;
+  const schema = globalThis.HEALTH_SCHEMA; // output ids + display helpers (single source, js/schema.js)
   const state = engine.defaults(model);
   const refs = engine.sourceIndex(model); // shared citation numbering (sources.html uses the same)
 
@@ -35,24 +36,10 @@ const EVIDENCE_TITLE = {
   // Per-slider / per-lever notes generated from the engine's tags — the same
   // fields the conflation table on sources.html renders (overlaps + joint
   // models), so the copy can never drift from the data.
-  const inputLabels = {};
-  for (const input of model.inputs) inputLabels[input.id] = input.label;
-  if (model.bmi && model.bmi.label) inputLabels.bmi = model.bmi.label;
-  const jmById = new Map();
-  for (const jm of model.jointModels || []) jmById.set(jm.id, jm);
-
-  const shortName = (s) => {
-    const stripped = String(s || '').replace(/\(.*?\)/g, '').trim();
-    return stripped || s;
-  };
-  // A pair may name an input OR a joint model (e.g. `dietScore`,
-  // `ekelundTable`) — resolve both.
-  const nameOf = (id) => {
-    if (inputLabels[id]) return shortName(inputLabels[id]);
-    const jm = jmById.get(id);
-    if (jm) return jm.title || shortName(jm.cluster || jm.id);
-    return id;
-  };
+  // Label helpers live in js/schema.js — single source shared with
+  // sources.js and the engine (see HEALTH_SCHEMA.displayName/esc).
+  const displayName = (id) => schema.displayName(model, id);
+  const esc = schema.esc;
   const blendPct = (rho) => Math.max(0, Math.round((1 - Number(rho)) * 100));
 
   // "counted at X% — overlaps Y"; only present on the weaker side of an
@@ -60,7 +47,7 @@ const EVIDENCE_TITLE = {
   const overlapNote = (c) => {
     const b = c.overlapBlend;
     if (!b) return '';
-    const other = nameOf(b.pair);
+    const other = displayName(b.pair);
     return {
       pct: blendPct(b.rho),
       other,
@@ -71,13 +58,12 @@ const EVIDENCE_TITLE = {
   // its cluster's published joint estimate (never multiplied separately).
   const jointNote = (c) => {
     if (!c.viaJoint) return '';
-    const name = nameOf(c.viaJoint);
+    const name = displayName(c.viaJoint);
     return {
       name,
       title: `Counted via the published ${name} joint model — this slider does not get multiplied separately.`,
     };
   };
-  const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
   // Chip footnotes: "counted at 70% — overlaps cardio" (blend) and "counted
   // via the PURE diet-score joint model" — the disclosure copy for a single
@@ -355,8 +341,9 @@ const EVIDENCE_TITLE = {
     for (const input of model.inputs) {
       const host = document.getElementById('chips-' + input.id);
       if (!host) continue;
-      const mine = result.contributions.mortality
-        .concat(result.contributions.cancer, result.contributions.cvd, result.contributions.cognition, result.contributions.happiness)
+      const mine = schema.OUTPUTS
+        .map((o) => result.contributions[o])
+        .flat()
         .filter((c) => c.inputId === input.id);
       const chips = [];
       for (const c of mine) {

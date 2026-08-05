@@ -35,10 +35,13 @@ sources.html        method, limitations, full disclaimer, reference list
 PLAN.md             roadmap + candidate-factor backlog (sources needed)
 css/style.css       all styling
 js/factors.js       THE MODEL — every number + its citation (see below)
+js/schema.js        conflation schema/API: OUTPUTS, conflationGroups,
+                    displayName/esc/shortLabel, auditModel (read by all JS)
 js/engine.js        pure math: values -> estimates (no DOM; also runs in node)
 js/app.js           main-page DOM rendering/wiring only; no numbers in this file
 js/sources.js       renders the reference list on sources.html
 tests/engine.test.js  dependency-free smoke tests: `node tests/engine.test.js`
+tests/audit.js      standalone runner for schema.auditModel: `node tests/audit.js`
 ```
 
 Cloudflare Pages deployment planned, not confirmed. Site is fully static; serve
@@ -143,8 +146,9 @@ integrity: sorted steps, bracketing CIs, existing sources).
   way; justify any library added later.
 - Model the estimates as a small, readable, cited data structure (e.g. a JSON
   of factors with study references) rather than burying magic numbers in code.
-- `factors.js`/`engine.js` use a dual-export pattern (browser global +
-  CommonJS) so the tests can require them without a bundler.
+- `factors.js`/`schema.js`/`engine.js` use a dual-export pattern (browser
+  global + CommonJS) so the tests can require them without a bundler. Script
+  load order on both pages: factors.js → schema.js → engine.js → page script.
 
 ## Local development
 
@@ -169,6 +173,6 @@ PRIME DIRECTIVE (YOUR BREAD AND BUTTER IN THIS WORKFLOW, NEVER FORGET THESE INST
 2. Identify the next step still yet to do in todo.md. Only work on one step at a time, and denote when you are finished with a step as soon as you are finished with a step. Don't wait until later.
 3. Construct a plan on how to get the next step into our current code. What needs to be modified? What needs to be touched? How does it fit into our current code? Our current model/infrastructure? Will something major need changing? If part of implementing this next step requires creating sub-steps in todo.md, DO THAT and return to '2.'. Seriously, don't hesitate to create substeps, especially for larger changes, or creating steps to "construct new plans" or "research x" or "look up data on z" or "look into y code framework" or non-code related stuff. It needs to be done as a software engineer would do it. If the entire implementation process plan doesn't run into issues, that's also fine, you don't need to make more steps if you don't need to.
 4. Once you have a concrete plan on how to implement something, implement it. If you run into issues, either make a note and new steps in todo.md and revert, or add it as the next step in todo.md.
-5. Go back to step 1 until 'The conflation problem' is fixed. Don't stop working until then.
+5. Go back to step 1 until all tasks are finished.
 
 Try to work out of todo.md, always leaving clear instructions as often as you can. Work as a software engineer would, not just coding on the fly, but once a seperate unanticipated issue is run into, go back and construct plans and ideas around it to get a well-functioning robust fix. You specifically track your work in todo.md as you are an AI agent and may suddenly run out of context, hence the IMPORTANCE of tracking everything you do structuredly in todo.md.

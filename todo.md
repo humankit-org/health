@@ -1653,6 +1653,198 @@ knows which mode it belongs to.
       future work tags its feature's mode (advanced = conflation-clarity UI /
       simple = flat naive). Human reviews this diff.
 
+## Phase C — Cleanup: agent-navigation work (created 2026-08-04)
+
+Goal: self-documenting, de-tangled code so future AI workers can navigate the
+conflation machinery WITHOUT carrying the 1659-line PLAN/todo history. Every
+step is behavior-identical (suite + probes green) UNLESS the step is the
+stricter-schema audit (A3/D1), which may surface data edits but never behavior
+changes or citation renumbering.
+
+Working rules for every step:
+- `node tests/engine.test.js` after ANY change to js/factors.js / js/engine.js.
+- Run `node --check` on every edited JS file (browser global + CommonJS dual
+  export must still parse).
+- Do NOT move citation order, renumber sources, or change the `evaluate()`
+  return shape (in-flight Phase 4.5 and the future Phase 5.5
+  `SIMPLE_HEALTH_MODEL` read them).
+- Out of scope (flag, don't do): splitting factors.js per-cluster;
+  de-prose-ifying PLAN.md/todo.md.
+- NOTE (2026-08-04): todo.md reverted once mid-session (concurrent process?);
+  if edits vanish, re-apply and continue — the code edits (js/*) are the
+  source of truth and survive.
+
+### Phase A — navigation & discoverability (zero behavior change)
+
+- [x] A1: top-of-file manifest comments in js/factors.js and js/engine.js
+      naming each structure and its line region (inputs / bmi / findings /
+      jointModels / overlaps / perLeverOnly / sources / constants / baseline /
+      outputs). Keeps the giant object literal findable. `node --check` + suite.
+      DONE 2026-08-04: manifest + "THE CENTRAL DATA FLOW" walkthrough added
+      to both files (explicitly flagging applyOverlaps' in-place mutation as
+      pre-B1 and the Maps as ephemeral per-call). Suite green.
+- [x] A2: add `OUTPUTS = ['mortality','cancer','cvd','cognition','happiness']`
+      to engine.js, export it, and replace hard-coded output-name string
+      literals in engine.js internals, app.js, and sources.js. PRESERVE ARRAY
+      ORDER (matters for sourceIndex/clusterTotals iteration order — do not
+      sort).
+
+      Replaces the private `HR_OUTPUTS`/`POINTS_OUTPUTS`? NO — leave those
+      (matters for which loop keys on private subsets); `OUTPUTS` is the FULL
+      ordered list used by the DOM/copy layers. Only use `OUTPUTS` where the
+      old code hard-coded the full 5-output sequence.
+      DONE 2026-08-04: `OUTPUTS = HR_OUTPUTS.concat(POINTS_OUTPUTS)` + export;
+      `evalEffects` builds `contributions` from OUTPUTS; app.js `updateChips`
+      flattens `engine.OUTPUTS`. Per-output card renderers keep explicit keys.
+      Suite green.
+- [x] A3: tests/audit.js — read-only structural validator against the
+      conflation schema (fail LOUDLY early instead of relying on fragile
+      number-pinned tests in engine.test.js):
+      + every `overlaps` member id is a real input id OR a live jointModels id;
+      + every `jointModels[].members[]` is a real input id (bmi allowed as
+        derived member);
+      + rho/rhoU ∈ [0,1];
+      + `outputs.grid` vs `outputs.grids` well-formed; `axes` bands non-empty;
+        axis inputs resolve to real input ids;
+      + `outputs` shorthand (`lookup`) valid; `model` field is score|table;
+      + findings `when(v)` callable; sources keys all defined.
+      Wired into the existing test entry (or run standalone) — suite STAYS green.
+      DONE 2026-08-04: `tests/audit.js` (dual-export, standalone
+      `node tests/audit.js` -> exit 0/1; factory `{ audit }`). Covers: overlap
+      members real-id-or-jm, rho/rhoU ∈ [0,1], source+note presence; joint
+      model id/model∈{score,table}/members/`outputs`-or-`lookup` shorthand,
+      per-output shape (score: components inputs real + max>0, gradient steps
+      numeric; table: axes each either real-input `inputs` OR a data `fn`
+      [bmi/bodyFat allowed as derived axis inputs], non-empty bands; grid vs
+      grids, rectangular cells with numeric hr; ratio shape; calibrate bool);
+      perLeverOnly members real; findings when-callable + input + source;
+      sources entries are objects. Wired into engine.test.js as `[A3]` section
+      (audit(model) must be clean — one ok line). Negative-tested: broken
+      member / bad axis / bad model-type all caught. Suite green.
+
+### Phase B — de-tangle the conflation engine (behavior-identical, suite green)
+
+- [x] B1: applyOverlaps -> pure `blendOverlaps(model, fx, jmTotals)` returning
+      `{ blended, jmBlend, report }` (returns copies; does NOT mutate fx/
+      jmTotals in place). Update activeOverlaps + evaluateRaw callers. Add a
+      short data-flow header + ASCII diagram above it (eval -> blend ->
+      accumulate). Behavior identical.
+      DONE 2026-08-04: `blendOverlaps(model, fx, jmTotals)` added (engine.js)
+      — shallow-copies the fx effect objects + the jmTotals map so the
+      overlap discount is applied to COPIES and returned as
+      `{ blended, jmTotals, jmBlend, report }`; the internal mutating core is
+      renamed path (applyOverlaps still exists as the internal engine, NOT
+      exported, called only by blendOverlaps). `activeOverlaps` reads
+      `blendOverlaps(...).report`; `evaluateRaw` destructures the return and
+      reads `blended`/`blendedJmTotals` in the accumulate + covariance loops
+      (previously it read the mutated fx). `record` objects are SHARED by
+      reference between the copy and the contribution records, so the
+      overlapBlend tag still lands on the UI records. Engine header manifest +
+      central-data-flow comment updated (blend now pure). Suite green
+      byte-identical.
+- [x] B2: extract one `conflationGroups(model)` -> { groups, groupOf,
+      perLeverSet } (joint models + overlap pairs + per-lever) and have
+      evaluateRaw, boundsEndpoints, and activeOverlaps ALL consume it —
+      removing boundsEndpoints' hand-rolled re-derivation.
+      DONE 2026-08-04: `conflationGroups(model)` (engine.js) returns
+      { jmById, jmForInput, groups, groupOf, perLeverSet, perLeverKeys,
+      perLeverOf } — the ONE walk over jointModels+overlaps+perLeverOnly
+      (first-match ownership preserved). evaluateRaw's dispatch setup and
+      boundsEndpoints' groups/groupOf/perLever construction both replaced by
+      it (activeOverlaps reads overlap report directly, unchanged). Manifest
+      updated. Suite green byte-identical.
+- [x] B3: extract `accumulateHr(model, fx, jmTotals)` -> { totals, accMeta }
+      from evaluateRaw so the ~90-line pass becomes a named sequence of steps.
+      DONE 2026-08-04: `accumulateHr(model, values, blended, jmTotals,
+      covJmTotals, jmBlend, overlapReport, contributions)` -> { totals, points,
+      jmMeta, bmi } (engine.js, ~line 811). Holds the whole accumulation pass:
+      per-lever exclusion, joint-model per-cluster product, marginal product,
+      quadrature sigma, covariance (reads covJmTotals = post-blend cluster
+      totals; jmMeta replacement reads unblended jmTotals), and the derived BMI
+      effect. evaluateRaw now: evalEffects -> computeJmTotals -> blendOverlaps
+      -> accumulateHr -> mark(viaJoint/partialCredit) -> bounds. Dead
+      `resolveValue`/`widen`/`superseded` consts dropped with the old inline
+      block (their 18 global refs were all in computeJmTotals/boundsEndpoints).
+      Manifest updated (FOUR passes; accumulateHr:811). Suite green
+      byte-identical.
+
+### Phase C — de-duplicate drift-prone helpers (single source)
+
+- [x] C1: engine exports `shortLabel(s)`, `esc(s)`, `displayName(id)` (input
+      or joint-model title). app.js + sources.js call these instead of
+      redefining shortName/esc/nameOf/jmTitle/inputName. Verify rendered HTML
+      identical (`node --check` + app/sources boot smoke).
+      DONE 2026-08-04: engine.js now exports `shortLabel(s)` (drops
+      parentheticals), `esc(s)` (HTML-escape), and `displayName(model, id)`
+      (resolves input id -> shortLabel(label), bmi -> shortLabel(bmi.label),
+      joint-model id -> jm.title || shortLabel(cluster||id), else id — all the
+      fallbacks the two pages used, single source ~line 1239). app.js dropped
+      its local shortName/nameOf/esc + inputLabels/jmById maps (uses
+      engine.esc + displayName); sources.js dropped its local
+      shortLabel/inputName/jmTitle/esc/jmById/inputById and calls
+      engine.displayName directly at all call sites (incl. overlap table,
+      which now resolves both members via one fn). Verified: all 50 ids
+      (inputs + 5 joint models + bmi + overlap members) produce identical
+      strings to BOTH old paths; sources.html render (jm-list 15873b /
+      ref-list 48767b / overlap 5384b / version) byte-identical to HEAD under
+      a DOM-stub boot smoke. app.js boot smoke fails identically on HEAD and
+      current (missing DOM pieces in stub — not a C1 regression). Suite green.
+
+### Phase D — shared schema/API module (single place agents read the model)
+
+- [x] D1: js/schema.js (dual-export like factors.js/engine.js) owning OUTPUTS,
+      conflationGroups, displayName/esc/shortLabel, and auditModel(model)
+      (hosted from A3). engine.js/app.js/sources.js/tests/audit.js import it.
+      Move the conflation schema comment from PLAN.md to schema.js (PLAN.md
+      keeps a short pointer). Citation order + evaluate() shape unchanged.
+      DONE 2026-08-04: see D1a–D1f below. Suite green, sources render
+      byte-identical, standalone audit runs.
+  - [x] D1a: create js/schema.js — dual-export IIFE (browser global
+        `HEALTH_SCHEMA` + `module.exports`) owning HR_OUTPUTS/POINTS_OUTPUTS/
+        OUTPUTS, conflationGroups(model), shortLabel/esc/displayName(model,id),
+        auditModel(model) (moved verbatim from tests/audit.js), plus the
+        conflation schema doc comment (distilled from PLAN.md §2.1).
+        DONE: js/schema.js created; exports all 8 names; auditModel clean
+        against factors.js.
+  - [x] D1b: engine.js — at IIFE top resolve schema via
+        `(module.exports ? require('./schema.js') : globalThis.HEALTH_SCHEMA)`;
+        delete local HR_OUTPUTS/POINTS_OUTPUTS/OUTPUTS, conflationGroups,
+        shortLabel/esc/displayName; destructure from schema; re-export the
+        same names (aliases to schema refs, so no consumer breaks). Update
+        manifest. Suite green byte-identical.
+        DONE: engine.js imports schema at IIFE top; local copies deleted
+        (incl. sourceTags' inner shortLabel, now uses the schema one);
+        manifest rewritten with a schema.js imports row. Engine still
+        re-exports OUTPUTS/shortLabel/esc/displayName as the SAME objects
+        (=== checked). Suite green.
+  - [x] D1c: index.html + sources.html — add `<script src="js/schema.js">`
+        AFTER factors.js, BEFORE engine.js.
+        DONE: both pages load factors → schema → engine → page script.
+  - [x] D1d: app.js + sources.js — read displayName/esc/OUTPUTS from
+        `globalThis.HEALTH_SCHEMA` instead of engine; sources render still
+        byte-identical under boot smoke.
+        DONE: both pages add `const schema = globalThis.HEALTH_SCHEMA` and use
+        schema.displayName/esc/OUTPUTS. sources.html boot smoke: jm-list
+        15873b / ref-list 48767b / overlap 5384b / version 6b — byte-identical
+        to HEAD. (app.js boot smoke fails identically on HEAD — stub too thin,
+        not a regression.)
+  - [x] D1e: tests/audit.js — thin wrapper re-exporting schema.auditModel as
+        `{ audit }` + standalone runner (require.main === module) stays;
+        tests/engine.test.js [A3] unchanged (requires './audit.js').
+        DONE: tests/audit.js now requires ../js/schema.js; standalone
+        `node tests/audit.js` → "model structure OK", exit 0; [A3] green.
+  - [x] D1f: PLAN.md — replace the §2.1 conflation schema section with a
+        pointer to js/schema.js; AGENTS.md file list + manifest mentions get
+        a schema.js row. Final verification: `node --check` all, full suite
+        green, sources boot-smoke byte-identical, node standalone audit runs.
+        DONE: PLAN.md §2.1 has a blockquote pointer to js/schema.js as the
+        authoritative schema; AGENTS.md file list + dual-export/load-order
+        line updated (js/schema.js + tests/audit.js rows). Final verify:
+        all 7 files `node --check` OK, `node tests/engine.test.js` green,
+        `node tests/audit.js` exit 0, browser-style vm boot (factors→schema→
+        engine) exposes HEALTH_MODEL/HEALTH_SCHEMA/HEALTH_ENGINE with
+        engine.OUTPUTS === schema.OUTPUTS.
+
 ## Phase 5 — deferred (not now)
 
 GBD pathway layer (H), age-conditional actuarial engine (E), own-cohort

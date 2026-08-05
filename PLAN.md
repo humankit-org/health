@@ -291,7 +291,11 @@ from §1.3/§1.5–1.8 per cluster. (Schema added 2026-07-31, §1.15.)
   today's math exactly, ρ=1 pair → combined equals the stronger effect
   alone, covariance monotonically widens σ.
 
-**§2.1 implementation notes — cluster dispatch (recorded 2026-07-31).** The
+**§2.1 implementation notes — cluster dispatch (recorded 2026-07-31).**
+> The machine-readable conflation schema (jointModels / overlaps / perLeverOnly
+> shapes, ownership + overlap rules) now lives in **js/schema.js** — the
+> authoritative short form. This section is the historical derivation.
+The
 dispatch is per-cluster, three resolution modes, in this order:
 1. **Joint model** — a `jointModels` entry owns a cluster; its lookup computes
    the cluster total per HR output, REPLACING the member inputs' marginal

@@ -14,36 +14,51 @@
  *
  * FILE MANIFEST (line numbers approximate — re-grep if they drift)
  * -----------------------------------------------------------------
- * fx builders:        evalEffect:39  evalEffects:383  pick:77  computeBmi:86
- * cluster machinery:  bandIndex:125  indexGrid:130  axisValue:146
- *                     gridForLookup:171  gridTotal:181  ratioTotal:238
- *                     scoreTotal:259  calibrateOffsets:291  shifted:335
- *                     clusterTotalFor:344  makeResolver:350
- * overlap machinery:  effectSide:427  clusterForMember:436  computeJmTotals:447
- *                     applyOverlaps:481  activeOverlaps:526
- * endpoints:          boundsEndpoints:543  sigma2:369  widenBound:110
- * main entry points:  evaluateRaw:687  averageEval:916(evaluate:926)
- * findings:           evaluateFindings:1082  defaults:1092
- * conflation display: sourceIndex:1103  sourceTags:1123  clusterTotals:1164
- *                     activeJoint:1187
- * exports: bottom of file (alpha, evaluate, evaluateRaw, sourceIndex, …).
+ * imports:           schema.js (js/schema.js) -> HR_OUTPUTS/POINTS_OUTPUTS/
+ *                     OUTPUTS, conflationGroups, shortLabel/esc/displayName.
+ *                     Loaded BEFORE this file on both pages (script tag) and
+ *                     required here for node.
+ * fx builders:        evalEffect:96  evalEffects:438  pick:137  computeBmi:146
+ * cluster machinery:  bandIndex:185  indexGrid:190  axisValue:206
+ *                     gridForLookup:231  gridTotal:241  ratioTotal:298
+ *                     scoreTotal:319  calibrateOffsets:352  shifted:395
+ *                     clusterTotalFor:404  makeResolver:410
+ * overlap machinery:  effectSide:483  clusterForMember:492  computeJmTotals:503
+ *                     blendOverlaps:587 (pure)  applyOverlaps:537 (internal
+ *                     mutating core)  activeOverlaps:608
+ * endpoints:          boundsEndpoints:629  sigma2:429  widenBound:170
+ * accumulate:         accumulateHr:783 (single named accumulate pass — marginal
+ *                     product, per-lever exclusion, joint-model replacement,
+ *                     covariance, derived BMI effect; returns totals/points/
+ *                     jmMeta/bmi)
+ * main entry points:  evaluateRaw:956  averageEval:1017  evaluate:1027
+ * findings:           evaluateFindings:1183  defaults:1193
+ * conflation display: sourceIndex:1208  sourceTags:1228  clusterTotals:1265
+ *                     activeJoint:1288
+ * exports: bottom of file (alpha, evaluate, evaluateRaw, sourceIndex, …; plus
+ *           re-exports of OUTPUTS/conflationGroups/shortLabel/esc/displayName
+ *           as aliases to the schema.js objects).
  *
  * THE CENTRAL DATA FLOW (the part new agents struggle with):
- *   evaluateRaw(model, values) runs THREE passes over the effects:
+ *   evaluateRaw(model, values) runs FOUR passes over the effects:
  *     1. evalEffects       -> fx map (input -> output -> {hr, logHr, sigma2,
  *                                points, record, rdHr/rdPoints})
- *     2. applyOverlaps     -> BLENDS weaker member of each active ρ pair in
- *                                log space (MUTATES fx + jmTotals in place —
- *                                see B1). Produces the per-pair report + a
- *                                jmBlend map for blended cluster totals.
- *     3. accumulate        -> routes each input's HR: per-lever (excluded),
+ *     2. computeJmTotals   -> per-cluster lookup totals (score/grid/ratio)
+ *     3. blendOverlaps (pure)  -> deep copies fx + jmTotals, then applies the
+ *                                overlap blend to the COPIES. Returns
+ *                                { blended, jmTotals, jmBlend, report } so the
+ *                                caller holds blended values as a value, not a
+ *                                side effect. applyOverlaps (internal) does the
+ *                                actual log-space discounting of the weaker
+ *                                pair member.
+ *     4. accumulateHr       -> routes each input's HR: per-lever (excluded),
  *                                joint-model member (per-cluster product),
  *                                or marginal (multiplies directly). Then
  *                                joint-model totals replace cluster products,
  *                                covariance (2·ρU·σᵢ·σⱼ) is added, the derived
- *                                BMI effect folds in, and bounds wrap the
- *                                output. boundsEndpoints independently
- *                                recomputes the assumption-space endpoints.
+ *                                BMI effect folds in. (bounds wrap in step 5;
+ *                                boundsEndpoints independently recomputes the
+ *                                assumption-space endpoints.)
  *   A single evaluate() then normalizes raw HRs against the average profile
  *   (defaults) so 1.0× = the average person, and clamps to [hrFloor, hrCeiling].
  *   mutable-shared Maps are computed fresh per evaluate() call and are NOT
@@ -56,6 +71,14 @@
   root.HEALTH_ENGINE = engine;
 })(typeof self !== 'undefined' ? self : globalThis, function () {
   'use strict';
+
+  // The conflation schema/API lives in js/schema.js (browser: the <script>
+  // tag before this file sets globalThis.HEALTH_SCHEMA; node: require). We
+  // destructure the SAME objects schema.js exports, so the output-id lists,
+  // grouping walk and display helpers can never drift from the pages that
+  // also read them.
+  const schema = (typeof module !== 'undefined' && module.exports) ? require('./schema.js') : globalThis.HEALTH_SCHEMA;
+  const { HR_OUTPUTS, POINTS_OUTPUTS, OUTPUTS, conflationGroups, shortLabel, esc, displayName } = schema;
 
   // Gompertz slope: adult mortality hazard doubles every mrrtYears.
   function alpha(model) {
@@ -410,8 +433,6 @@
     return s * s;
   }
 
-  const HR_OUTPUTS = ['mortality', 'cancer', 'cvd'];
-  const POINTS_OUTPUTS = ['cognition', 'happiness'];
   const EPS = 1e-6; // |log HR| (or |points|) above this counts as "active"
 
   // Evaluate every active effect once: fx[inputId][output] = { hr, logHr,
@@ -419,7 +440,8 @@
   // evaluateRaw and activeOverlaps so the blend logic never drifts.
   function evalEffects(model, values) {
     const fx = {};
-    const contributions = { mortality: [], cancer: [], cvd: [], cognition: [], happiness: [] };
+    const contributions = {};
+    for (const o of OUTPUTS) contributions[o] = [];
     const widen = model.constants.uncertaintyWiden || { high: 1, moderate: 1, low: 1 };
     const isOn = (key) => !!values[key];
     const superseded = (flag) => flag && isOn(flag);
@@ -557,14 +579,44 @@
     return report;
   }
 
-  // Active overlap pairs for the current values (per output: which member
+  // Pure entry point for the overlap blend (Phase C-B1). applyOverlaps above
+  // mutates the fx/jmTotals maps it is given; that mutation was the hidden
+  // hand-off to the accumulation loop. This wrapper instead works on
+  // shallow copies so callers get the blended state back as a VALUE
+  // ({ blended, jmTotals, jmBlend, report }) and never have to reason about
+  // side effects. The `record` objects (the contribution records the UI
+  // reads) are SHARED by reference, so a blend still tags the returned
+  // contributions' overlapBlend — only the effect value maps are copied.
+  function blendOverlaps(model, fx, jmTotals) {
+    const fxCopy = {};
+    for (const key of Object.keys(fx)) {
+      const out = fx[key];
+      fxCopy[key] = {};
+      for (const outName of Object.keys(out)) fxCopy[key][outName] = { ...out[outName] };
+    }
+    const jmCopy = new Map();
+    for (const [id, perOutput] of jmTotals) {
+      const c = {};
+      for (const outName of Object.keys(perOutput)) c[outName] = { ...perOutput[outName] };
+      jmCopy.set(id, c);
+    }
+    const jmBlend = new Map();
+    const report = applyOverlaps(model, fxCopy, jmCopy, jmBlend);
+    return { blended: fxCopy, jmTotals: jmCopy, jmBlend, report };
+  }
+
+// Active overlap pairs for the current values (per output: which member
   // was blended, by how much). Mirrors sourceIndex/sourceTags' drift-proof
   // pattern — the conflation table and per-slider chips read from here.
   function activeOverlaps(model, values) {
     const { fx } = evalEffects(model, values);
     const jmTotals = computeJmTotals(model, values);
-    return applyOverlaps(model, fx, jmTotals, new Map()).map((e) => ({ ...e, active: Object.keys(e.outputs).length > 0 }));
+    const { report } = blendOverlaps(model, fx, jmTotals);
+    return report.map((e) => ({ ...e, active: Object.keys(e.outputs).length > 0 }));
   }
+
+  // conflationGroups (the grouping/ownership walk) lives in js/schema.js —
+  // shared with boundsEndpoints and the pages; see the top-of-file import.
 
   // Assumption endpoints per HR output: independence (full marginal product
   // of every active effect — "if all levers were truly independent") vs
@@ -579,13 +631,10 @@
   // (4.3), not hard brackets.
   function boundsEndpoints(model, values) {
     const { fx } = evalEffects(model, values);
-    const perLever = new Set();
-    for (const entry of model.perLeverOnly || []) for (const m of entry.members || []) perLever.add(m);
-    const groups = [];
-    for (const jm of model.jointModels || []) groups.push({ key: 'jm:' + jm.id, jm, members: jm.members || [] });
-    for (const o of model.overlaps || []) groups.push({ key: 'pair:' + o.a + '+' + o.b, members: [o.a, o.b] });
-    const groupOf = {};
-    for (const g of groups) for (const m of g.members) if (groupOf[m] === undefined) groupOf[m] = g.key;
+    const G = conflationGroups(model);
+    const perLever = G.perLeverSet;
+    const groups = G.groups;
+    const groupOf = G.groupOf;
     const jmTotals = computeJmTotals(model, values);
     const widen = model.constants.uncertaintyWiden || { high: 1, moderate: 1, low: 1 };
     const out = {};
@@ -721,8 +770,20 @@
    * input's default (population-average) value, so the UI can phrase every
    * effect as "vs the average person".
    */
-  function evaluateRaw(model, values) {
-    const { fx, contributions } = evalEffects(model, values);
+
+  // The HR accumulation pass of evaluateRaw (Phase C-B3), extracted so the
+  // caller reads as a short sequence of named steps. Pure-ish: mutates
+  // `contributions` (BMI records are pushed here) and builds jmMeta; every
+  // other input (blended, jmTotals, jmBlend, overlapReport) is read-only.
+  //   blended        the blendOverlaps() output (effect values, discounted)
+  //   jmTotals       per-cluster lookup totals (unblended — used for the
+  //                  joint-model replacement + bmiCovered)
+  //   covJmTotals    post-blend cluster totals (covariance reads the sigmas)
+  //   jmBlend        jm.id -> output -> {hr, sigma2} when the cluster side blended
+  //   overlapReport  per-pair active outputs (for the covariance term)
+  //   contributions  the shared record arrays (BMI pushes land here)
+  // Returns { totals, points, jmMeta }.
+  function accumulateHr(model, values, blended, jmTotals, covJmTotals, jmBlend, overlapReport, contributions) {
     const widen = model.constants.uncertaintyWiden || { high: 1, moderate: 1, low: 1 };
     // One accumulator per HR output (mortality/cancer/cvd all share the same
     // accumulate path — marginal product, quadrature sigma, joint-model
@@ -738,39 +799,24 @@
     // Cluster dispatch setup: each input's HR is owned by at most one joint
     // model (first `members` match in array order); per-lever-only clusters
     // never enter the product. Empty structures -> no-ops.
-    const jmById = new Map();
-    const jmForInput = new Map();
-    for (const jm of model.jointModels || []) {
-      jmById.set(jm.id, jm);
-      for (const m of jm.members || []) if (!jmForInput.has(m)) jmForInput.set(m, jm);
-    }
-    const perLeverKeys = new Set();
-    const perLeverOf = new Map(); // input id -> cluster key
-    for (const entry of model.perLeverOnly || []) {
-      perLeverKeys.add(entry.cluster);
-      for (const m of entry.members || []) perLeverOf.set(m, entry.cluster);
-    }
+    const G = conflationGroups(model);
+    const jmById = G.jmById;
+    const jmForInput = G.jmForInput;
+    const perLeverKeys = G.perLeverKeys;
+    const perLeverOf = G.perLeverOf;
     const jmAcc = new Map(); // jm.id -> output -> {prod, sigma2}
     // Seed EVERY joint model so a cluster whose members are all gated off —
     // or derived-only (mayoCells' bmi is not an input and never reaches the
     // accumulation loop) — still contributes its lookup total where the
     // lookup covers the output.
     for (const jm of model.jointModels || []) jmAcc.set(jm.id, {});
-    const resolveValue = makeResolver(model, values);
-
-    // Overlap blend (discounts the weaker active member of each pair in log
-    // space; mutates fx so the accumulation below uses the blended values;
-    // cluster↔input pairs blend against the cluster's precomputed totals).
-    const jmTotals = computeJmTotals(model, values);
-    const jmBlend = new Map(); // jm.id -> { output: {hr, sigma2} } when the cluster side was blended
-    const overlapReport = applyOverlaps(model, fx, jmTotals, jmBlend);
 
     // Accumulate: per-lever-only clusters contribute nothing; joint-model
     // members accumulate per joint model; everything else multiplies
     // marginals. hrDelta is computed from the BLENDED value vs the
     // (unblended) default-value effect.
     for (const input of model.inputs) {
-      const perInput = fx[input.id];
+      const perInput = blended[input.id];
       if (!perInput) continue;
       const jm = jmForInput.get(input.id);
       const perLeverCluster = perLeverOf.get(input.id);
@@ -811,8 +857,8 @@
     // its output's quadrature sum.
     for (const entry of overlapReport) {
       for (const output of Object.keys(entry.outputs)) {
-        const a = effectSide(fx, jmTotals, entry.a, output);
-        const b = effectSide(fx, jmTotals, entry.b, output);
+        const a = effectSide(blended, covJmTotals, entry.a, output);
+        const b = effectSide(blended, covJmTotals, entry.b, output);
         if (!a || !b) continue;
         const cov = 2 * entry.rhoU * Math.sqrt(a.sigma2) * Math.sqrt(b.sigma2);
         const acc = totals[output];
@@ -907,9 +953,30 @@
       }
     }
 
+    return { totals, points, jmMeta, bmi };
+  }
+
+  function evaluateRaw(model, values) {
+    const { fx, contributions } = evalEffects(model, values);
+
+    // Overlap blend (discounts the weaker active member of each pair in log
+    // space). Pure call: returns the blended value maps ({ blended, jmTotals,
+    // jmBlend, report }) — the accumulation below reads `blended`, not `fx`.
+    const jmTotals = computeJmTotals(model, values);
+    const { blended, jmTotals: blendedJmTotals, jmBlend, report: overlapReport } = blendOverlaps(model, fx, jmTotals);
+
+    // Accumulate (single named step): marginal product + quadrature sigma per
+    // output, with per-lever exclusion, joint-model replacement, covariance
+    // and the derived BMI effect folded in (see accumulateHr). Contribution
+    // records get hrDelta/pointsDelta/cluster/perLever tags here too.
+    const { totals, points, jmMeta, bmi } = accumulateHr(
+      model, values, blended, jmTotals, blendedJmTotals, jmBlend, overlapReport, contributions
+    );
+
     // Attribution tags on HR records: viaJoint = this input's marginal was
     // replaced by the joint model; partialCredit = its share of the cluster
     // score. The UI phrases these ("counted together via…", "counted at X%").
+    const { jmForInput } = conflationGroups(model);
     const mark = (recs, output) => {
       for (const rec of recs) {
         const jm = jmForInput.get(rec.inputId);
@@ -1132,6 +1199,10 @@
     return values;
   }
 
+  // --------------------------------------------------------- shared display
+  // shortLabel/esc/displayName (the display helpers app.js + sources.js use)
+  // live in js/schema.js — destructured at the top; see the import there.
+
   // Number sources in order of first use: input effects (in model order),
   // then the derived BMI effect, then the baseline life table, then joint
   // models and overlap pairs (appended at the end so existing citation
@@ -1167,11 +1238,7 @@
       });
     };
     // Short chip form of an input label: drop parentheticals, e.g.
-    // "Cardio (moderate-equivalent)" -> "Cardio".
-    const shortLabel = (s) => {
-      const stripped = s.replace(/\(.*?\)/g, '').trim();
-      return stripped || s;
-    };
+    // "Cardio (moderate-equivalent)" -> "Cardio" (shortLabel from schema.js).
     // A finding's subject label (e.g. "Strength", "Iron") is often just a
     // short form of the input label (e.g. "Strength training"); fold it in
     // rather than showing two chips for the same subject.
@@ -1233,5 +1300,5 @@
     return clusterTotals(model, values).filter((t) => activeIds.has(t.id));
   }
 
-  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, evaluateRaw, averageEval, evaluateFindings, defaults, sourceIndex, sourceTags, clusterTotals, activeJoint, activeOverlaps, boundsEndpoints };
+  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, evaluateRaw, averageEval, evaluateFindings, defaults, sourceIndex, sourceTags, clusterTotals, activeJoint, activeOverlaps, boundsEndpoints, shortLabel, esc, displayName, OUTPUTS };
 });

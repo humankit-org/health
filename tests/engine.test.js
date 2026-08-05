@@ -1206,5 +1206,15 @@ console.log('\n[25] Shipped Mayo PA×adiposity cluster (Phase 3.3 — conflation
   ok(res.cancer.noData.includes('Recreational screen time'), 'cancer noData: screen time still listed');
 }
 
+// Phase C-A3: structural audit of the conflation data model (independent of
+// the number-pinned assertions above — catches shape errors early).
+console.log('\n[A3] Conflation schema audit (tests/audit.js)');
+{
+  const { audit } = require('./audit.js');
+  const problems = audit(model);
+  ok(problems.length === 0, 'audit: model structure clean (see tests/audit.js)');
+  if (problems.length) problems.forEach((p) => console.error('      FAIL  [' + p.field + '] ' + p.message + ' — ' + p.what));
+}
+
 console.log(failures === 0 ? '\nAll tests passed.' : `\n${failures} test(s) FAILED.`);
 process.exit(failures === 0 ? 0 : 1);
