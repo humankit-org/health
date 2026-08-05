@@ -31,8 +31,10 @@
  *                     product, per-lever exclusion, joint-model replacement,
  *                     covariance, derived BMI effect; returns totals/points/
  *                     jmMeta/bmi)
- * main entry points:  evaluateRaw:956  averageEval:1017  evaluate:1027
- * findings:           evaluateFindings:1183  defaults:1193
+ * main entry points:  evaluateRaw:961  averageEval:1022  evaluate:1069
+ * norm/noData helpers:normHr:1033 (evaluate's shared normalize->clamp->CI
+ *                     path)  noDataInputs:1049 (cancer/cvd coverage labels)
+ * findings:           evaluateFindings:1178  defaults:1188
  * conflation display: sourceIndex:1208  sourceTags:1228  clusterTotals:1265
  *                     activeJoint:1288
  * exports: bottom of file (alpha, evaluate, evaluateRaw, sourceIndex, …; plus
@@ -1022,6 +1024,43 @@
     return _avgCache.get(model);
   }
 
+  // Normalize one raw HR output onto the "vs the average person" scale:
+  // raw HR is vs the studies' reference strata; dividing by the average
+  // profile's HR makes 1.0x = the average person. Clamp the CENTRAL estimate
+  // (lifestyle effects overlap; don't overclaim) — then apply the combined
+  // uncertainty AROUND the clamped value so the range always brackets what
+  // we display. Shared by the mortality/cancer/cvd blocks in evaluate().
+  function normHr(rawHr, rawLow, rawHigh, avgHr, cap) {
+    const hrAvgRaw = rawHr / avgHr;
+    const clamped = hrAvgRaw < cap.hrFloor || hrAvgRaw > cap.hrCeiling;
+    const hrAvg = clamp(hrAvgRaw, cap.hrFloor, cap.hrCeiling);
+    const sigma = (Math.log(rawHigh) - Math.log(rawLow)) / (2 * 1.96);
+    return {
+      hrAvg, hrAvgRaw, clamped,
+      hrAvgLow: hrAvg * Math.exp(-1.96 * sigma),
+      hrAvgHigh: hrAvg * Math.exp(1.96 * sigma),
+    };
+  }
+
+  // Which inputs have NO output-specific effect (labels only, for the card's
+  // coverage note)? Shown so users see exactly what this output does and
+  // doesn't cover. Inputs whose joint model covers the output count as
+  // covered (3.3: bodyFat gains CVD + cancer data via the Mayo cells).
+  function noDataInputs(model, output) {
+    const clusterCovered = new Set();
+    for (const jm of model.jointModels || []) {
+      if (!jm.outputs || !jm.outputs[output]) continue;
+      for (const m of jm.members || []) clusterCovered.add(m);
+    }
+    const withOut = new Set();
+    for (const input of model.inputs) {
+      for (const e of input.effects) if (e.output === output) withOut.add(input.id);
+    }
+    return model.inputs
+      .filter((i) => i.group !== 'you' && i.effects.length > 0 && !withOut.has(i.id) && !clusterCovered.has(i.id))
+      .map((i) => i.label);
+  }
+
   /**
    * Evaluate the whole model, normalized so 1.0x = the average person.
    * @param {object} model  HEALTH_MODEL
@@ -1032,69 +1071,20 @@
     const avg = averageEval(model);
     const cap = model.constants;
 
-    // Normalize: raw HR is vs the studies' reference strata; dividing by the
-    // average profile's HR makes 1.0x = the average person. Clamp the CENTRAL
-    // estimate (lifestyle effects overlap; don't overclaim) — then apply the
-    // combined uncertainty AROUND the clamped value so the range always
-    // brackets what we display.
-    const hrAvgRaw = raw.hr / avg.hr;
-    const clamped = hrAvgRaw < cap.hrFloor || hrAvgRaw > cap.hrCeiling;
-    const hrAvg = clamp(hrAvgRaw, cap.hrFloor, cap.hrCeiling);
-    const sigmaNorm = (Math.log(raw.hrHigh) - Math.log(raw.hrLow)) / (2 * 1.96);
-    const hrAvgLow = hrAvg * Math.exp(-1.96 * sigmaNorm);
-    const hrAvgHigh = hrAvg * Math.exp(1.96 * sigmaNorm);
+    // Each HR output (mortality/cancer/cvd) goes through the same
+    // normalize -> clamp -> CI-around-clamped path; no years translation
+    // for cancer/cvd.
+    const m = normHr(raw.hr, raw.hrLow, raw.hrHigh, avg.hr, cap);
+    const c = normHr(raw.hrCancer, raw.hrCancerLow, raw.hrCancerHigh, avg.hrCancer, cap);
+    const v = normHr(raw.hrCvd, raw.hrCvdLow, raw.hrCvdHigh, avg.hrCvd, cap);
 
-    // Cancer output: same normalization/clamp, no years translation.
-    const cancerAvgRaw = raw.hrCancer / avg.hrCancer;
-    const clampedCancer = cancerAvgRaw < cap.hrFloor || cancerAvgRaw > cap.hrCeiling;
-    const hrAvgCancer = clamp(cancerAvgRaw, cap.hrFloor, cap.hrCeiling);
-    const sigmaCancer = (Math.log(raw.hrCancerHigh) - Math.log(raw.hrCancerLow)) / (2 * 1.96);
-    const hrAvgCancerLow = hrAvgCancer * Math.exp(-1.96 * sigmaCancer);
-    const hrAvgCancerHigh = hrAvgCancer * Math.exp(1.96 * sigmaCancer);
+    const cancerNoData = noDataInputs(model, 'cancer');
+    const cvdNoData = noDataInputs(model, 'cvd');
 
-    // CVD output: same normalization/clamp, no years translation.
-    const cvdAvgRaw = raw.hrCvd / avg.hrCvd;
-    const clampedCvd = cvdAvgRaw < cap.hrFloor || cvdAvgRaw > cap.hrCeiling;
-    const hrAvgCvd = clamp(cvdAvgRaw, cap.hrFloor, cap.hrCeiling);
-    const sigmaCvd = (Math.log(raw.hrCvdHigh) - Math.log(raw.hrCvdLow)) / (2 * 1.96);
-    const hrAvgCvdLow = hrAvgCvd * Math.exp(-1.96 * sigmaCvd);
-    const hrAvgCvdHigh = hrAvgCvd * Math.exp(1.96 * sigmaCvd);
-
-    // Which inputs have NO cancer-specific effect? Shown on the card so users
-    // see exactly what this output does and doesn't cover. Inputs whose
-    // joint model covers the output count as covered (3.3: bodyFat gains
-    // CVD + cancer data via the Mayo cells).
-    const clusterCovered = (output) => {
-      const s = new Set();
-      for (const jm of model.jointModels || []) {
-        if (!jm.outputs || !jm.outputs[output]) continue;
-        for (const m of jm.members || []) s.add(m);
-      }
-      return s;
-    };
-    const cancerClusterCovered = clusterCovered('cancer');
-    const withCancer = new Set();
-    for (const input of model.inputs) {
-      for (const e of input.effects) if (e.output === 'cancer') withCancer.add(input.id);
-    }
-    const cancerNoData = model.inputs
-      .filter((i) => i.group !== 'you' && i.effects.length > 0 && !withCancer.has(i.id) && !cancerClusterCovered.has(i.id))
-      .map((i) => i.label);
-
-    // Which inputs have NO CVD-specific effect?
-    const cvdClusterCovered = clusterCovered('cvd');
-    const withCvd = new Set();
-    for (const input of model.inputs) {
-      for (const e of input.effects) if (e.output === 'cvd') withCvd.add(input.id);
-    }
-    const cvdNoData = model.inputs
-      .filter((i) => i.group !== 'you' && i.effects.length > 0 && !withCvd.has(i.id) && !cvdClusterCovered.has(i.id))
-      .map((i) => i.label);
-
-    const years = clamp(hrToYears(model, hrAvg), -cap.yearsCapLoss, cap.yearsCapGain);
+    const years = clamp(hrToYears(model, m.hrAvg), -cap.yearsCapLoss, cap.yearsCapGain);
     // Pessimistic bound = upper HR; optimistic bound = lower HR.
-    const yearsLow = clamp(hrToYears(model, hrAvgHigh), -cap.yearsCapLoss, cap.yearsCapGain);
-    const yearsHigh = clamp(hrToYears(model, hrAvgLow), -cap.yearsCapLoss, cap.yearsCapGain);
+    const yearsLow = clamp(hrToYears(model, m.hrAvgHigh), -cap.yearsCapLoss, cap.yearsCapGain);
+    const yearsHigh = clamp(hrToYears(model, m.hrAvgLow), -cap.yearsCapLoss, cap.yearsCapGain);
 
     const sex = model.baseline.lifeExpectancy[raw.values.sex] !== undefined ? raw.values.sex : 'unspecified';
     const baselineLe = model.baseline.lifeExpectancy[sex];
@@ -1143,7 +1133,9 @@
         // vs the studies' reference strata (transparent internals):
         hr: raw.hr, hrLow: raw.hrLow, hrHigh: raw.hrHigh,
         // vs the average person (what the UI shows):
-        hrAvg, hrAvgRaw, hrAvgLow, hrAvgHigh, clamped, years, yearsLow, yearsHigh,
+        hrAvg: m.hrAvg, hrAvgRaw: m.hrAvgRaw,
+        hrAvgLow: m.hrAvgLow, hrAvgHigh: m.hrAvgHigh,
+        clamped: m.clamped, years, yearsLow, yearsHigh,
       },
       lifeExpectancy: {
         baseline: baselineLe,
@@ -1154,16 +1146,16 @@
       },
       cancer: {
         hr: raw.hrCancer,
-        hrAvg: hrAvgCancer, hrAvgRaw: cancerAvgRaw,
-        hrAvgLow: hrAvgCancerLow, hrAvgHigh: hrAvgCancerHigh,
-        clamped: clampedCancer,
+        hrAvg: c.hrAvg, hrAvgRaw: c.hrAvgRaw,
+        hrAvgLow: c.hrAvgLow, hrAvgHigh: c.hrAvgHigh,
+        clamped: c.clamped,
         noData: cancerNoData,
       },
       cvd: {
         hr: raw.hrCvd,
-        hrAvg: hrAvgCvd, hrAvgRaw: cvdAvgRaw,
-        hrAvgLow: hrAvgCvdLow, hrAvgHigh: hrAvgCvdHigh,
-        clamped: clampedCvd,
+        hrAvg: v.hrAvg, hrAvgRaw: v.hrAvgRaw,
+        hrAvgLow: v.hrAvgLow, hrAvgHigh: v.hrAvgHigh,
+        clamped: v.clamped,
         noData: cvdNoData,
       },
       scores: {

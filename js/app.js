@@ -26,7 +26,7 @@
     { id: 'advanced', title: 'Advanced — if you\'ve measured these' },
   ];
 
-const EVIDENCE_TITLE = {
+  const EVIDENCE_TITLE = {
     high: 'High confidence: large, consistent meta-analyses / pooled cohorts (still mostly observational).',
     moderate: 'Moderate confidence: meta-analytic but heterogeneous, small trials, or approximate conversions.',
     low: 'Low confidence: single cohorts, cross-sectional or indirect evidence. Directionally suggestive only.',
@@ -149,95 +149,9 @@ const EVIDENCE_TITLE = {
 
   function renderOutputs() {
     const host = document.getElementById('outputs');
-    host.innerHTML = `
-      <div class="output-tiles">
-      <div class="output-card" id="out-lifeExpectancy">
-        <h3>Estimated life expectancy</h3>
-        <div class="output-main">
-          <div class="output-highlight">
-            <div class="le-big"><output id="le-estimate">–</output><span class="le-unit">years</span></div>
-          </div>
-          <div class="output-info">
-            <div class="le-delta" id="le-delta"></div>
-            <div class="le-range" id="le-range"></div>
-          </div>
-        </div>
-        <details><summary>More</summary><p class="output-blurb"></p><p class="le-method">Life expectancy is estimated from a US sex-specific baseline (NCHS 2023) shifted by your combined mortality risk. The translation uses a Gompertz approximation in which adult mortality risk doubles every ~7 years: ΔLE ≈ −ln(HR) / (ln2 / 7). This approach reproduces published estimates such as +4.5 years for high exercise (Moore 2012) and −10 years for smoking (Jha 2013). These are rough population-level associations, not individual predictions.</p></details>
-      </div>
-      <hr class="output-divider">
-      <div class="output-card" id="out-mortality">
-        <h3>All-cause mortality risk <!-- <span class="ev" data-ev="high">high</span></h3> --> </h3>
-        <div class="mort-top">
-          <div class="output-highlight">
-            <div class="hr-big"><output id="hr-estimate">–</output><span class="hr-unit">× reference</span></div>
-          </div>
-          <div class="mort-right">
-            <div class="hr-sub" id="hr-sub"></div>
-            <div class="gauge" id="hr-gauge" role="img" aria-label="Mortality hazard gauge">
-              <div class="gauge-band" id="hr-band"></div>
-              <div class="gauge-marker" id="hr-marker"></div>
-              <div class="gauge-ref" title="Reference lifestyle = 1.0"></div>
-            </div>
-            <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
-          </div>
-        </div>
-        <details><summary>More</summary><ul class="contrib" id="contrib-mortality"></ul><p class="ci-note">Ranges combine 95% CI, widened where evidence is thin.</p></details>
-      </div>
-      <div class="output-row split">
-      <div class="output-card" id="out-cancer">
-        <h3>Cancer mortality risk <!-- <span class="ev" data-ev="moderate">moderate</span></h3> --> </h3>
-        <div class="hr-big"><output id="cancer-estimate">–</output><span class="hr-unit">× reference</span></div>
-        <div class="hr-sub" id="cancer-sub"></div>
-        <div class="gauge" id="cancer-gauge" role="img" aria-label="Cancer mortality hazard gauge">
-          <div class="gauge-band" id="cancer-band"></div>
-          <div class="gauge-marker" id="cancer-marker"></div>
-          <div class="gauge-ref" title="Average person = 1.0"></div>
-        </div>
-        <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
-        <details><summary>More</summary><ul class="contrib" id="contrib-cancer"></ul><p class="ci-note">Ranges combine 95% CI, widened where evidence is thin.</p><p class="output-blurb"></p><p class="coverage-note" id="cancer-coverage"></p></details>
-      </div>
-      <div class="output-card" id="out-cvd">
-        <h3>Cardiovascular mortality risk <!-- <span class="ev" data-ev="moderate">moderate</span></h3> --> </h3>
-        <div class="hr-big"><output id="cvd-estimate">–</output><span class="hr-unit">× reference</span></div>
-        <div class="hr-sub" id="cvd-sub"></div>
-        <div class="gauge" id="cvd-gauge" role="img" aria-label="Cardiovascular mortality hazard gauge">
-          <div class="gauge-band" id="cvd-band"></div>
-          <div class="gauge-marker" id="cvd-marker"></div>
-          <div class="gauge-ref" title="Average person = 1.0"></div>
-        </div>
-        <div class="gauge-scale"><span>0.3×</span><span>1.0×</span><span>3.0×</span></div>
-        <details><summary>More</summary><ul class="contrib" id="contrib-cvd"></ul><p class="ci-note">Ranges combine 95% CI, widened where evidence is thin.</p><p class="output-blurb"></p><p class="coverage-note" id="cvd-coverage"></p></details>
-      </div>
-      </div>
-      <hr class="output-divider">
-      <div class="output-row split">
-      <div class="output-card" id="out-cognition">
-        <h3>Cognitive function</h3>
-        <div class="band-meter" id="meter-cognition" role="img">
-          <div class="band-ref" title="Average"></div>
-          <div class="band-marker" id="marker-cognition"></div>
-        </div>
-        <div class="band-label" id="band-cognition">–</div>
-        <p class="qual-text" style="margin-top:0.01cm;">qualitative estimate, generally thin evidence</p>
-        <details><summary>More</summary><p class="output-blurb"></p><ul class="contrib" id="contrib-cognition"></ul></details>
-      </div>
-      <div class="output-card" id="out-happiness">
-        <h3>Happiness / wellbeing</h3>
-        <div class="band-meter" id="meter-happiness" role="img">
-          <div class="band-ref" title="Average"></div>
-          <div class="band-marker" id="marker-happiness"></div>
-        </div>
-        <div class="band-label" id="band-happiness">–</div>
-        <p class="qual-text" style="margin-top:0.01cm;">qualitative estimate, generally thin evidence</p>
-        <details><summary>More</summary><p class="output-blurb"></p><ul class="contrib" id="contrib-happiness"></ul></details>
-      </div>
-      </div>
-      </div>
-      <hr class="output-divider">
-      <div class="output-card findings-card" id="out-findings">
-        <h3>More findings</h3>
-        <ul class="findings" id="findings-list"></ul>
-      </div>`;
+    const tpl = document.getElementById('outputs-template');
+    host.innerHTML = '';
+    host.appendChild(tpl.content.cloneNode(true));
     for (const output of model.outputs) {
       const card = host.querySelector('#out-' + output.id);
       const blurb = card && card.querySelector('.output-blurb');
@@ -449,6 +363,32 @@ const EVIDENCE_TITLE = {
     document.getElementById('meter-' + id).setAttribute('aria-label', score.label);
   }
 
+  // Citation anchors for one contribution (source is a single key or array).
+  const citeLinks = (c) => {
+    const keys = Array.isArray(c.source) ? c.source : [c.source];
+    return keys
+      .map((key) => `<a class="contrib-ref" href="sources.html#ref-${refs[key]}" title="${c.note}">[${refs[key]}]</a>`)
+      .join(' ');
+  };
+
+  // Conflation disclosure notes for one contribution row: overlap blend
+  // ("counted at X% — overlaps Y"), joint-model membership ("counted via …"),
+  // and psychosocial per-lever exclusions. Same copy as the chips + the
+  // sources.html table, generated from the same engine tags.
+  const contribNotes = (c, outputId, field) => {
+    const ov = overlapNote(c);
+    const jn = jointNote(c);
+    const conflNote = ov
+      ? `<span class="contrib-lever" title="${esc(ov.title)}">counted at ${ov.pct}% — overlaps ${esc(ov.other)}</span>`
+      : jn ? `<span class="contrib-lever" title="${esc(jn.title)}">counted via ${esc(jn.name)}</span>` : '';
+    const leverNote = c.perLever && field === 'hr'
+      ? `<span class="contrib-lever" title="Psychosocial: no reliable way to combine these yet — the research can't separate this effect from the other factors on this card, so it is shown individually and is NOT counted into the ${outputId} total.">psychosocial — shown individually, not in the total</span>`
+      : c.perLever
+        ? `<span class="contrib-lever" title="Psychosocial: no reliable way to combine these yet — shown individually. Points from these sliders still count into this band.">psychosocial — points only</span>`
+        : conflNote;
+    return { conflNote, leverNote };
+  };
+
   function updateContrib(outputId, contribs, field) {
     const host = document.getElementById('contrib-' + outputId);
     const nonzero = contribs
@@ -463,20 +403,11 @@ const EVIDENCE_TITLE = {
     host.innerHTML = nonzero.map((c) => {
       const effect = field === 'hr' ? `mortality ${fmtPctFromHr(c.hrDelta)}` : fmtSigned(c.pointsDelta);
       const dir = field === 'hr' ? (c.hrDelta < 1 ? 'good' : 'bad') : (c.pointsDelta > 0 ? 'good' : 'bad');
-const ov = overlapNote(c);
-      const jn = jointNote(c);
-      const conflNote = ov ? `<span class="contrib-lever" title="${esc(ov.title)}">counted at ${ov.pct}% — overlaps ${esc(ov.other)}</span>`
-        : jn ? `<span class="contrib-lever" title="${esc(jn.title)}">counted via ${esc(jn.name)}</span>`
-        : '';
-      const leverNote = c.perLever && field === 'hr'
-        ? `<span class="contrib-lever" title="Psychosocial: no reliable way to combine these yet — the research can't separate this effect from the other factors on this card, so it is shown individually and is NOT counted into the ${outputId} total.">psychosocial — shown individually, not in the total</span>`
-        : c.perLever
-          ? `<span class="contrib-lever" title="Psychosocial: no reliable way to combine these yet — shown individually. Points from these sliders still count into this band.">psychosocial — points only</span>`
-          : conflNote;
+      const { conflNote, leverNote } = contribNotes(c, outputId, field);
       return `<li>
         <span class="contrib-effect ${dir}">${effect}</span>
         <span class="contrib-label">${c.label}</span>
-        ${Array.isArray(c.source) ? c.source.map((key) => `<a class="contrib-ref" href="sources.html#ref-${refs[key]}" title="${c.note}">[${refs[key]}]</a>`).join(' ') : `<a class="contrib-ref" href="sources.html#ref-${refs[c.source]}" title="${c.note}">[${refs[c.source]}]</a>`}
+        ${citeLinks(c)}
         <span class="ev small" data-ev="${c.evidence}" title="${EVIDENCE_TITLE[c.evidence]}">${c.evidence}</span>
         ${conflNote}
         ${leverNote}

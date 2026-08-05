@@ -1845,6 +1845,40 @@ Working rules for every step:
         engine) exposes HEALTH_MODEL/HEALTH_SCHEMA/HEALTH_ENGINE with
         engine.OUTPUTS === schema.OUTPUTS.
 
+## Phase C2 — Cleanup: readability refactors (created 2026-08-05)
+
+Follow-up user request: another maintainability pass — agents still trip over
+the largest functions and the duplicate test sections. Everything below is
+behavior-identical (suite green) and follows the Phase C working rules (tests
+after engine/factors edits, `node --check`, no citation renumbering, no
+`evaluate()` shape change).
+
+- [x] C2.1 engine.js: de-triplicate `evaluate()` — extract
+      `normHr(rawHr, rawLow, rawHigh, avgHr, cap)` (normalize -> clamp ->
+      CI-around-clamped) and `noDataInputs(model, output)` (clusterCovered +
+      withOut + filter) so the three near-identical mortality/cancer/cvd
+      blocks (engine.js ~1040–1092) collapse to three one-liners. Suite green.
+- [x] C2.2 index.html + app.js: move the static output-card markup out of
+      `renderOutputs()` (app.js ~150–249) into a `<template id="outputs-template">`
+      in index.html; app.js clones the fragment and fills the model blurbs.
+      HTML belongs in HTML — shrinks app.js ~90 lines and makes index.html the
+      place to find the DOM skeleton. Every output id app.js reads must still
+      resolve inside the template.
+- [x] C2.3 app.js readability: extract `contribNotes(c, outputId, field)` +
+      `citeLinks(c)` helpers from the inline template in `updateContrib`;
+      fix stray indentation (EVIDENCE_TITLE, `const ov` in updateContrib);
+      remove the commented-out `<!-- <span class="ev">… -->` remnants in the
+      output template. Suite green.
+- [x] C2.4 tests: give every numbered block a `console.log` header ([22][23]
+      [24] currently have none) and renumber the duplicate §[25] (two blocks
+      both labelled [25] — the Momma-ratio block and the Mayo block) so the
+      Mayo section becomes §[26]. Suite green.
+- [x] C2.5 Verification: `node --check` on all five JS files, full suite green,
+      serve + manual smoke of index.html (template clone renders all output
+      cards + findings, blurbs filled) and sources.html (unchanged render).
+      DOM ids cross-checked: every id app.js resolves exists in the template;
+      template divs balanced (48/48). sources.html unaffected.
+
 ## Phase 5 — deferred (not now)
 
 GBD pathway layer (H), age-conditional actuarial engine (E), own-cohort

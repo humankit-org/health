@@ -938,6 +938,7 @@ console.log('\n[21] Shipped diet cluster (Phase 3.1 — PURE score + harmful-foo
   ok(engine.sourceTags(model)['duncan2023'].includes('Movement score'), 'duncan2023 chip: Movement score');
 }
 
+console.log('\n[22] Calibration anchor (`calibrate: true`, Phase 3.2a).');
 // [22] Calibration anchor (`calibrate: true`, Phase 3.2a).
 // A table whose default cell is far from its members' marginal product must
 // be shifted by a constant log-space offset so the anchored cluster total at
@@ -1010,6 +1011,7 @@ console.log('\n[21] Shipped diet cluster (Phase 3.1 — PURE score + harmful-foo
   approx(engine.clusterTotals(B, d).find((t) => t.id === 'ekB').outputs.mortality.hr, 1.10, 1e-9, 'anchor uses only members not owned by earlier clusters (sitting 1.10)');
 }
 
+console.log('\n[23] Shipped Ekelund table (Phase 3.2b — PA×sitting interaction, fallbacks, no double-count).');
 // [23] Shipped Ekelund table (Phase 3.2b — PA×sitting interaction,
 // fallbacks, no double-count). The calibrate anchor makes the average
 // profile exactly the members' product (§[17]), so cell RATIOS are the
@@ -1084,6 +1086,7 @@ approx(raw.hrCancer, plainHrOut(v, 'cancer') / strCancer * mmCancer * myCancer, 
   approx(raw.hrCvd, plainHrOut(v, 'cvd') / strCvd / bmiCvdMarg * mmCvd * myCvd, 1e-9, 'cvd: momma + mayo cells replace strength + bmi, cardio/steps/sitting fall back, per-lever excluded');
 }
 
+console.log('\n[24] Duncan ratio table + VO2max supersession (Phase 3.2d).');
 // [24] Duncan ratio table + VO2max supersession (Phase 3.2d). Duncan's
 // ratio mode divides by the Rec (referent) column, so at 7 h sleep the
 // total is exactly 1.0 in EVERY PA category (no calibration offset — the
@@ -1127,6 +1130,7 @@ approx(raw.hrCancer, plainHrOut(v, 'cancer') / strCancer * mmCancer * myCancer, 
   ok(rhrRec.overlapBlend && rhrRec.overlapBlend.pair === 'ekelundTable', 'rhr blend tagged against the Ekelund cluster');
 }
 
+console.log('\n[25] Momma aerobic-axis ratio mode (Phase 3.2f — aerobic double-count fix).');
 // [25] Momma aerobic-axis ratio mode (Phase 3.2f — aerobic double-count
 // fix). The 3.2e probe showed cardio 0->300 moved BOTH the Ekelund PA axis
 // (x0.824) AND Momma's aerobic row (x0.706) — aerobic PA priced twice.
@@ -1164,7 +1168,7 @@ approx(raw.hrCancer, plainHrOut(v, 'cancer') / strCancer * mmCancer * myCancer, 
   approx(b / a, ek({ ...d, cardio: 300, strength: 0 }) / ek({ ...d, cardio: 0, strength: 0 }), 1e-9, 'aerobic delta 0->300 = Ekelund alone (Momma no longer responds to cardio)');
 }
 
-console.log('\n[25] Shipped Mayo PA×adiposity cluster (Phase 3.3 — conflation of weight, body fat and PA)');
+console.log('\n[26] Shipped Mayo PA×adiposity cluster (Phase 3.3 — conflation of weight, body fat and PA)');
 {
   const d = engine.defaults(model);
   const mayo = (v, output) => engine.clusterTotals(model, v).find((t) => t.id === 'mayoCells').outputs[output].hr;
