@@ -504,8 +504,28 @@
   // Precomputed per-output totals for every joint model (pure function of
   // the values). Shared by the overlap blend (cluster↔input pairs), the
   // covariance terms, and the accumulation replacement, so every use sees
-  // the same total. Entries carry `id: jm.id` for the blend report.
+  // the same total. Entries carry `id: jm.id` for the blend report, plus
+  // `rdHr` = the cluster total at the average profile (defaults) — the blend
+  // discounts deviations from that level, never the raw level (4.5.8).
   function computeJmTotals(model, values) {
+    const perOutput = computeJmTotalsCore(model, values);
+    const def = defaultJmTotalsCore(model);
+    for (const [jmId, outs] of perOutput) {
+      const dOuts = def.get(jmId);
+      if (!dOuts) continue;
+      for (const output of HR_OUTPUTS) {
+        const o = outs[output];
+        const dd = dOuts[output];
+        if (o && dd) o.rdHr = dd.hr;
+      }
+    }
+    return perOutput;
+  }
+
+  // The cluster-total body without the rdHr attachment (so the default
+  // totals can be computed recursively without infinite recursion).
+  const _jmDefaultCache = new WeakMap();
+  function computeJmTotalsCore(model, values) {
     const resolveValue = makeResolver(model, values);
     const widen = model.constants.uncertaintyWiden || { high: 1, moderate: 1, low: 1 };
     const offsets = calibrateOffsets(model);
@@ -530,6 +550,14 @@
     }
     return jmTotals;
   }
+  function defaultJmTotalsCore(model) {
+    let m = _jmDefaultCache.get(model);
+    if (!m) {
+      m = computeJmTotalsCore(model, defaults(model));
+      _jmDefaultCache.set(model, m);
+    }
+    return m;
+  }
 
   // Overlap blend: for each pair, per output, when BOTH members are active,
   // the weaker (smaller |log HR| / |points|) is discounted in log space by
@@ -551,11 +579,28 @@
         const a = effectSide(fx, jmTotals, o.a, output);
         const b = effectSide(fx, jmTotals, o.b, output);
         if (!a || !b || a.hr === undefined || b.hr === undefined) continue;
-        if (Math.abs(a.logHr) <= EPS || Math.abs(b.logHr) <= EPS) continue;
-        const weaker = Math.abs(a.logHr) <= Math.abs(b.logHr) ? a : b;
+        // Blend the DEVIATION from the average-person level (rdHr = the effect
+        // at defaults), never the raw level (4.5.8): excess = logHr - log(rdHr),
+        // so at reset excess = 0 and nothing blends — an input whose raw effect
+        // at its own average value is != 1 (magnesium 0.969 at 280 mg/d, sun
+        // 0.88 at 1.5 h/d) no longer shows a spurious chip. "Weaker" means the
+        // smaller deviation, matching the semantics of what the blend discounts.
+        const rdA = a.rdHr !== undefined ? a.rdHr : 1;
+        const rdB = b.rdHr !== undefined ? b.rdHr : 1;
+        const eA = a.logHr - Math.log(rdA);
+        const eB = b.logHr - Math.log(rdB);
+        if (Math.abs(eA) <= EPS || Math.abs(eB) <= EPS) continue;
+        // Only discount SHARED deviation: when the two sides move in opposite
+        // directions there is no overlapping excess to remove, and blending
+        // one of them would push the point estimate outside the
+        // [independence, redundancy] assumption band (4.5.8 refinement).
+        if (Math.sign(eA) !== Math.sign(eB)) continue;
+        const weaker = Math.abs(eA) <= Math.abs(eB) ? a : b;
         const other = weaker === a ? b : a;
+        const rdW = weaker === a ? rdA : rdB;
+        const excess = weaker === a ? eA : eB;
         const factor = 1 - o.rho;
-        weaker.logHr *= factor;
+        weaker.logHr = Math.log(rdW) + factor * excess;
         weaker.hr = Math.exp(weaker.logHr);
         if (weaker.record) weaker.record.overlapBlend = { pair: other.id, rho: o.rho };
         entry.outputs[output] = { active: true, blended: weaker.id, factor };
@@ -569,10 +614,17 @@
         const a = fx[o.a] ? fx[o.a][output] : undefined;
         const b = fx[o.b] ? fx[o.b][output] : undefined;
         if (!a || !b || a.points === undefined || b.points === undefined) continue;
-        if (Math.abs(a.points) <= EPS || Math.abs(b.points) <= EPS) continue;
-        const weaker = Math.abs(a.points) <= Math.abs(b.points) ? a : b;
+        // Points blend mirrors the HR side: discount the deviation from the
+        // default points (rdPoints), so nothing blends when both members sit
+        // at their average values.
+        const dA = a.points - (a.rdPoints || 0);
+        const dB = b.points - (b.rdPoints || 0);
+        if (Math.abs(dA) <= EPS || Math.abs(dB) <= EPS) continue;
+        const weaker = Math.abs(dA) <= Math.abs(dB) ? a : b;
         const other = weaker === a ? b : a;
-        weaker.points *= 1 - o.rho;
+        const rdP = weaker === a ? (a.rdPoints || 0) : (b.rdPoints || 0);
+        const dev = weaker === a ? dA : dB;
+        weaker.points = rdP + (1 - o.rho) * dev;
         weaker.record.overlapBlend = { pair: other.id, rho: o.rho };
         entry.outputs[output] = { active: true, blended: weaker.id, factor: 1 - o.rho };
       }
@@ -1292,5 +1344,143 @@
     return clusterTotals(model, values).filter((t) => activeIds.has(t.id));
   }
 
-  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, evaluateRaw, averageEval, evaluateFindings, defaults, sourceIndex, sourceTags, clusterTotals, activeJoint, activeOverlaps, boundsEndpoints, shortLabel, esc, displayName, OUTPUTS };
+  // ------------------------------------------------- per-input disclosure (4.5.7)
+  // "What we use, where, why": one entry per input (same order as
+  // model.inputs), classifying HOW each input feeds each of the five outputs.
+  // STATIC data walk (per-lever > joint-model ownership > overlap pair >
+  // marginal > no-data > none) — deliberately NOT a probe-profile evaluation:
+  // evalEffects skips gated sliders when their gate is off (a probe can't see
+  // vo2max/bodyFat/grip/rhr), and the overlap blend discounts whichever side
+  // is weaker at the probe values (a classification that changes with the
+  // numbers). This walk dispatches on the same structures the engine uses
+  // (conflationGroups + per-output lookup coverage + effect lists), so it
+  // cannot drift from the numbers. Gate toggles and gated sliders and the
+  // derived-BMI pathway (height/weight) get explicit labels.
+  function inputDisclosure(model) {
+    const { jmById, jmForInput, perLeverOf } = conflationGroups(model);
+    const byId = new Map(model.inputs.map((i) => [i.id, i]));
+    const clusterCovers = (jmId, output) => {
+      const jm = jmById.get(jmId);
+      return !!(jm && jm.outputs && jm.outputs[output]);
+    };
+    const actsOn = (id, output) => {
+      if (jmById.has(id)) return clusterCovers(id, output);
+      const input = byId.get(id);
+      return !!(input && (input.effects || []).some((e) => e.output === output));
+    };
+    const pairFor = (id, output) => {
+      for (const o of model.overlaps || []) {
+        const other = o.a === id ? o.b : o.b === id ? o.a : null;
+        if (other === null) continue;
+        if (actsOn(id, output) && actsOn(other, output)) return { rho: o.rho, other };
+      }
+      return null;
+    };
+    const shareHow = (jm, output, effFor) => {
+      const e = effFor(output);
+      return {
+        how: 'share',
+        detail: jm.id,
+        evidence: e ? e.evidence : jm.evidence,
+        source: e ? (e.source || []).slice() : (jm.source || []).slice(),
+      };
+    };
+
+    return model.inputs.map((input) => {
+      const effects = input.effects || [];
+      const effFor = (output) => effects.find((e) => e.output === output);
+      const isGateToggle = effects.length === 0 && input.kind === 'toggle';
+      const gatedSliders = isGateToggle ? model.inputs.filter((i) => i.gatedBy === input.id) : [];
+      const supersededInputs = isGateToggle
+        ? model.inputs.filter((i) => (i.effects || []).some((e) => e.supersededBy === input.id))
+        : [];
+      const replacesBmi = isGateToggle && !!(model.bmi && model.bmi.supersededBy === input.id);
+
+    const hows = {};
+    for (const output of OUTPUTS) {
+      const eff = effFor(output);
+      let how = null;
+      if (isGateToggle) {
+        const affected = new Set();
+        if (replacesBmi) { affected.add('mortality'); affected.add('cvd'); }
+        for (const s of supersededInputs) for (const e of s.effects || []) if (e.supersededBy === input.id) affected.add(e.output);
+        for (const s of gatedSliders) for (const e of s.effects || []) affected.add(e.output);
+        if (affected.has(output)) {
+          const targets = [];
+          if (replacesBmi) targets.push('BMI');
+          for (const s of supersededInputs) if (!targets.includes(s.label)) targets.push(s.label);
+          const gatedNames = gatedSliders.map((s) => s.label).join(' / ');
+          how = {
+            how: targets.length ? 'replaces' : 'enables',
+            detail: targets.length
+              ? (targets.join(' and ') + ' when enabled')
+              : (gatedNames + ' input'),
+            evidence: (gatedSliders[0] && gatedSliders[0].effects[0] && gatedSliders[0].effects[0].evidence) || 'moderate',
+            source: (gatedSliders[0] && gatedSliders[0].effects[0] && gatedSliders[0].effects[0].source) || [],
+          };
+        } else {
+          how = { how: 'none' };
+        }
+      } else if (input.id === 'sex') {
+        how = { how: 'none' };
+      } else if (input.id === 'heightCm' || input.id === 'weightKg') {
+        if (output === 'mortality' || output === 'cvd') {
+          how = { how: 'via-bmi', detail: 'derived BMI → PA × body weight cluster', evidence: model.bmi.evidence, source: (model.bmi.source || []).slice() };
+        } else {
+          how = { how: 'none' };
+        }
+      } else if (eff) {
+        const pl = perLeverOf.get(input.id);
+        if (pl) {
+          const points = OUTPUTS.indexOf(output) >= 3;
+          how = {
+            how: points ? 'per-lever-points' : 'per-lever',
+            detail: 'psychosocial — ' + (points ? 'points count into the band' : 'not in the total'),
+            evidence: eff.evidence,
+            source: (eff.source || []).slice(),
+          };
+        } else {
+          const jm = jmForInput.get(input.id);
+          if (jm && clusterCovers(jm.id, output)) {
+            how = shareHow(jm, output, effFor);
+          } else {
+            const pair = pairFor(input.id, output);
+            if (pair) how = { how: 'overlap', detail: pair.other, rho: pair.rho, evidence: eff.evidence, source: (eff.source || []).slice() };
+            else how = { how: 'marginal', evidence: eff.evidence, source: (eff.source || []).slice() };
+          }
+        }
+      } else if (effects.length > 0) {
+        const jm = jmForInput.get(input.id);
+        if (jm && clusterCovers(jm.id, output)) how = shareHow(jm, output, effFor);
+        else how = { how: 'no-data' };
+      } else {
+        how = { how: 'none' };
+      }
+      // Gated sliders (vo2max/bodyFat/grip/rhr): everything is conditional on
+      // the gate toggle. Tag the classification rather than a separate 'how'
+      // value so share/overlap/marginal all read as gated too.
+      if (how && input.gatedBy) {
+        const gate = byId.get(input.gatedBy);
+        how.gated = true;
+        how.gateLabel = gate ? gate.label : input.gatedBy;
+      }
+      if (how) hows[output] = how;
+    }
+
+      const seen = new Set();
+      const sources = [];
+      const add = (arr) => { for (const k of arr || []) if (!seen.has(k)) { seen.add(k); sources.push(k); } };
+      for (const output of OUTPUTS) { const h = hows[output]; if (h && h.source) add(h.source); }
+      if (sources.length === 0 && isGateToggle) {
+        for (const s of gatedSliders) for (const e of s.effects || []) add(e.source);
+        for (const s of supersededInputs) for (const e of s.effects || []) add(e.source);
+        if (replacesBmi) add(model.bmi.source);
+      }
+      if (sources.length === 0 && input.id === 'sex') add(model.baseline.source);
+
+      return { id: input.id, label: input.label, group: input.group, hows, sources };
+    });
+  }
+
+  return { alpha, hrToYears, yearsToHr, evalEffect, computeBmi, evaluate, evaluateRaw, averageEval, evaluateFindings, defaults, sourceIndex, sourceTags, clusterTotals, activeJoint, activeOverlaps, boundsEndpoints, inputDisclosure, shortLabel, esc, displayName, OUTPUTS };
 });

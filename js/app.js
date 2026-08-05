@@ -42,6 +42,84 @@
   const esc = schema.esc;
   const blendPct = (rho) => Math.max(0, Math.round((1 - Number(rho)) * 100));
 
+  // Card-level cluster notes (4.5.2). When a joint model covers an output,
+  // its members are counted as ONE published estimate — the product of their
+  // chips would double-count. activeJoint() returns each cluster's calibrated
+  // total per covered output; dividing by the same total at the average
+  // profile (clusterTotals at defaults) puts it on the "vs the average
+  // person" scale the card and chips already use (1.0 = average).
+  const { jmById } = schema.conflationGroups(model);
+  const avgClusters = new Map(
+    engine.clusterTotals(model, engine.defaults(model)).map((c) => [c.id, c.outputs])
+  );
+  const clusterNote = (t, outputId) => {
+    const jm = jmById.get(t.id);
+    if (!jm) return '';
+    const o = t.outputs[outputId];
+    const avgOut = avgClusters.get(t.id) && avgClusters.get(t.id)[outputId];
+    if (!o || !o.hr || !avgOut || !avgOut.hr) return '';
+    const scale = avgOut.hr;
+    const members = (jm.members || []).map(displayName).join(' + ');
+    const title = displayName(t.id);
+    return `<p class="cluster-note" title="These ${members} share a causal pathway, so the model prices them from one published study instead of multiplying each slider's effect separately.">
+      <strong>${esc(members)} are counted as ONE joint estimate</strong>
+      (${esc(title)} ${refLink(jm.source)}): combined effect
+      ${(o.hr / scale).toFixed(3)} (range ${(o.hrLow / scale).toFixed(3)}–${(o.hrHigh / scale).toFixed(3)}).
+      Each slider's chip still shows its independent effect; multiplying those
+      chips together would double-count the shared pathway — the combined
+      effect above prices it once.</p>`;
+  };
+  const updateClusterNotes = (active) => {
+    for (const outputId of schema.HR_OUTPUTS) {
+      const host = document.getElementById('cluster-note-' + outputId);
+      if (!host) continue;
+      host.innerHTML = active
+        .filter((t) => t.outputs[outputId])
+        .map((t) => clusterNote(t, outputId))
+        .join('');
+    }
+  };
+
+  // More-panel header note + output-grid footer link (4.5.3): one shared note
+  // ("already adjusted for overlaps…") shown in every contrib panel, and a
+  // link to sources.html#conflation from the output grid — both only while a
+  // conflation adjustment is actually live. The trigger is "any
+  // conflation-relevant input (a joint-model member, overlap member or
+  // per-lever member) moved off its default" — false at reset by construction.
+  // It is NOT driven by engine.activeOverlaps(): the overlap blend runs on raw
+  // marginals, so some inputs report as blended even at all-defaults (e.g. the
+  // magnesium/dietScore pair — magnesium's raw marginal at its average intake
+  // is 0.969), which would light the note up at reset. The cluster notes above
+  // use the same member-off-default semantics (engine.activeJoint), so the two
+  // disclosures stay in sync. Copy is output-agnostic so it stays true on the
+  // points panels (cognition/happiness) as well as the HR cards.
+  const conflationInputs = new Set();
+  for (const jm of model.jointModels || []) for (const m of jm.members || []) conflationInputs.add(m);
+  for (const o of model.overlaps || []) { conflationInputs.add(o.a); conflationInputs.add(o.b); }
+  for (const g of model.perLeverOnly || []) for (const m of g.members || []) conflationInputs.add(m);
+  const defaultById = {};
+  for (const input of model.inputs) defaultById[input.id] = input.default;
+  const conflationActive = () => {
+    for (const id of conflationInputs) {
+      if (defaultById[id] === undefined) continue; // joint-model / derived-bmi ids
+      if (state[id] !== defaultById[id]) return true;
+    }
+    return false;
+  };
+  const updateMoreNotes = (on) => {
+    const note = on
+      ? `The values below already account for overlapping effects: joint-model members are shares of one published estimate, overlap pairs are counted at partial strength, and psychosocial factors are shown per lever only. <a href="sources.html#conflation">Full breakdown: how inputs are combined →</a>`
+      : '';
+    for (const outputId of schema.OUTPUTS) {
+      const host = document.getElementById('confl-more-' + outputId);
+      if (host) host.innerHTML = note;
+    }
+    const foot = document.getElementById('confl-foot');
+    if (foot) foot.innerHTML = on
+      ? '<a href="sources.html#conflation">How these inputs are combined (overlaps &amp; joint estimates) →</a>'
+      : '';
+  };
+
   // "counted at X% — overlaps Y"; only present on the weaker side of an
   // active overlap pair (engine sets c.overlapBlend).
   const overlapNote = (c) => {
@@ -186,8 +264,11 @@
   // ------------------------------------------------------------- updating
 
   function update(result) {
+    const activeClusters = engine.activeJoint(model, state);
     updateInputReadouts(result);
     updateChips(result);
+    updateClusterNotes(activeClusters);
+    updateMoreNotes(conflationActive());
     updateLifeExpectancy(result);
     updateMortality(result);
     updateCancer(result);

@@ -627,41 +627,52 @@ console.log('\n[18] Overlap blend + covariance (Phase 2 machinery; synthetic pai
   const PAIR = { a: 'rhr', b: 'cardio', kind: 'shared-pathway', tier: 'moderate', note: 'test pair', source: 'aune2017rhr' };
   const v = { ...engine.defaults(plainModel), rhrOn: true, rhr: 90, cardio: 150 };
   const hrAt = (m, values) => engine.evaluateRaw(m, values).hr;
-  const hrRhr = engine.evalEffect(model.inputs.find((i) => i.id === 'rhr').effects.find((e) => e.output === 'mortality'), 90).hr;
-  const hrCardio = engine.evalEffect(model.inputs.find((i) => i.id === 'cardio').effects.find((e) => e.output === 'mortality'), 150).hr;
-  const weakId = Math.abs(Math.log(hrRhr)) <= Math.abs(Math.log(hrCardio)) ? 'rhr' : 'cardio';
-  const strongId = weakId === 'rhr' ? 'cardio' : 'rhr';
-  const hrWeaker = weakId === 'rhr' ? hrRhr : hrCardio;
 
-  // ρ=0 and rhoU=0 reproduces today's math exactly (central AND bounds).
+  // ρ=0 and rhoU=0 reproduces the plain math exactly (central AND bounds).
   const M0 = { ...plainModel, overlaps: [{ ...PAIR, rho: 0, rhoU: 0 }] };
   const r0 = engine.evaluateRaw(M0, v);
   const rPlain = engine.evaluateRaw(plainModel, v);
   ok(Math.abs(r0.hr - rPlain.hr) < 1e-12 && Math.abs(r0.hrLow - rPlain.hrLow) < 1e-12, 'rho=0 -> identical math');
 
-  // ρ=1: weaker collapses to 1.0 -> combined equals the stronger alone.
+  // 4.5.8: the blend runs on DEVIATIONS from the average-person level, so
+  // nothing blends when the two sides move in OPPOSITE directions (rhr 90 is
+  // harmful, cardio 150 is protective) — there is no shared excess to remove,
+  // and discounting one side would push the point outside the assumption band.
+  // Any ρ yields the plain total.
   const M1 = { ...plainModel, overlaps: [{ ...PAIR, rho: 1, rhoU: 1 }] };
-  const r1 = engine.evaluateRaw(M1, v);
-  const expected1 = rPlain.hr / hrWeaker;
-  ok(Math.abs(r1.hr - expected1) < 1e-9, 'rho=1 -> combined equals stronger alone');
-  const weakerRec = r1.contributions.mortality.find((c) => c.inputId === weakId);
-  ok(weakerRec.overlapBlend && weakerRec.overlapBlend.rho === 1 && Math.abs(weakerRec.hr - 1.0) < 1e-12, 'weaker collapsed to 1.0 and tagged overlapBlend');
-  const strongerRec = r1.contributions.mortality.find((c) => c.inputId === strongId);
-  ok(!strongerRec.overlapBlend, 'stronger member untouched');
-
-  // ρ=0.5: weaker discounted in log space; stronger keeps its value.
   const M3 = { ...plainModel, overlaps: [{ ...PAIR, rho: 0.5, rhoU: 0.5 }] };
-  const r3 = engine.evaluateRaw(M3, v);
-  const w3 = r3.contributions.mortality.find((c) => c.inputId === weakId);
-  ok(Math.abs(w3.hr - Math.exp(Math.log(hrWeaker) * 0.5)) < 1e-9, 'weaker discounted by rho=0.5 in log space');
+  for (const m of [M1, M3]) {
+    const rm = engine.evaluateRaw(m, v);
+    ok(Math.abs(rm.hr - rPlain.hr) < 1e-12, 'opposite-direction pair -> no blend regardless of rho');
+    ok(!rm.contributions.mortality.some((c) => c.overlapBlend), 'opposite-direction pair -> no overlapBlend tag');
+  }
+
+  // Same-direction pair (snus 'yes' + alcohol 20, both harmful): the weaker
+  // deviation is discounted. Both references sit at HR 1.0, so the deviation
+  // blend reduces to the classic log-space discount.
+  const S = { ...plainModel, overlaps: [{ ...PAIR, a: 'snus', b: 'alcohol', rho: 0.5, rhoU: 0.5 }] };
+  const vs = { ...engine.defaults(S), snus: 'yes', alcohol: 20 };
+  const hrSnus = engine.evalEffect(model.inputs.find((i) => i.id === 'snus').effects.find((e) => e.output === 'mortality'), 'yes').hr;
+  const hrAlc = engine.evalEffect(model.inputs.find((i) => i.id === 'alcohol').effects.find((e) => e.output === 'mortality'), 20).hr;
+  const rs = engine.evaluateRaw(S, vs);
+  const weakRec = rs.contributions.mortality.find((c) => c.overlapBlend);
+  ok(weakRec && weakRec.inputId === 'alcohol' && Math.abs(weakRec.hr - Math.exp(Math.log(hrAlc) * 0.5)) < 1e-9, 'weaker deviation discounted by rho=0.5 in log space');
+  ok(!rs.contributions.mortality.find((c) => c.inputId === 'snus').overlapBlend, 'stronger member untouched');
+
+  // ρ=1 collapses the weaker deviation back to its average-person level
+  // (rdHr), which for these references is 1.0.
+  const S1 = { ...plainModel, overlaps: [{ ...PAIR, a: 'snus', b: 'alcohol', rho: 1, rhoU: 1 }] };
+  const rs1 = engine.evaluateRaw(S1, vs);
+  const weakRec1 = rs1.contributions.mortality.find((c) => c.overlapBlend);
+  ok(weakRec1 && weakRec1.inputId === 'alcohol' && weakRec1.overlapBlend.rho === 1 && Math.abs(weakRec1.hr - 1.0) < 1e-12, 'rho=1 -> weaker deviation collapsed to its average level');
 
   // Covariance widens the bounds; rhoU does not move the central estimate.
-  const r2 = engine.evaluateRaw(M3, v);
-  const noCov = engine.evaluateRaw({ ...plainModel, overlaps: [{ ...PAIR, rho: 0.5, rhoU: 0 }] }, v);
+  const r2 = engine.evaluateRaw(S, vs);
+  const noCov = engine.evaluateRaw({ ...plainModel, overlaps: [{ ...PAIR, a: 'snus', b: 'alcohol', rho: 0.5, rhoU: 0 }] }, vs);
   ok(r2.hrLow <= noCov.hrLow && r2.hrHigh >= noCov.hrHigh, 'covariance widens bounds');
   ok(Math.abs(r2.hr - noCov.hr) < 1e-12, 'rhoU does not move the central estimate');
 
-  // Inactive pair (one member at HR 1.0) blends nothing.
+  // Inactive pair (one member at HR 1.0 / its average level) blends nothing.
   const vInactive = { ...engine.defaults(plainModel), rhrOn: true, rhr: 72, cardio: 150 };
   const rIn = engine.evaluateRaw(M3, vInactive);
   ok(!rIn.contributions.mortality.find((c) => c.inputId === 'rhr').overlapBlend, 'inactive member -> no blend');
@@ -810,14 +821,15 @@ console.log('\n[20] Overlap/joint audit + pair symmetry (Phase 2 — data integr
   }
 
   // a↔b order doesn't matter: swapping the pair yields identical results.
-  const v = { ...engine.defaults(model), rhrOn: true, rhr: 90, cardio: 150 };
-  const P1 = { a: 'rhr', b: 'cardio', rho: 0.5, rhoU: 0.5, kind: 'shared-pathway', tier: 'moderate', note: 'test pair', source: 'aune2017rhr' };
+  // Same-direction pair (snus + alcohol, both harmful) so the blend fires.
+  const v = { ...engine.defaults(model), snus: 'yes', alcohol: 20 };
+  const P1 = { a: 'snus', b: 'alcohol', rho: 0.5, rhoU: 0.5, kind: 'shared-pathway', tier: 'moderate', note: 'test pair', source: 'byhamre2021' };
   const r1 = engine.evaluateRaw({ ...model, overlaps: [P1] }, v);
-  const r2 = engine.evaluateRaw({ ...model, overlaps: [{ ...P1, a: 'cardio', b: 'rhr' }] }, v);
+  const r2 = engine.evaluateRaw({ ...model, overlaps: [{ ...P1, a: 'alcohol', b: 'snus' }] }, v);
   ok(Math.abs(r1.hr - r2.hr) < 1e-12 && Math.abs(r1.hrLow - r2.hrLow) < 1e-12 && Math.abs(r1.hrHigh - r2.hrHigh) < 1e-12, 'pair order swap is a no-op');
   const w1 = r1.contributions.mortality.find((c) => c.overlapBlend);
   const w2 = r2.contributions.mortality.find((c) => c.overlapBlend);
-  ok(w1.inputId === w2.inputId, 'swap blends the same member');
+  ok(!!w1 && w1.inputId === w2.inputId, 'swap blends the same member');
 }
 
 console.log('\n[21] Shipped diet cluster (Phase 3.1 — PURE score + harmful-foods pairs)');
@@ -841,7 +853,9 @@ console.log('\n[21] Shipped diet cluster (Phase 3.1 — PURE score + harmful-foo
   }
 
   // No double-count: model total = plain total, members' marginals replaced
-  // by the cluster total, magnesium re-blended (its pair is active at defaults).
+  // by the cluster total. The overlap blends are INERT at defaults (4.5.8:
+  // the blend discounts deviations from the average person, and at reset
+  // every deviation is 0), so magnesium/sun keep their raw marginals.
   const pRaw = engine.evaluateRaw(plainModel, v);
   // All 9 cluster members (diet 4 + movement 5); the movement clusters
   // (ekelundTable, mommaCells, duncanCells) replace their members' marginals
@@ -853,17 +867,13 @@ console.log('\n[21] Shipped diet cluster (Phase 3.1 — PURE score + harmful-foo
   const mgPlain = pRaw.contributions.mortality.find((c) => c.inputId === 'magnesium').hr;
   const mgModel = raw.contributions.mortality.find((c) => c.inputId === 'magnesium').hr;
   const mov = engine.clusterTotals(model, v);
-  // Sun exposure's default (1.5 h/d) carries HR 0.9 — a real active effect
-  // at the average profile — so its pair vs the Ekelund cluster blends it
-  // (0.9 -> 0.81). Its marginal is not cluster-owned, so the identity must
-  // re-blend it like magnesium's.
   const sunPlain = pRaw.contributions.mortality.find((c) => c.inputId === 'sunExposure').hr;
   const sunModel = raw.contributions.mortality.find((c) => c.inputId === 'sunExposure').hr;
   const expected = plainHrOut(v, 'mortality') / mprodAll / mgPlain * mgModel / sunPlain * sunModel * tot.outputs.mortality.hr
     * mov.find((t) => t.id === 'ekelundTable').outputs.mortality.hr
     * mov.find((t) => t.id === 'mommaCells').outputs.mortality.hr
     * mov.find((t) => t.id === 'duncanCells').outputs.mortality.hr;
-  approx(raw.hr, expected, 1e-9, 'no double-count: cluster totals replace members, per-lever excluded, magnesium + sun blends applied');
+  approx(raw.hr, expected, 1e-9, 'no double-count: cluster totals replace members, per-lever excluded, blends inert at defaults');
 
   // 1.0x anchoring survives: reset = exactly the average person.
   const e = engine.evaluate(model, v);
@@ -876,27 +886,39 @@ console.log('\n[21] Shipped diet cluster (Phase 3.1 — PURE score + harmful-foo
     .reduce((a, b) => a * b, 1);
   ok(Math.abs(tot.outputs.mortality.hr - mprodDiet) / mprodDiet < 0.10, 'cluster total within 10% of the member marginal product (' + (Math.abs(tot.outputs.mortality.hr - mprodDiet) / mprodDiet * 100).toFixed(1) + '% off)');
 
-  // Pairs at defaults: magnesium (blend 0.969^0.5) and sunExposure (sun's
-  // default HR is 0.9, blended 0.9^0.9 against the anchored cluster) are
-  // active; the rest sit at their references or are gated off.
+  // 4.5.8: NO overlap pair is active at defaults — every input sits at its
+  // population average, so every deviation (and every shared excess) is 0,
+  // and the chips stay silent at reset. Magnesium's raw 0.969 at 280 mg/d
+  // no longer shows a spurious "counted at 50%" chip.
   const ov = engine.activeOverlaps(model, v);
   const pair = (id) => ov.find((o) => o.a === id || o.b === id);
-  ok(pair('magnesium').active && pair('sunExposure').active, 'defaults: magnesium + sun pairs active');
+  ok(pair('magnesium').active === false && pair('sunExposure').active === false, '4.5.8: magnesium + sun pairs inactive at defaults (zero deviation)');
   ok(pair('processedMeat').active === false && pair('ssb').active === false && pair('duncanCells').active === false && pair('rhr').active === false, 'defaults: pm/ssb at reference, Duncan ratio 1.0, rhr gated off');
-  approx(mgModel, Math.pow(mgPlain, 0.5), 1e-9, 'magnesium weaker side blended 0.969^0.5 (rho 0.5)');
-  approx(sunModel, Math.pow(sunPlain, 0.9), 1e-9, 'sun weaker side blended 0.9^0.9 (rho 0.1 vs the anchored cluster)');
+  ok(Math.abs(mgModel - mgPlain) < 1e-12, 'magnesium keeps its raw marginal at defaults (0.969, no blend)');
+  ok(Math.abs(sunModel - sunPlain) < 1e-12, 'sun keeps its raw marginal at defaults (0.88, no blend)');
+  ok(!raw.contributions.mortality.find((c) => c.inputId === 'magnesium').overlapBlend && !raw.contributions.mortality.find((c) => c.inputId === 'sunExposure').overlapBlend, 'no overlapBlend tags at defaults');
 
-  // Harmful foods: processedMeat 8/wk -> blended against the cluster.
+  // Harmful foods: processedMeat 8/wk with a PERFECT diet — the cluster
+  // deviates protectively while pm deviates harmfully (opposite directions),
+  // so 4.5.8 leaves both full: there is no shared excess to discount.
   const v2 = { ...v, processedMeat: 8, fiber: 50, fruitVeg: 8, nuts: 28, fish: 'lots' };
   const t2 = engine.clusterTotals(model, v2)[0];
   approx(t2.score, 5.0, 1e-9, 'perfect diet -> score 5.0');
   approx(t2.outputs.mortality.hr, 0.6857, 1e-4, 'score 5 -> 0.91^4 = 0.6857 (published >=5-vs-<=1: 0.70)');
   const pmRec = engine.evaluateRaw(model, v2).contributions.mortality.find((c) => c.inputId === 'processedMeat');
-  approx(pmRec.hr, Math.pow(1.2, ((8 - 1.5) / 7)) ** 0.7, 1e-9, 'processedMeat 8/wk blended: 1.1845^0.7 (cluster is the stronger side)');
-  ok(engine.activeOverlaps(model, v2).find((o) => o.a === 'processedMeat').active, 'processedMeat pair active at 8/wk');
+  approx(pmRec.hr, Math.pow(1.2, ((8 - 1.5) / 7)), 1e-9, 'processedMeat 8/wk + perfect diet: opposite directions -> no blend (pm full)');
+  ok(engine.activeOverlaps(model, v2).find((o) => o.a === 'processedMeat').active === false, 'processedMeat pair inactive when the diet cluster moves the other way');
   ok(engine.activeOverlaps(model, v2).find((o) => o.a === 'ssb').active === false, 'ssb pair stays inactive (ssb at default)');
 
-  // Cluster side weaker: processedMeat 0/wk blends only the processedMeat side.
+  // Same-direction pm: 8/wk on a BAD diet (cluster harmful too) blends the
+  // weaker deviation (pm) against the cluster.
+  const vbad = { ...v, processedMeat: 8, fiber: 5, fruitVeg: 0, nuts: 0, fish: 'none' };
+  const pmBad = engine.evaluateRaw(model, vbad).contributions.mortality.find((c) => c.inputId === 'processedMeat');
+  approx(pmBad.hr, Math.pow(1.2, ((8 - 1.5) / 7)) ** 0.7, 1e-9, 'processedMeat 8/wk + bad diet: same direction -> blended 1.1845^0.7 (weaker deviation)');
+  ok(engine.activeOverlaps(model, vbad).find((o) => o.a === 'processedMeat').active, 'processedMeat pair active on a bad diet');
+
+  // Cluster side weaker: processedMeat 0/wk with a perfect diet (both
+  // protective) blends only the processedMeat side (rdHr 1.0 -> ^0.7).
   const v3 = { ...v, processedMeat: 0, fiber: 50, fruitVeg: 8, nuts: 28, fish: 'lots' };
   const pm0 = engine.evaluateRaw(model, v3).contributions.mortality.find((c) => c.inputId === 'processedMeat');
   approx(pm0.hr, Math.pow(1.2, ((0 - 1.5) / 7)) ** 0.7, 1e-9, 'processedMeat 0/wk blended 0.9616^0.7 (weakest side)');
@@ -1050,9 +1072,9 @@ console.log('\n[23] Shipped Ekelund table (Phase 3.2b — PA×sitting interactio
 
   // No double-count at off-default values: model total = plain total with
   // all five clusters replacing their members' mortality marginals (the
-  // derived bmi marginal too — retired in favour of the Mayo cluster total),
-  // magnesium + sun re-blended (both pairs active — magnesium's input sits
-  // at default 280, sun's default carries HR 0.9).
+  // derived bmi marginal too — retired in favour of the Mayo cluster total).
+  // magnesium/sun sit at their averages here, so their overlap pairs are
+  // inert (4.5.8: zero deviation) and the identity cancels them exactly.
   const v = { ...d, cardio: 300, steps: 8000, sitting: 4 };
   const pRaw = engine.evaluateRaw(plainModel, v);
   const raw = engine.evaluateRaw(model, v);
@@ -1121,14 +1143,29 @@ console.log('\n[24] Duncan ratio table + VO2max supersession (Phase 3.2d).');
   ok(Math.abs(dn({ ...d, cardio: 600, vo2maxOn: true, sleep: 5 }).hr - dn({ ...d, sleep: 5 }).hr) < 1e-12, 'vo2maxOn retires cardio from the Duncan PA category (Inactive row)');
   ok(ek({ ...d, cardio: 0 }).hr !== ek({ ...d, cardio: 0, steps: 0 }).hr, 'steps still drive the PA axis (axis does not collapse to zero)');
 
-  // rhr pair: gated off by default (rhrOn false), active and blended on the
-  // rhr side when enabled (cluster total is the stronger side: 0.528 vs
-  // 1.33; rho 0.15 -> 1.3266^0.85).
+  // rhr pair (4.5.8): the blend discounts DEVIATIONS from the average
+  // person, so with rhr enabled but everything else at its average the
+  // cluster's deviation is 0 and the pair stays inactive (rhr shows its full
+  // 1.3266). When the cluster deviates the SAME way (harmful: cardio 0 /
+  // steps 0 / sitting 13), the pair fires and the WEAKER deviation — the
+  // cluster (0.688 vs its 0.528 baseline, |dev| 0.265 < rhr's 0.283) — is
+  // discounted, not rhr.
   const rhr = model.inputs.find((i) => i.id === 'rhr');
   ok(engine.activeOverlaps(model, d).find((o) => o.a === 'rhr').active === false, 'rhr pair inactive at defaults (gated off)');
-  const rhrRec = engine.evaluateRaw(model, { ...d, rhrOn: true, rhr: 90 }).contributions.mortality.find((c) => c.inputId === 'rhr');
-  approx(rhrRec.hr, Math.pow(1.3265833774719424, 0.85), 1e-9, 'rhr 90 blended 1.3266^0.85 (weaker side, rho 0.15 vs the cluster)');
-  ok(rhrRec.overlapBlend && rhrRec.overlapBlend.pair === 'ekelundTable', 'rhr blend tagged against the Ekelund cluster');
+  const rhrAlone = engine.evaluateRaw(model, { ...d, rhrOn: true, rhr: 90 }).contributions.mortality.find((c) => c.inputId === 'rhr');
+  ok(!rhrAlone.overlapBlend && Math.abs(rhrAlone.hr - 1.3265833774719424) < 1e-9, 'rhr 90 alone: cluster at baseline -> pair inactive, rhr full');
+  const vRhr = { ...d, rhrOn: true, rhr: 90, cardio: 0, steps: 0, sitting: 13 };
+  ok(engine.activeOverlaps(model, vRhr).find((o) => o.a === 'rhr').active, 'rhr pair active when the cluster deviates the same way');
+  const ekDef = engine.clusterTotals(model, d).find((t) => t.id === 'ekelundTable').outputs.mortality.hr;
+  const ekTot = engine.clusterTotals(model, vRhr).find((t) => t.id === 'ekelundTable').outputs.mortality.hr;
+  const ekBlended = ekDef * Math.exp(0.85 * Math.log(ekTot / ekDef));
+  const withPair = engine.evaluateRaw(model, vRhr);
+  const noPair = engine.evaluateRaw(
+    { ...model, overlaps: model.overlaps.filter((o) => !((o.a === 'rhr' && o.b === 'ekelundTable') || (o.a === 'ekelundTable' && o.b === 'rhr'))) },
+    vRhr
+  );
+  approx(withPair.hr, noPair.hr / ekTot * ekBlended, 1e-9, 'rhr pair blends the weaker (cluster) side: total uses ekDef x exp(0.85 x dev)');
+  ok(!withPair.contributions.mortality.find((c) => c.inputId === 'rhr').overlapBlend && Math.abs(withPair.contributions.mortality.find((c) => c.inputId === 'rhr').hr - 1.3265833774719424) < 1e-9, 'rhr (stronger deviation) stays full');
 }
 
 console.log('\n[25] Momma aerobic-axis ratio mode (Phase 3.2f — aerobic double-count fix).');
@@ -1213,6 +1250,126 @@ console.log('\n[26] Shipped Mayo PA×adiposity cluster (Phase 3.3 — conflation
 
 // Phase C-A3: structural audit of the conflation data model (independent of
 // the number-pinned assertions above — catches shape errors early).
+// [27] Input transparency table (Phase 4.5.7 — engine.inputDisclosure).
+// sources.html's per-input table is generated from this walk, so the tests
+// pin the shape the renderer relies on: one row per input, every row with at
+// least one citation, every classification known, and "no data yet" exactly
+// matching the engine's own coverage labels on cancer/cvd.
+console.log('\n[27] Input transparency (engine.inputDisclosure, Phase 4.5.7)');
+{
+  const OUTS = ['mortality', 'cancer', 'cvd', 'cognition', 'happiness'];
+  const KNOWN = ['share', 'marginal', 'overlap', 'per-lever', 'per-lever-points', 'via-bmi', 'replaces', 'enables', 'no-data', 'none'];
+  const rows = engine.inputDisclosure(model);
+
+  ok(rows.length === model.inputs.length, `rows == model.inputs length (${rows.length} == ${model.inputs.length})`);
+  ok(rows.every((r) => r.sources.length > 0), 'every row has at least one source');
+
+  let unknown = 0;
+  for (const r of rows) for (const o of OUTS) {
+    const h = r.hows[o];
+    if (h && !KNOWN.includes(h.how)) unknown++;
+  }
+  ok(unknown === 0, 'every how is a known classification');
+
+  let wrongNoData = 0;
+  for (const r of rows) for (const o of OUTS) {
+    const h = r.hows[o];
+    const input = model.inputs.find((i) => i.id === r.id);
+    const hasEffect = (input.effects || []).some((e) => e.output === o);
+    if (h && h.how === 'no-data' && hasEffect) wrongNoData++;
+  }
+  ok(wrongNoData === 0, "'no-data' never appears where an effect exists for that output");
+
+  // cancer/cvd coverage: the disclosure's no-data rows must be EXACTLY the
+  // engine's coverage labels (noDataInputs) — drift-proof by construction.
+  const res = engine.evaluate(model, engine.defaults(model));
+  const discNoData = (out) => rows.filter((r) => {
+    const h = r.hows[out];
+    return h && h.how === 'no-data';
+  }).map((r) => r.label).sort();
+  for (const out of ['cancer', 'cvd']) {
+    const discSet = new Set(discNoData(out));
+    const engSet = new Set(res[out].noData || []);
+    const onlyDisc = [...discSet].filter((l) => !engSet.has(l));
+    const onlyEng = [...engSet].filter((l) => !discSet.has(l));
+    ok(onlyDisc.length === 0 && onlyEng.length === 0,
+      `${out}: disclosure no-data rows == engine coverage labels (${discSet.size} == ${engSet.size})`);
+  }
+
+  // Spot checks pinning the browser-visible strings' data.
+  const bf = rows.find((r) => r.id === 'bodyFat');
+  ok(bf.hows.mortality.how === 'share' && bf.hows.mortality.gated === true, 'bodyFat mortality = gated share (Mayo cluster)');
+  ok(bf.hows.cognition.how === 'no-data', 'bodyFat cognition = no-data');
+  const v2 = rows.find((r) => r.id === 'vo2maxOn');
+  ok(v2.hows.cognition.how === 'none', 'vo2maxOn does not touch cognition (cardio mind effects not superseded)');
+  const sex = rows.find((r) => r.id === 'sex');
+  ok(sex.hows.mortality.how === 'none' && sex.hows.cancer.how === 'none', 'sex row is "none" on every output (baseline only)');
+}
+
+// [28] Cluster-note premise (Phase 4.5.5) — the card note (cluster-note in
+// app.js) claims the joint-model total prices a shared pathway ONCE and that
+// multiplying the member sliders would double-count. Assert that redundancy
+// really exists: the cluster total (normalized to the average person, exactly
+// what the note displays) differs from the naive product of the members'
+// independent hrDeltas. Also pin WHY the note's copy says "each slider's chip
+// shows its independent effect": the chips' hrDeltas equal the naive (SIMPLE)
+// model's marginals — the redundancy is carried by the cluster total, not by
+// the member shares (they are not shares).
+console.log('\n[28] Cluster-note premise (Phase 4.5.5)');
+{
+  const memberDeltas = (m, jmId, vals) => {
+    const members = model.jointModels.find((j) => j.id === jmId).members;
+    let naive = 1;
+    let shares = 1;
+    const plain = engine.evaluate(plainModel, vals);
+    const adv = engine.evaluate(model, vals);
+    for (const m of members) {
+      const pr = plain.contributions.mortality.find((c) => c.inputId === m);
+      const ar = adv.contributions.mortality.find((c) => c.inputId === m);
+      ok(pr && typeof pr.hrDelta === 'number', `naive ${jmId} member ${m} has a mortality hrDelta`);
+      ok(ar && typeof ar.hrDelta === 'number', `advanced ${jmId} member ${m} has a mortality hrDelta`);
+      naive *= pr.hrDelta;
+      shares *= ar.hrDelta;
+    }
+    return { members, naive, shares };
+  };
+
+  const clusterScale = (jmId, vals) => {
+    const outs = engine.clusterTotals(model, vals);
+    const avg = engine.clusterTotals(model, engine.defaults(model));
+    const c = outs.find((x) => x.id === jmId);
+    const a = avg.find((x) => x.id === jmId);
+    return { c, a, scale: c.outputs.mortality.hr / a.outputs.mortality.hr };
+  };
+
+  const d = engine.defaults(model);
+
+  // Diet cluster: all four members off default (fish is segmented).
+  const dv = { ...d, fiber: 45, fruitVeg: 1, nuts: 30, fish: 'none' };
+  const dietScale = clusterScale('dietScore', dv);
+  ok(dietScale.c && dietScale.c.outputs.mortality.hr, 'diet cluster active at off-default members');
+  const diet = memberDeltas('dietScore', 'dietScore', dv);
+  ok(Math.abs(dietScale.scale - diet.naive) > 1e-6,
+    `redundancy: diet cluster total (${dietScale.scale.toFixed(4)}) != naive member product (${diet.naive.toFixed(4)})`);
+  ok(Math.abs(diet.shares - diet.naive) < 1e-9,
+    'diet member chips == independent hrDeltas (not shares of the cluster)');
+
+  // Movement cluster: cardio + steps + sitting off default.
+  const mv = { ...d, cardio: 300, steps: 10000, sitting: 8 };
+  const ekScale = clusterScale('ekelundTable', mv);
+  ok(ekScale.c && ekScale.c.outputs.mortality.hr, 'ekelund cluster active at off-default members');
+  const ek = memberDeltas('ekelundTable', 'ekelundTable', mv);
+  ok(Math.abs(ekScale.scale - ek.naive) > 1e-6,
+    `redundancy: ekelund cluster total (${ekScale.scale.toFixed(4)}) != naive member product (${ek.naive.toFixed(4)})`);
+  ok(Math.abs(ek.shares - ek.naive) < 1e-9,
+    'ekelund member chips == independent hrDeltas (not shares of the cluster)');
+
+  // At defaults both the cluster scale and the naive product are exactly 1.0
+  // (the anchoring contract) — the note only appears when a cluster is active.
+  const dScale = clusterScale('dietScore', d);
+  ok(Math.abs(dScale.scale - 1) < 1e-9, 'diet cluster scale = 1.0 at defaults (anchor intact)');
+}
+
 console.log('\n[A3] Conflation schema audit (tests/audit.js)');
 {
   const { audit } = require('./audit.js');

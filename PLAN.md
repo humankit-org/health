@@ -113,16 +113,24 @@ The machine-readable schema (shapes, ownership rules, blend rule, audit) is in
 4. **Psychosocial = per-lever-only, not ρ**: no joint model exists
    (research.md §5.1); pairwise ρ does not compose in dense triangles
    (double-discounts), so the structural removal is used instead.
-5. **ρ does two jobs** — point blend (weaker effect ×(1−ρ) in log space) and
-   covariance (2·ρU·σᵢ·σⱼ in the quadrature). Redundancy share ≠ error
-   correlation; methodology copy says so. Blend rule: when both members of a
-   pair are active, the weaker |log HR| is discounted by ρ (ρ=1 ⇒ stronger
-   alone, ρ=0 ⇒ independent).
-6. **Bounds endpoints** (independence = full product; redundancy = strongest
-   effect per cluster) are ASSUMPTION-space labels ("the range of our models'
-   answers"), not truth bounds. Blend is monotone, so the point always lies
-   between the endpoints for pair groups; joint-model totals are lookups and
-   may sit outside (they are evidence).
+ 5. **ρ does two jobs** — point blend (weaker deviation ×(1−ρ) in log space,
+    where deviation = log HR − log rdHr, the excess over the input's
+    average-person level) and covariance (2·ρU·σᵢ·σⱼ in the quadrature).
+    Redundancy share ≠ error correlation; methodology copy says so. Blend
+    rule (4.5.8, 2026-08-05): when both members of a pair deviate from their
+    average levels, the weaker |deviation| is discounted by ρ (ρ=1 ⇒ the
+    weaker deviation collapses to its average level — NOT to 1.0 if its
+    average level ≠ 1, e.g. magnesium 0.969 at 280 mg/d; ρ=0 ⇒ independent).
+    Nothing blends when a side sits at its average (deviation 0), so reset is
+    silent by construction; and only SAME-direction deviations are blended —
+    opposite directions share no excess to remove, and blending one would push
+    the point outside the assumption band.
+ 6. **Bounds endpoints** (independence = full product; redundancy = strongest
+    effect per cluster) are ASSUMPTION-space labels ("the range of our models'
+    answers"), not truth bounds. The deviation blend is a convex move toward
+    the weaker side's average level, so for pair groups the point always lies
+    between the endpoints (same-direction blend only); joint-model totals are
+    lookups and may sit outside (they are evidence).
 7. **Clamp [0.45, 4.0]** is a safety net only; the joint curves should keep a
    regular healthy person mid-range. Reset invariant = baseline LE.
 8. **Supersession works inside joint axes**: `vo2maxOn` retires cardio from
@@ -271,48 +279,107 @@ has no header note explaining values are already adjusted, and the output area
 never links to sources.html#conflation (`activeJoint` already exports
 per-cluster totals and is tested).
 
-- [ ] 4.5.2 Card-level cluster note (js/app.js): for each output card, when
-      `engine.activeJoint(model, state)` returns a cluster covering that
-      output, render inside the card's More panel (above the contrib list) a
-      note of the form: "cardio + steps + sitting are counted as ONE joint
-      estimate (Ekelund 2019): combined effect 0.433 (range 0.415–0.433).
-      Each slider's chip is a share of this one estimate — they don't
-      multiply." Data: activeJoint() per-output {hr, hrLow, hrHigh}, jmById
-      for label/ref, member labels from the cluster definition. No engine
-      change needed.
-- [ ] 4.5.3 More-panel header note (js/app.js): one shared note (build once,
-      reuse in all five contrib panels) — "The percentages below are already
-      adjusted for overlaps: joint-model members are shares of one estimate,
-      overlap pairs are counted at partial strength. Full breakdown:
-      conflation on the methodology page." Link to sources.html#conflation.
-      Also a footer link to that anchor from the output grid whenever any
-      overlap/cluster is active.
-- [ ] 4.5.4 sources.html copy (js/sources.js): one sentence at the top of the
-      conflation section tying it to the main page ("every chip and More-row
-      on the main page gets its overlap discount / joint-model share from the
-      tables below") — doubles as the intro of the per-input table from 4.5.7.
-      No new tables beyond 4.5.7; ids #conflation, #overlap-list,
-      #fair-boundary already exist.
-- [ ] 4.5.7 sources.html per-input transparency table — the "what we use,
+- [x] 4.5.2 Card-level cluster note (js/app.js + index.html template +
+      css/style.css): for each output card, when `engine.activeJoint(model,
+      state)` returns a cluster covering that output, render inside the card's
+      More panel (above the contrib list) a note of the form: "cardio + steps +
+      sitting are counted as ONE joint estimate (PA × sitting cluster [n]):
+      combined effect 0.433 (range 0.415–0.433). Each slider's chip is a share
+      of this one estimate — they don't multiply." Data: activeJoint()
+      per-output {hr, hrLow, hrHigh} normalized to the "vs average person"
+      scale by dividing by the same cluster's total at defaults
+      (clusterTotals(model, defaults)); jmById from schema.conflationGroups for
+      label/ref; member labels from jm.members via displayName. No engine
+      change. Implemented 2026-08-05: `updateClusterNotes()` in app.js,
+      `.cluster-note` divs added to the three HR cards' More panels in the
+      outputs-template, `.cluster-note` CSS. Verified: at cardio 300 / steps
+      10000 / sitting 5 the ekelund note reads 0.820 (0.787–0.852) vs the naive
+      member-product 0.632 — the redundancy is surfaced, not hidden.
+- [x] 4.5.3 More-panel header note + output-grid footer link (js/app.js +
+      index.html template + css/style.css): one shared note ("The values below
+      already account for overlapping effects: joint-model members are shares
+      of one published estimate, overlap pairs are counted at partial strength,
+      and psychosocial factors are shown per lever only. Full breakdown: how
+      inputs are combined →" linking to sources.html#conflation) rendered into
+      a `.confl-more-note` div at the top of all five contrib More panels, plus
+      a `.confl-foot` link under the output grid. Both are gated on
+      `conflationActive()` = "any conflation-relevant input (joint-model
+      member / overlap member / per-lever member) moved off its default" —
+      false at reset by construction. NOT driven by engine.activeOverlaps():
+      the overlap blend runs on RAW marginals, so some inputs report blended
+      even at all-defaults (magnesium raw marginal at average intake 0.969;
+      sunExposure likewise) — the record flags would light the note up at
+      reset. The gate matches engine.activeJoint's member-off-default
+      semantics, keeping the note in sync with the cluster notes. Implemented
+      2026-08-05. Verified: defaults → all three panels empty; cardio/
+      magnesium/purpose/sleep moved → note+footer on; sauna-only and
+      weight-only → off.
+- [x] 4.5.4 sources.html copy (js/sources.js + sources.html + css/style.css):
+      one sentence at the top of the conflation section tying it to the main
+      page — "Every chip and More-row on the calculator gets its overlap
+      discount and its joint-model share from the tables below — the main page
+      and this page read the same data." Rendered into a
+      `<p id="conflation-tie">` (the first element under #conflation's h2) from
+      sources.js, so it can double as the intro of the per-input table (4.5.7).
+      Styled `.conflation-tie` (soft italic callout). Implemented 2026-08-05.
+- [x] 4.5.7 sources.html per-input transparency table — the "what we use,
       where, why" ask. New section under #conflation, generated from the model
       (drift-proof, like everything else): one row per input, columns: input;
       which outputs it feeds (mortality / cancer / cvd / cognition /
       happiness); HOW it is counted per output (marginal HR / share of
       <joint model> / overlap ρ with <pair> / per-lever only, not in total /
       no data yet / none); evidence tier; source [n]. Implement:
-      (a) engine helper `engine.inputDisclosure(model)` (pure, node-testable,
-      in engine.js): for each input nudge it off-default, evaluateRaw once,
-      collect its per-output records from contributions (viaJoint /
-      overlapBlend / perLever / evidence / source) and mark outputs listed in
-      result.noData as "no data yet"; gate inputs (vo2maxOn / bodyFatOn)
-      marked "replaces X when enabled"; (b) rendering in sources.js reusing
-      the existing inputName/evBadge/citeKeys/refLink/jmTitle helpers;
-      (c) tests: rows == model.inputs length, every row has a source, no-data
-      outputs only appear where engine says so.
-- [ ] 4.5.5 Tests (tests/engine.test.js): assert the note's premise — with a
-      joint model active, the naive product of the member hrDeltas differs
-      from the cluster total (redundancy exists and is carried by the cluster,
-      not hidden in member shares). Suite: `node tests/engine.test.js`.
+      (a) [x] engine helper `engine.inputDisclosure(model)` (pure, node-testable,
+      in engine.js, implemented 2026-08-05): STATIC walk (no evaluateRaw) over
+      conflationGroups + per-output lookup coverage + effect lists, so it
+      cannot drift from the numbers. Returns one row per model.input (44),
+      each { id, label, group, hows{output→{how,detail,evidence,source[,rho]}},
+      sources }. HOW per output: gate toggles → "replaces BMI/Cardio… when
+      enabled" (only for effects whose supersededBy === toggle, or BMI when
+      model.bmi.supersededBy, or gated sliders' outputs) else "none";
+      heightCm/weightKg → "via-bmi" (mortality+cvd) / none; perLeverOnly →
+      "per-lever"/"per-lever-points"; joint-model owner with lookup coverage →
+      "share" (detail = cluster id; source falls back to jm.source when the
+      input has no own effect on that output); overlap pair where BOTH sides
+      act on the output → "overlap" (rho + other side); else "marginal";
+      effects-but-undefined-coverage → "no-data"; else "none". GATED sliders
+      (vo2max/bodyFat/grip/rhr) are tagged `gated:true + gateLabel` on top of
+      their normal classification (bodyFat mortality/cancer/cvd = "share" of
+      mayoCells, gated). sex → none. Sources = deduped union over hows, with
+      gate/bmi/baseline fallbacks. Verified by node probe: 44 rows, no
+      source-less rows, bodyFatOn/vo2maxOn/grip/rhr/bodyFat/vo2max/grip rows
+      all classify correctly; cardio's cognition/happiness effects are NOT
+      superseded by vo2maxOn (confirmed in factors.js), so the toggle shows
+      "none" there. Full suite green. (b) [x] rendering in sources.js (implemented
+      2026-08-05): new `renderInputTable()` → `#input-transparency tbody`, a
+      section after the overlap table in sources.html ("What each input does").
+      Columns: Input (displayName + group), Feeds (outputs where the how is
+      neither none nor no-data), How it is counted (one `<li>` per output via
+      `howText`, reusing displayName/evBadge/citeKeys — cluster ids and overlap
+      partners resolved to readable titles, gated rows carry "— only when
+      "<gate>" is on"), Evidence (deduped badges), Source (citeKeys). Styled
+      `.group-sub`/`.how-list` in css/style.css. Verified via
+      /tmp/opencode/dom_shim_sources.js: 44 rows, all classification strings
+      present. (c) [x] tests (tests/engine.test.js §[27], implemented
+      2026-08-05): rows == model.inputs length; every row has ≥1 source; all
+      hows ∈ known set; 'no-data' never where an effect exists; disclosure's
+      no-data rows == engine.noDataInputs labels EXACTLY on cancer (17) and
+      cvd (7) — the drift-proof invariant; spot checks bodyFat=gated-share,
+      vo2maxOn cognition='none', sex='none'. Full suite + audit green.
+- [x] 4.5.5 Tests (tests/engine.test.js) §[28] (implemented 2026-08-05):
+      asserts the note's premise — with a joint model active, the cluster
+      total normalized to the average person (exactly what the note displays)
+      differs from the naive product of the member hrDeltas. Verified for both
+      shipped clusters at off-default members: diet total 1.0989 vs naive
+      0.7576; ekelund total 0.8524 vs naive 0.6956. Also pins the discovery
+      that member chips' hrDeltas EQUAL the naive (SIMPLE) model's marginals
+      (diet 0.7576, ekelund 0.6956) — the redundancy is carried by the cluster
+      total, NOT by member shares. This proved the 4.5.2 note's last sentence
+      ("Each slider's chip is a share of this one estimate — they don't
+      multiply") factually wrong, so the app.js copy was corrected (same step)
+      to: "Each slider's chip still shows its independent effect; multiplying
+      those chips together would double-count the shared pathway — the
+      combined effect above prices it once." Suite + audit green.
 - [ ] 4.5.6 Verification: `node --check js/app.js` (+ js/sources.js), full
       suite green, serve and manually check four scenarios: (a) PA cluster
       active (cardio+steps+sitting) → cluster note + header note visible;
@@ -320,6 +387,36 @@ per-cluster totals and is tested).
       chip and row, header note visible; (c) all defaults → no conflation UI
       rendered anywhere; (d) sources.html per-input table renders every input
       with a where/how/why for each output.
+- [x] 4.5.8 FIX (implemented 2026-08-05): the overlap blend ran on RAW
+      marginals, so inputs whose raw effect at their average value is ≠1
+      (magnesium raw 0.969 at 280 mg/d; sunExposure) showed a spurious chip at
+      reset. DONE — engine now blends the DEVIATION from the average-person
+      level: excess = logHr − log(rdHr), blended logHr = log(rdHr) +
+      (1−ρ)·excess. `computeJmTotals` now attaches `rdHr` (cluster total at
+      defaults) to every cluster entry via a new memoized `defaultJmTotalsCore`
+      WeakMap (computeJmTotalsCore split out to avoid recursion); input effects
+      already carried rdHr/rdPoints. Points blend mirrors it (deviation from
+      rdPoints). REFINEMENT beyond the PLAN formula (discovered running the
+      suite): blend ONLY same-direction deviations (`Math.sign(eA) ===
+      Math.sign(eB)`) — opposite-direction pairs (rhr harmful vs cardio
+      protective; pm harmful vs a protective diet cluster) share no excess to
+      remove, and blending one would push the point estimate outside the
+      [independence, redundancy] assumption band ([19] failed). This preserves
+      the documented between-endpoints invariant. Consequences (all pinned in
+      updated tests): at defaults EVERY pair is inactive (excess 0) — the
+      reset artifact is gone; a lone moving member whose cluster sits at its
+      average (magnesium@450 alone, rhr@90 alone, pm@8 alone) is NOT blended
+      (no shared excess); the blend fires only when both sides deviate the
+      same way, and it discounts the smaller |deviation| — which can be the
+      CLUSTER (rhr 0.283 vs cluster 0.265 harmful; magnesium 0.179 vs diet
+      cluster 0.094 protective), never the raw-level comparison. [21]/[23]
+      defaults identities now cancel mg/sun exactly (blends inert); [24] rhr
+      alone unblended + cluster-blended scenario; [18] opposite-direction skip
+      + same-direction snus/alcohol blend (rdHr 1.0 → identical to the old
+      log-space discount); [20] swap test moved to snus/alcohol. Suite + audit
+      green. research.md line ~545 (vaping null) still holds — a null HR 1.00
+      has rdHr 1.0 → zero deviation → no-op. Design-decision §5/§6 in PLAN.md
+      updated. Blocked-by cleared: 4.5.6(c) now satisfiable.
 
 ## Phase 5.5 — Simple/Advanced model toggle (created 2026-08-04)
 

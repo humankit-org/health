@@ -523,6 +523,42 @@ summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--ac
   cursor: help;
 }
 
+/* Card-level cluster note (4.5.2): shown in a card's More panel when a
+   joint model covers that output — the members are counted as one estimate,
+   so their chips are shares of it, not separate multipliers. */
+.cluster-note {
+  margin: 0.4rem 0;
+  padding: 0.45rem 0.6rem;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.cluster-note a { color: var(--ink-soft); text-decoration: none; }
+.cluster-note:empty { display: none; }
+
+/* Shared More-panel header note (4.5.3): appears in every contrib panel only
+   while a cluster or overlap is active — "already adjusted, see methodology".
+   Deliberately softer than .cluster-note so the specific estimate stands out. */
+.confl-more-note {
+  margin: 0.3rem 0 0.5rem;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.confl-more-note a { color: var(--accent); font-style: normal; text-decoration: none; }
+.confl-more-note:empty { display: none; }
+
+/* Output-grid footer link to sources.html#conflation (4.5.3), shown only
+   while a cluster or overlap is active. */
+.confl-foot {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.85rem;
+  text-align: right;
+}
+.confl-foot a { color: var(--accent); text-decoration: none; }
+.confl-foot:empty { display: none; }
+
 /* -------------------------------------------------- methodology + refs */
 
 .page-section {
@@ -551,6 +587,15 @@ summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--ac
 
 /* --------------------------------------------- conflation (sources.html) */
 
+.conflation-tie {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+}
+
 .jm-block { margin: 0.7rem 0; border-top: 1px solid var(--line); padding-top: 0.6rem; }
 .jm-block summary { cursor: pointer; font-weight: 600; color: var(--ink); }
 .jm-block summary .ev { margin-left: 0.3rem; }
@@ -577,6 +622,10 @@ summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--ac
   border-radius: 6px;
   color: var(--ink);
 }
+
+.jm-tbl.conflation .group-sub { font-size: 0.72rem; color: var(--ink-soft); font-weight: 400; }
+.jm-tbl.conflation .how-list { margin: 0; padding-left: 1rem; }
+.jm-tbl.conflation .how-list li { font-size: 0.8rem; margin: 0.1rem 0; }
 
 .reset-row { margin-bottom: 1.25rem; }
 #reset {

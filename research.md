@@ -542,8 +542,9 @@ exist):
    results" — double count real but small. Source: byhamre2021.
 2. **ρ(vaping, alcohol) = 0.10 (ρU 0.05), tier low, unmeasured-confounding**
    — PATH collects no alcohol data. Numerically MOOT while the vaping CVD
-   estimate is a null (HR 1.00 [0.69–1.45]): a 1.0 HR raised to (1−ρ) is
-   still 1.0, so the blend is a no-op today — kept for structure, activates
+   estimate is a null (HR 1.00 [0.69–1.45]): a null HR has zero deviation
+   from its own reference level (rdHr 1.0), so the blend is a no-op today —
+   kept for structure, activates
    automatically if a future vaping HR turns non-null. Source: berlowitz2022.
 
 **Correction (applied in the data):** factors.js snus CVD byOption CI was
