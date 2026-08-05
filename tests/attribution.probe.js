@@ -50,7 +50,7 @@ function probeValues() {
   return v;
 }
 
-// Cluster definitions (todo.md 0.7 / PLAN.md Phase 0 sizing). These are the
+// Cluster definitions (PLAN.md / research.md). These are the
 // naive-multiplication clusters the engine currently multiplies through.
 const CLUSTERS = {
   movement: ['cardio', 'steps', 'strength', 'sitting'],

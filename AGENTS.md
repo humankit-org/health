@@ -32,7 +32,8 @@ Working v0.2: plain HTML/CSS/JS, zero build step, zero runtime dependencies.
 ```
 index.html          main page: nav, short disclaimer, calculator (inputs/outputs)
 sources.html        method, limitations, full disclaimer, reference list
-PLAN.md             roadmap + candidate-factor backlog (sources needed)
+PLAN.md             current model, design decisions, roadmap, candidate backlog
+research.md         verified evidence base (primary-source cells, ρ justifications, sweep audit) — read before changing any number
 css/style.css       all styling
 js/factors.js       THE MODEL — every number + its citation (see below)
 js/schema.js        conflation schema/API: OUTPUTS, conflationGroups,
@@ -166,13 +167,13 @@ links here as `health.humankit.org`.
 
 # You need to be currently working on:
 
-We are working on implementing a fix for the conflating variables / double counting / correlation of seperate inputs problem, as described as 'The conflation problem' in PLAN.md, read it. We are working on implementing a fix / larger refactor to the engine/model to fix the issue. PLAN.md and todo.md are written by AI, only AGENTS.md is written by a human, so you can take the PLAN.md and todo.md with grains of salt if they say something you find questionable, double check it, it may be a hallucination.
+We are working on implementing a fix for the conflating variables / double counting / correlation of seperate inputs problem, as described as 'The conflation problem' in PLAN.md, read it. We are working on implementing a fix / larger refactor to the engine/model to fix the issue. PLAN.md (including the Working TODO section at the bottom) is written by AI, only AGENTS.md is written by a human, so you can take the PLAN.md with grains of salt if they say something you find questionable, double check it, it may be a hallucination.
 
 PRIME DIRECTIVE (YOUR BREAD AND BUTTER IN THIS WORKFLOW, NEVER FORGET THESE INSTRUCTIONS EXACTLY. THIS IS ALSO REPEATED IN AGENTS.md, SO ALWAYS READ THAT). DO THE FOLLOWING:
 1. Read AGENTS.md, PLAN.md
-2. Identify the next step still yet to do in todo.md. Only work on one step at a time, and denote when you are finished with a step as soon as you are finished with a step. Don't wait until later.
-3. Construct a plan on how to get the next step into our current code. What needs to be modified? What needs to be touched? How does it fit into our current code? Our current model/infrastructure? Will something major need changing? If part of implementing this next step requires creating sub-steps in todo.md, DO THAT and return to '2.'. Seriously, don't hesitate to create substeps, especially for larger changes, or creating steps to "construct new plans" or "research x" or "look up data on z" or "look into y code framework" or non-code related stuff. It needs to be done as a software engineer would do it. If the entire implementation process plan doesn't run into issues, that's also fine, you don't need to make more steps if you don't need to.
-4. Once you have a concrete plan on how to implement something, implement it. If you run into issues, either make a note and new steps in todo.md and revert, or add it as the next step in todo.md.
+2. Identify the next step still yet to do in PLAN.md's Working TODO section. Only work on one step at a time, and denote when you are finished with a step as soon as you are finished with a step. Don't wait until later.
+3. Construct a plan on how to get the next step into our current code. What needs to be modified? What needs to be touched? How does it fit into our current code? Our current model/infrastructure? Will something major need changing? If part of implementing this next step requires creating sub-steps in the Working TODO section of PLAN.md, DO THAT and return to '2.'. Seriously, don't hesitate to create substeps, especially for larger changes, or creating steps to "construct new plans" or "research x" or "look up data on z" or "look into y code framework" or non-code related stuff. It needs to be done as a software engineer would do it. If the entire implementation process plan doesn't run into issues, that's also fine, you don't need to make more steps if you don't need to.
+4. Once you have a concrete plan on how to implement something, implement it. If you run into issues, either make a note and new steps in the Working TODO section of PLAN.md and revert, or add it as the next step in the Working TODO section.
 5. Go back to step 1 until all tasks are finished.
 
-Try to work out of todo.md, always leaving clear instructions as often as you can. Work as a software engineer would, not just coding on the fly, but once a seperate unanticipated issue is run into, go back and construct plans and ideas around it to get a well-functioning robust fix. You specifically track your work in todo.md as you are an AI agent and may suddenly run out of context, hence the IMPORTANCE of tracking everything you do structuredly in todo.md.
+Try to work out of the Working TODO section of PLAN.md, always leaving clear instructions as often as you can. Work as a software engineer would, not just coding on the fly, but once a seperate unanticipated issue is run into, go back and construct plans and ideas around it to get a well-functioning robust fix. You specifically track your work in the Working TODO section as you are an AI agent and may suddenly run out of context, hence the IMPORTANCE of tracking everything you do structuredly there.
