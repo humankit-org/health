@@ -538,15 +538,20 @@ labels) so future presentation work knows which mode it belongs to.
       id="mode-toggle", two `.seg-option` radios named `mode` with
       data-mode="simple|advanced", Advanced checked; caption is an empty
       `<p class="mode-caption" id="mode-caption">` under the tagline (filled
-      by JS); a `.mode-badge` row sits above the output grid. Both the
-      caption's link and the badge copy are set in app.js updateModeUI (6.6).
+      by JS); copy is set in app.js updateModeUI (6.6). A first attempt also
+      placed a `.mode-badge` row above the output grid, but that <p> is a
+      real grid item in the two-column `main` grid and stole the right-hand
+      cell — pushing the outputs BELOW the inputs. Removed the badge
+      (element + CSS + app.js code, 2026-08-06); the caption under the
+      tagline alone carries the reminder.
 - [x] 6.4 css/style.css: `.mode-toggle` styles reusing the existing
       `.segmented`/`.switch` aesthetic (css/style.css:179–221); a clear
       "active mode" state so the current mode is obvious.
       DONE (2026-08-06): `.topbar-right` flex row, `.mode-toggle` pill group
       (checked option = accent fill, same as .seg-option), `.mode-caption`
-      (simple-mode tint), `.mode-badge` + `.mode-badge.simple-mode` (warn
-      tint) + `.mode-badge-row`.
+      (simple-mode tint). `.mode-badge`/`.mode-badge-row` styles were added
+      then REMOVED with the badge (6.3 note) so `#outputs` stays in the
+      right grid column.
 - [x] 6.5 app.js: two-model refactor.
       (a) Keep `const model = HEALTH_MODEL` for one-time data-derived
       structures (GROUPS, inputLabels, jmById, renderInputs, updateGates) —
@@ -588,10 +593,9 @@ labels) so future presentation work knows which mode it belongs to.
       DONE (2026-08-06): `updateModeUI()` sets `#mode-caption` innerHTML
       (advanced: "…priced from published joint studies… How inputs are
       combined →"; simple: "…multiplied as if independent — it overstates
-      combinations… Full method →") + toggles `.simple-mode` tint, and sets
-      `#mode-badge` text ("Advanced model — overlap-corrected" /
-      "Simple model — naive independence") + tint. Called on init and from
-      setMode.
+      combinations… Full method →") + toggles `.simple-mode` tint. Called on
+      init and from setMode. (A `#mode-badge` near the outputs was dropped
+      post-review — see 6.3 note — so updateModeUI sets caption copy only.)
 - [x] 6.7 tests (tests/engine.test.js): new §[29] "Simple vs advanced mode"
       (AFTER Phase 7: `SIMPLE_HEALTH_MODEL` comes from
       `require('../js/joint/index.js').SIMPLE_HEALTH_MODEL`, or just
@@ -642,7 +646,7 @@ labels) so future presentation work knows which mode it belongs to.
       removed) with cluster note + header note + confl-foot present in
       advanced and ALL cleared in simple; the mode radio change handler
       actually swaps the displayed HR (0.63 ≈ engine simple 0.632,
-      display-rounded), flips badge/caption, and restores the cluster note on
+      display-rounded), flips caption, and restores the cluster note on
       flip-back; slider values carry across (state untouched by setMode);
       base evaluateFindings returns no mode:advanced findings (they vanish in
       simple) while advanced returns them; simple-mode contribution records

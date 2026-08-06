@@ -121,24 +121,6 @@ main {
 }
 .mode-caption.simple-mode { color: var(--warn-line); }
 
-.mode-badge {
-  display: inline-block;
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  color: var(--ink-soft);
-  background: var(--card);
-  vertical-align: middle;
-}
-.mode-badge.simple-mode {
-  border-color: var(--warn-line);
-  color: var(--warn-line);
-}
-
-.mode-badge-row { margin: 0 0 0.5rem; }
-
 .tagline {
   margin: 0.15rem 0 0.9rem;
   color: var(--ink-soft);

@@ -533,9 +533,8 @@
     update(engine.evaluate(activeModel, state));
   }
 
-  // Mode caption + badge copy (6.6). No numbers — copy only. The caption sits
-  // under the tagline (id="mode-caption"); the badge sits in the output grid
-  // (id="mode-badge"). Simple mode gets a reminder that the numbers are naive.
+  // Mode caption copy (6.6). No numbers — copy only. Sits under the tagline
+  // (id="mode-caption"). Simple mode gets a reminder that the numbers are naive.
   function updateModeUI() {
     const caption = document.getElementById('mode-caption');
     if (caption) {
@@ -543,11 +542,6 @@
         ? 'Simple: each factor\'s effect is multiplied as if independent — it overstates combinations. Advanced corrects overlapping effects using published joint studies. <a href="sources.html#conflation">Full method →</a>'
         : 'Advanced: overlapping effects are priced from published joint studies, so the combined estimate doesn\'t overclaim. <a href="sources.html#conflation">How inputs are combined →</a>';
       caption.classList.toggle('simple-mode', mode === 'simple');
-    }
-    const badge = document.getElementById('mode-badge');
-    if (badge) {
-      badge.textContent = mode === 'simple' ? 'Simple model — naive independence' : 'Advanced model — overlap-corrected';
-      badge.classList.toggle('simple-mode', mode === 'simple');
     }
   }
 
