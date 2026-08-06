@@ -168,6 +168,9 @@ that cluster**; edit the number + its note/source in the same commit, run
 ### In flight (live task list: Working TODO at the bottom of this file)
 - **Phase 4.5** — main-page conflation disclosure: card-level cluster notes,
   More-panel header note, per-input transparency table on sources.html.
+- **Phase 4.6** — chips + More-list presentation: advanced-mode chips for
+  joint-model members (arrow + cluster name, no %); clustered, expandable
+  More list on the HR cards.
 - **Phase 5.5** — Simple/Advanced model toggle.
 - **Phase 7** — refactor: extract the joint model into `js/joint/` (separate
   the base SIMPLE model from the conflation layer; steps below).
@@ -432,6 +435,210 @@ per-cluster totals and is tested).
       green. research.md line ~545 (vaping null) still holds — a null HR 1.00
       has rdHr 1.0 → zero deviation → no-op. Design-decision §5/§6 in PLAN.md
       updated. Blocked-by cleared: 4.5.6(c) now satisfiable.
+
+## Phase 4.6 — chips + More-list presentation (Feature A: advanced-mode chips; Feature B: clustered More list) (created 2026-08-06)
+
+Two presentational changes, planned separately (A = chips under inputs, B =
+the More disclosure list under the HR output cards). NO engine change and NO
+new numbers: everything renders from data the engine already returns
+(contribution records carry `viaJoint`/`overlapBlend`/`perLever`; per-cluster
+totals come from `engine.activeJoint`/`clusterTotals` + the existing
+`avgClusters` map in app.js; cluster titles come from `schema.displayName`).
+Both features are pure app.js + css + (maybe) template work.
+
+### Design decisions (confirmed with the human 2026-08-06)
+
+- **Feature A scope:** ONLY cluster-member chips change format in advanced
+  mode. A chip whose record has `c.viaJoint` renders as
+  `{output} {arrow} ({cluster displayName}) [n]` — arrow = ↓ when
+  `hrDelta < 1`, ↑ when `hrDelta > 1`; cluster name via
+  `schema.displayName(model, c.viaJoint)`; the `[n]` citation stays. NO % and
+  NO separate `via` tag (the parenthesised cluster name IS the disclosure —
+  it replaces the "counted via …" confl-tag). Non-members (plain marginal,
+  overlap-blend, per-lever HR) keep today's format exactly (flat % + any
+  overlap `confl-tag`). Points chips (cognition/happiness) never have
+  `viaJoint` → unchanged. Per-lever HR chips keep their "(shown individually)"
+  tag. Overlap-blend records are never cluster members in the current data
+  (pairs are input↔input or input↔cluster), so the formats can't collide; if a
+  record ever carried BOTH flags, the cluster format wins and the overlap info
+  stays in the chip's title tooltip only.
+- **Feature A self-neutralises:** `viaJoint` is only set when `jointModels` is
+  non-empty, so simple mode renders flat % with zero branch code (the
+  AGENTS.md mode-convention allows relying on engine tags). The branch in
+  `updateChips` is just `if (c.viaJoint)` — no `mode` check needed.
+- **Feature B scope:** clustered list ONLY on the three HR panels
+  (mortality/cancer/cvd). cognition/happiness keep the flat list exactly as
+  today (incl. their per-lever "psychosocial — points only" tags).
+- **More-list structure (advanced, HR panels):**
+  1. Cluster groups first: for each cluster in
+     `engine.activeJoint(activeModel, state)` that covers the output AND has ≥1
+     nonzero member record on it, a group header row `▸ {displayName} [n]`
+     plus the cluster's combined % =
+     `fmtPctFromHr(t.outputs[out].hr / avgOut.hr)` (avgOut from the existing
+     `avgClusters` map — the same normalization the 4.5.2 cluster note uses).
+     The header is a `<details>`/`<summary>` expanding to member rows.
+  2. Member rows (inside the group): each nonzero member record — label,
+     marginal % (`fmtPctFromHr(c.hrDelta)`), citation, evidence badge. Same
+     row content as today minus the inline tags. Members at default (hrDelta
+     ≈ 1.0, filtered by the existing nonzero gate) simply don't appear.
+  3. Unclustered rows after the groups: records with no `viaJoint` (plain
+     marginal, overlap-blend, per-lever) — flat, minus the inline
+     `conflNote`/`leverNote` tags.
+- **Removed "popup text":** on HR panels, the per-row
+  `contrib-lever`/`conflNote`/`leverNote` spans ("counted at X% — overlaps Y",
+  "counted via …", "psychosocial — shown individually"). The `.confl-more-note`
+  header note STAYS (it is the explanation; the group headers are navigation).
+  The strength-training reference the human flagged is the `jointNote` "counted
+  via Aerobic × strength cluster" row tag — gone with the inline tags (and on
+  chips the cluster name replaces it).
+- **Card-level cluster notes REMOVED (2026-08-06):** the 4.5.2 `.cluster-note`
+  divs (and their `updateClusterNotes`/`clusterNote` code + CSS) are gone —
+  the grouped More-list group headers now carry the same combined-effect
+  number, so the note was redundant. Only the `.confl-more-note` header note
+  and the `.confl-foot` link remain of the 4.5.x disclosure block.
+- **Ordering:** cluster groups sorted by |log(combined ratio)| descending
+  (biggest effect first, matching today's magnitude sort); members within a
+  group by |log(hrDelta)|; unclustered rows by magnitude as today.
+- **Group renders even when the cluster nets ±0%** (refinement, 2026-08-06):
+  a group appears whenever it has ≥1 nonzero member record on the card, even
+  if the cluster's normalized total is exactly 1.0 (e.g. mommaCells on
+  cancer: strength 1→3 stays in the same grid cell, so the cluster total is
+  unchanged while the member marginal is +8% — hiding the group would drop the
+  member row entirely). The ±0% header next to the +8% member is honest: the
+  cluster prices it once.
+- **Effect-label fix:** HR More rows now label with the actual card
+  (`cancer −14%` on the cancer card) instead of the old hard-coded
+  `mortality −14%` on every card — a pre-existing copy bug corrected in
+  `contribRow()`.
+- **Self-neutralising in simple mode:** no record carries `viaJoint` when
+  `jointModels` is empty → the grouped renderer produces the flat list with no
+  branch. `avgClusters`/`activeJoint` are empty on the base model.
+- **Cluster→output coverage (verified in joint-models.js):** mortality = all 5
+  clusters (dietScore, ekelundTable, mommaCells, duncanCells, mayoCells);
+  cancer = mommaCells + mayoCells; cvd = mommaCells + mayoCells. dietScore and
+  ekelundTable and duncanCells cover mortality ONLY, so their members appear as
+  plain marginal rows on the cancer/cvd cards — expected, not a bug.
+- **Gated sliders:** `vo2maxOn` retires cardio from the PA axes, `bodyFatOn`
+  retires bmi from mayoCells (supersession). When a member is retired it simply
+  produces no nonzero contribution on the covered output → its member row
+  disappears from the group (verify per cluster below). The derived BMI
+  pseudo-input is grouped under mayoCells when it produces a `viaJoint:
+  'mayoCells'` record; the `bmi-readout` copy is untouched.
+
+### Feature A steps (advanced-mode chips)
+
+- [x] 4.6.1 app.js `updateChips`: add the `c.viaJoint` branch — for HR records,
+      render `{which} {arrow} ({displayName(c.viaJoint)}) {refLink(c.source)}`
+      instead of the % + `chipTags`; keep the per-lever "(shown individually)"
+      handling and the title `c.note`. `node --check js/app.js`.
+      DONE (2026-08-06): a new `hrChip()` helper renders the joint-member form
+      (arrow from `hrDelta`, cluster name in parens, no %, no `via`/`confl-tag`)
+      and the flat form for everyone else. Points chips untouched. Verified by
+      /tmp/opencode/phase46_probe.js §[1–6]: all 5 clusters' members render the
+      new form on mortality (momma also on cancer+cvd); fiber's cancer/cvd
+      chips stay flat % (no viaJoint on uncovered outputs — expected); alcohol
+      (non-member) keeps flat % + no confl-tag unless blended; simple mode flat.
+- [x] 4.6.2 css/style.css: `.chip-group` span for the parenthesised cluster
+      name (small, muted, maybe a distinct accent to signal "this chip is a
+      share of one estimate, not an independent %"); keep `.chip.good/.bad`
+      colours driving the arrow. No layout change.
+      DONE (2026-08-06): `.chip-group` — lighter weight, ~0.85 opacity, nowrap.
+- [x] 4.6.3 DOM-shim verification per cluster (reuse the mode_probe pattern):
+      move one member off-default and assert the chip reads `{output} {arrow}
+      ({cluster title}) [n]` with NO % and NO `via`/`confl-tag` span, for:
+      (a) dietScore — fiber (mortality ↓); (b) ekelundTable — cardio ↑… no,
+      cardio ↓; also steps + sitting; (c) mommaCells — strength (mortality ↓,
+      cancer ↓, cvd ↓); (d) duncanCells — sleep (mortality ↓); (e) mayoCells —
+      bmi via weight/height AND bodyFatOn (mortality/cancer/cvd ↑). Also: a
+      non-member (e.g. alcohol) keeps the flat % format in advanced mode.
+      DONE (2026-08-06) via /tmp/opencode/phase46_probe.js §[1–6] — directions
+      computed FROM the engine (don't hard-code them; e.g. strength@3 is
+      HARMFUL per momma's ratio-mode, sitting@12 harmful / @2 protective,
+      bodyFat@22 protective / @45 harmful). bodyFat has NO input-level
+      cancer/cvd records (the mayo grid prices those, but no per-input
+      attribution exists) → no bodyFat chips there, by design.
+
+### Feature B steps (clustered More list)
+
+- [x] 4.6.4 app.js `updateContrib`: for the three HR outputs, build the
+      grouped list — pass `activeClusters` in (already computed in `update()`);
+      group by cluster as per the design block; unclustered rows appended.
+      cognition/happiness keep the existing flat path unchanged.
+      DONE (2026-08-06): `groupedContribRows()` — group header = combined % +
+      cluster title + `[n]` + evidence badge, wrapped in `<details>/<summary>`,
+      expanding to member rows (marginal %, label, citation, evidence); then
+      unclustered rows flat. REFINEMENT vs the plan: a group renders whenever
+      it has ≥1 nonzero member record even if the cluster total nets to ±0
+      (the original "skip ratio===1" hid e.g. mommaCells on cancer — strength
+      1→3 stays in the same grid cell so the cluster total is unchanged while
+      the member marginal is +8%; hiding it would drop the member row entirely).
+      The ±0% header + the member's +8% is honest (the cluster prices it once).
+      Verified /tmp/opencode/phase46_probe.js §[7–10]: ekelund group on
+      mortality with combined % ≠ member product; mommaCells grouped on
+      cancer+cvd; dietScore NOT grouped on cancer (mortality-only cluster,
+      fiber appears as a flat marginal row there); mayoCells + ekelund both
+      grouped on mortality together; unclustered alcohol + per-lever purpose
+      render flat with no tags.
+- [x] 4.6.5 app.js: stop emitting `conflNote`/`leverNote` inline spans on HR
+      rows (the grouped list replaces them). Mind panels keep `contribNotes`
+      as today. Remove now-dead code if nothing else uses it.
+      DONE (2026-08-06): `contribRow()` renders inline conflation tags ONLY for
+      `field === 'points'` (mind panels); HR rows are tag-free everywhere.
+      `contribNotes` is still used by the mind panels, so it stays. NOTE: this
+      intentionally obsoletes the 4.5.6 dom_shim_probe.js scenario-(b) assertion
+      "mortality contrib row carries overlap disclosure" — the overlap
+      disclosure now lives on the chip + `.confl-more-note` header + sources.html
+      (per the human's confirmed "remove inline tags, keep note divs").
+- [x] 4.6.6 css/style.css: `.contrib-cluster` (group block), `.contrib-cluster
+      head` (summary row: ▸ marker, title, combined % + `[n]`), nested member
+      list indentation, `.contrib-members` spacing. Reuse `.contrib-effect`/
+      `.ev`/`.contrib-ref` for member rows so the look stays consistent.
+      DONE (2026-08-06): `.contrib-cluster`/`summary` flex rows with a rotating
+      ▸ affordance, `.contrib-members` indented under a left border.
+- [x] 4.6.7 DOM-shim verification per cluster × covered output (mortality:
+      all 5; cancer/cvd: mommaCells + mayoCells): group header shows cluster
+      title + combined % (normalized, ≠ naive member product — §[28] already
+      pins this) and expands to member rows with marginal %; unclustered rows
+      (e.g. alcohol, smoking, per-lever purpose) render flat with NO inline
+      tags; `.confl-more-note` still present (`.cluster-note` divs removed with
+      4.6.10). Mind panels unchanged (flat, tags intact). Simple mode: flat
+      list, no group headers, chips flat.
+      DONE (2026-08-06) via /tmp/opencode/phase46_probe.js §[7–11] + §[12]
+      (simple mode). `.confl-more-note` presence re-verified by the existing
+      /tmp/opencode/mode_probe.js (still green, cluster-note assertions
+      replaced by grouped-list checks after 4.6.10). mind panels keep per-lever
+      tags (happiness check — purpose has NO cognition record, so the
+      per-lever-tag assertion must target happiness).
+- [x] 4.6.10 REMOVE the 4.5.2 card-level cluster notes (human request,
+      2026-08-06): the `.cluster-note` divs in the outputs-template
+      (index.html:79/92/104), `clusterNote` + `updateClusterNotes` in app.js,
+      and the `.cluster-note` CSS. Rationale: the grouped More-list group
+      headers (4.6.4) now carry the same combined-effect number, so the note
+      was redundant. KEEP `.confl-more-note` (header) + `.confl-foot` + the
+      `activeClusters` computation (still feeds `updateContrib`).
+      DONE (2026-08-06): all three removed. `avgClusters`/`jmById` stay (used
+      by `groupedContribRows`). Note: the file had been left mid-refactor
+      (`updateClusterNotes` commented out but still called in `update()` → a
+      runtime ReferenceError) — the removal completed it cleanly. `/tmp/
+      opencode/mode_probe.js`'s three cluster-note assertions were replaced
+      with grouped-list checks. `node --check`, full suite, audit, phase46 +
+      mode probes all green.
+
+### Verification (both features)
+
+- [x] 4.6.8 `node --check` on edited JS; `node tests/engine.test.js` +
+      `node tests/audit.js` green (engine untouched — no assertion edits
+      expected); DOM-shim probe from 4.6.3 + 4.6.7 passing.
+      DONE (2026-08-06): `node --check js/app.js` clean; full suite + audit
+      green; /tmp/opencode/phase46_probe.js ALL PASS; /tmp/opencode/mode_probe.js
+      ALL PASS (cluster notes / header notes / confl-foot / toggle intact).
+      KNOWN EXPECTED FAIL: /tmp/opencode/dom_shim_probe.js scenario (b) —
+      its "mortality contrib row carries overlap disclosure" assertion is
+      obsolete by design (4.6.5 removed HR-row inline tags; the overlap
+      disclosure remains on the chip, which that probe still passes).
+- [ ] 4.6.9 Serve and manual pass: advanced mode shows arrow+cluster chips and
+      the grouped More list; toggle to simple → flat chips + flat list; reset →
+      nothing; all `[n]` links resolve on sources.html (canonical numbering).
 
 ## Phase 5.5 — Simple/Advanced model toggle (created 2026-08-04)
 

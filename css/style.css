@@ -265,6 +265,11 @@ input[type="range"] {
 .chip-ref { color: inherit; text-decoration: none; opacity: 0.75; }
 .chip-ref:hover { opacity: 1; text-decoration: underline; }
 
+/* 4.6.2: parenthesised cluster name on a joint-member chip (advanced mode).
+   Signals "this chip is a share of one published estimate, not an
+   independent %" — softer weight than the arrow, distinct hue. */
+.chip-group { font-weight: 500; font-style: normal; opacity: 0.85; white-space: nowrap; }
+
 /* topic chips on the sources page: which inputs/subjects a source drives */
 .ref-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
 .chip.topic { background: #ecefed; color: var(--ink-soft); cursor: default; font-weight: 500; }
@@ -530,6 +535,39 @@ summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--ac
 .contrib-ref { text-decoration: none; }
 .contrib-empty { color: var(--ink-soft); }
 
+/* 4.6.6: clustered More list on the HR cards (advanced mode). A group header
+   shows the cluster's combined % — the total the card actually prices — and
+   expands to each member's marginal. The nested list reuses .contrib-row
+   look; the summary row reads like a normal row plus an expand affordance. */
+.contrib-cluster { display: block; padding: 0; }
+.contrib-cluster details { margin: 0; }
+.contrib-cluster summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+  color: inherit;
+}
+.contrib-cluster summary::-webkit-details-marker { display: none; }
+.contrib-cluster summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 0.1rem;
+  color: var(--ink-soft);
+  transition: transform 0.15s ease;
+}
+.contrib-cluster details[open] > summary::before { transform: rotate(90deg); }
+.contrib-members {
+  list-style: none;
+  margin: 0 0 0 1.1rem;
+  padding: 0;
+  border-left: 2px solid var(--line);
+}
+.contrib-members li { padding-left: 0.5rem; }
+.contrib-members .contrib-effect { min-width: 4.5rem; }
+
 /* per-lever-only contribution: the effect is real but is shown individually
    and is NOT folded into the card total (psychosocial — see methodology). */
 .contrib-lever {
@@ -553,23 +591,10 @@ summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--ac
   cursor: help;
 }
 
-/* Card-level cluster note (4.5.2): shown in a card's More panel when a
-   joint model covers that output — the members are counted as one estimate,
-   so their chips are shares of it, not separate multipliers. */
-.cluster-note {
-  margin: 0.4rem 0;
-  padding: 0.45rem 0.6rem;
-  border-left: 3px solid var(--accent);
-  background: var(--accent-soft);
-  font-size: 0.85rem;
-  color: var(--ink);
-}
-.cluster-note a { color: var(--ink-soft); text-decoration: none; }
-.cluster-note:empty { display: none; }
-
 /* Shared More-panel header note (4.5.3): appears in every contrib panel only
    while a cluster or overlap is active — "already adjusted, see methodology".
-   Deliberately softer than .cluster-note so the specific estimate stands out. */
+   (The 4.5.2 card-level cluster note was removed — the grouped More-list
+   headers now carry the same combined-effect number.) */
 .confl-more-note {
   margin: 0.3rem 0 0.5rem;
   font-size: 0.82rem;
