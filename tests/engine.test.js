@@ -1370,6 +1370,86 @@ console.log('\n[28] Cluster-note premise (Phase 4.5.5)');
   ok(Math.abs(dScale.scale - 1) < 1e-9, 'diet cluster scale = 1.0 at defaults (anchor intact)');
 }
 
+// [29] Simple vs advanced mode (Phase 5.5 — the Simple/Advanced toggle).
+// The base model (js/factors.js, exported as SIMPLE_HEALTH_MODEL by
+// js/joint/index.js) is the same audited data with NO conflation structures,
+// so the engine degrades to byte-identical plain marginal multiplication. The
+// advanced model removes redundancy via joint models / rho blends / per-lever
+// exclusion. Assert: (a) base at defaults => exactly 1.0x / LE delta 0;
+// (b) on a healthy profile simple == naive product AND differs from advanced
+// (redundancy really removed); (c) no contribution in simple mode carries
+// viaJoint/overlapBlend/perLever; (d) sourceIndex(base) is a key-subset of
+// sourceIndex(advanced) with shared-prefix numbering; (e) exactly the two
+// joint findings carry mode:'advanced' and engine passes it through.
+console.log('\n[29] Simple vs advanced mode (Phase 5.5)');
+{
+  const simple = model.SIMPLE_HEALTH_MODEL;
+  ok(simple && simple !== model, 'SIMPLE_HEALTH_MODEL exists and is distinct from the advanced model');
+  ok(!('jointModels' in simple) && !('overlaps' in simple) && !('perLeverOnly' in simple),
+    'base model has NO conflation keys (absence === empty for every `|| []` guard)');
+
+  // (a) reset invariant on the base: exactly 1.0x, LE delta 0.
+  const d = engine.defaults(model); // same defaults (inputs identical)
+  const rBase = engine.evaluate(simple, d);
+  ok(Math.abs(rBase.mortality.hrAvg - 1) < 1e-9, 'base at defaults: hrAvg exactly 1.0');
+  ok(Math.abs(rBase.lifeExpectancy.delta) < 1e-9, 'base at defaults: LE delta exactly 0');
+
+  // (b) healthy profile: simple == naive marginal product (no cluster
+  // replacement), and DIFFERS from the advanced total (redundancy removed).
+  // The naive product is the product of the simple contributions' hrDeltas
+  // (normalized vs the average person) — NOT plainHrOut, which returns the
+  // RAW scale. Keep the profile mild enough that the naive product stays
+  // above the 0.45 floor (an extreme healthy profile pins the clamp, hiding
+  // the equality).
+  const healthy = { ...d, cardio: 150, steps: 8000, sitting: 7, fiber: 25, fruitVeg: 3, nuts: 15, alcohol: 1 };
+  const sAdv = engine.evaluate(model, healthy);
+  const sSim = engine.evaluate(simple, healthy);
+  let naiveProd = 1;
+  for (const c of sSim.contributions.mortality) if (c.hrDelta !== undefined) naiveProd *= c.hrDelta;
+  ok(Math.abs(sSim.mortality.hrAvg - naiveProd) < 1e-6,
+    `simple total == naive marginal product (${sSim.mortality.hrAvg.toFixed(4)} vs ${naiveProd.toFixed(4)})`);
+  ok(Math.abs(sSim.mortality.hrAvg - sAdv.mortality.hrAvg) > 1e-3,
+    `simple differs from advanced on a healthy profile (${sSim.mortality.hrAvg.toFixed(4)} vs ${sAdv.mortality.hrAvg.toFixed(4)})`);
+  // Direction: the naive product overclaims, so simple is MORE protective.
+  ok(sSim.mortality.hrAvg < sAdv.mortality.hrAvg, 'simple more protective than advanced (overclaim removed)');
+
+  // (c) no conflation flags on simple-mode contribution records.
+  for (const out of engine.OUTPUTS) {
+    for (const c of sSim.contributions[out]) {
+      ok(!c.viaJoint && !c.overlapBlend && !c.perLever, `simple ${out} record ${c.inputId} has no conflation flags`);
+    }
+  }
+
+  // (d) sourceIndex: base keys are a subset of advanced keys, and every
+  // shared key numbered BEFORE the first advanced-only source has the SAME
+  // number in both maps (the BMI/baseline keys shift by the 2 joint-finding
+  // sources — both pages always use the advanced refs, so nothing renumbers).
+  const ai = engine.sourceIndex(model);
+  const bi = engine.sourceIndex(simple);
+  ok(Object.keys(bi).every((k) => ai[k] !== undefined), 'base sourceIndex keys are a subset of advanced keys');
+  const advOnly = Object.keys(ai).filter((k) => bi[k] === undefined);
+  ok(advOnly.includes('weeldreyer2025') && advOnly.includes('sanchezlastra2021') &&
+     advOnly.includes('mente2023') && advOnly.includes('ekelund2016') && advOnly.includes('duncan2023'),
+    'the 5 advanced-only sources are exactly the joint-layer ones');
+  const firstAdvOnly = Math.min(...advOnly.map((k) => ai[k]));
+  let sharedPrefixOk = true;
+  for (const k of Object.keys(bi)) {
+    if (ai[k] < firstAdvOnly && ai[k] !== bi[k]) { sharedPrefixOk = false; break; }
+  }
+  ok(sharedPrefixOk, 'shared keys before the first advanced-only source keep their number');
+
+  // (e) exactly the two cluster-referencing findings carry mode:'advanced',
+  // and the engine passes the field through.
+  const flagged = model.findings.filter((f) => f.mode === 'advanced');
+  ok(flagged.length === 2, 'exactly 2 findings carry mode:advanced');
+  ok(flagged.every((f) => f.source && f.source[0] === 'weeldreyer2025' || f.source[0] === 'sanchezlastra2021'),
+    'the flagged findings are the two joint-layer ones');
+  ok(simple.findings.every((f) => f.mode === undefined), 'base findings carry no mode');
+  const fv = engine.evaluateFindings(model, { ...d, vo2maxOn: true, heightCm: 175, weightKg: 60 });
+  const fvo2 = fv.find((f) => f.input === 'VO2 max');
+  ok(fvo2 && fvo2.mode === 'advanced', 'engine passes mode:advanced through on evaluateFindings');
+}
+
 console.log('\n[A3] Conflation schema audit (tests/audit.js)');
 {
   const { audit } = require('./audit.js');

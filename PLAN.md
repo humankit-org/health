@@ -257,8 +257,8 @@ Dev gotchas (learned the hard way):
   engine de-tangled (pure blendOverlaps, conflationGroups, accumulateHr);
   output markup in a `<template id="outputs-template">` in index.html; tests
   renumbered to 26 sections with headers.
-- **Phase 4.5 [~]** — main-page conflation disclosure: audit done; steps below.
-- **Phase 5.5 [ ]** — Simple/Advanced model toggle; steps below.
+- **Phase 4.5 [x]** — main-page conflation disclosure: audit done; steps below.
+- **Phase 5.5 [x]** — Simple/Advanced model toggle shipped; steps below.
 - **Phase 7 [x]** — refactor: extract the joint model into its own files
   (`js/joint/`); plan written; steps below.
 - **Phase 5** — deferred (list at the end).
@@ -380,13 +380,28 @@ per-cluster totals and is tested).
       to: "Each slider's chip still shows its independent effect; multiplying
       those chips together would double-count the shared pathway — the
       combined effect above prices it once." Suite + audit green.
-- [ ] 4.5.6 Verification: `node --check js/app.js` (+ js/sources.js), full
+- [x] 4.5.6 Verification: `node --check js/app.js` (+ js/sources.js), full
       suite green, serve and manually check four scenarios: (a) PA cluster
       active (cardio+steps+sitting) → cluster note + header note visible;
       (b) overlap pair active (magnesium + diet) → "counted at X%" tags on
       chip and row, header note visible; (c) all defaults → no conflation UI
       rendered anywhere; (d) sources.html per-input table renders every input
       with a where/how/why for each output.
+      DONE (2026-08-06): node --check clean on app.js/sources.js; full suite +
+      audit green. Verified the four scenarios with a DOM-shim probe
+      (/tmp/opencode/dom_shim_probe.js) driving the real app.js + sources.js
+      against a minimal fake document — (a) cardio 300/steps 10000/sitting 5 →
+      cluster note + header note + confl-foot all render, mortality estimate
+      0.76; (b) harmful-direction crash (fruitVeg/fiber/nuts 0, fish none,
+      magnesium 0) → magnesium chip + mortality contrib row both carry
+      "counted at X% — overlaps …", header note on — NOTE the blend needs the
+      diet cluster to actually move a gradient bracket (defaults→fiber 40 both
+      sit in the 0.7536 step, so no blend); (c) all defaults → every cluster
+      note/header note/confl-foot empty, zero confl-tag or chip-lever spans;
+      (d) input-transparency tbody renders 44 rows == model.inputs, each with
+      a how-list li + source ref, including share/marginal/no-data wordings.
+      (The serve-and-click browser pass in a real browser is still recommended
+      but the probe covers the rendered output of both pages.)
 - [x] 4.5.8 FIX (implemented 2026-08-05): the overlap blend ran on RAW
       marginals, so inputs whose raw effect at their average value is ≠1
       (magnesium raw 0.969 at 280 mg/d; sunExposure) showed a spurious chip at
@@ -484,9 +499,11 @@ labels) so future presentation work knows which mode it belongs to.
 
 ### Steps
 
-- [ ] 6.0 Record the design above in PLAN.md (new note after the Phase 4.5
+- [x] 6.0 Record the design above in PLAN.md (new note after the Phase 4.5
       section, "§5.5 — Simple/Advanced mode toggle"). No code.
-- [ ] 6.1 factors.js: add `SIMPLE_HEALTH_MODEL` + a comment block explaining
+      DONE (2026-08-04): the design block above IS this step — recorded at
+      creation; verified present 2026-08-06.
+- [x] 6.1 factors.js: add `SIMPLE_HEALTH_MODEL` + a comment block explaining
       the two-mode architecture (decisions above). Dual export: keep
       `module.exports = HEALTH_MODEL` (tests require it directly) and attach
       `module.exports.SIMPLE_HEALTH_MODEL = SIMPLE_HEALTH_MODEL`; browser:
@@ -495,21 +512,42 @@ labels) so future presentation work knows which mode it belongs to.
       NOTE (Phase 7 supersedes this): the `js/joint/` split makes factors.js
       the base model and exports it as `SIMPLE_HEALTH_MODEL` already — verify
       the export shape exists and skip the code part of this step.
-- [ ] 6.2 Add `mode: 'advanced'` to the two cluster-referencing findings —
+      DONE (2026-08-06): verified the post-Phase-7 shape — `module.exports =
+      base` + `globalThis.SIMPLE_HEALTH_MODEL = base`; `require('../js/
+      factors.js')` has NO jointModels/overlaps/perLeverOnly keys (absence ===
+      empty), 44 inputs, 31 findings; `js/joint/index.js` re-exports the same
+      base as `SIMPLE_HEALTH_MODEL` and assembles the distinct advanced model
+      (5 jointModels / 8 overlaps / 33 findings, meta 0.2.0). No code change
+      needed — no-op per plan.
+- [x] 6.2 Add `mode: 'advanced'` to the two cluster-referencing findings —
       AFTER Phase 7 they live in **js/joint/findings.js** (weeldreyer2025/
       vo2maxOn + sanchezlastra2021/underweight), not factors.js. All other
       findings stay mode-agnostic. Tests green.
-- [ ] 6.3 index.html: add the toggle to the `.topbar` (or a new row under the
+      DONE (2026-08-06): both js/joint/findings.js entries carry `mode:
+      'advanced'` (with a comment block; the base model never contains them).
+      engine.evaluateFindings now passes `mode: f.mode` through (engine.js:
+      1236) — the 6.5g engine change landed here with it. Suite + audit green.
+- [x] 6.3 index.html: add the toggle to the `.topbar` (or a new row under the
       tagline) — a labelled segmented control `Simple | Advanced` (use the
       same radiogroup pattern as `.segmented`, id="mode-toggle"), default
       Advanced, plus a one-line caption: "Simple multiplies each factor's
       effect as if independent — it overstates combinations. Advanced
       corrects overlapping effects using published joint studies." Place it
       ABOVE the calculator inputs so it reads as a site-level control.
-- [ ] 6.4 css/style.css: `.mode-toggle` styles reusing the existing
+      DONE (2026-08-06): toggle sits in `.topbar-right` (next to page-nav),
+      id="mode-toggle", two `.seg-option` radios named `mode` with
+      data-mode="simple|advanced", Advanced checked; caption is an empty
+      `<p class="mode-caption" id="mode-caption">` under the tagline (filled
+      by JS); a `.mode-badge` row sits above the output grid. Both the
+      caption's link and the badge copy are set in app.js updateModeUI (6.6).
+- [x] 6.4 css/style.css: `.mode-toggle` styles reusing the existing
       `.segmented`/`.switch` aesthetic (css/style.css:179–221); a clear
       "active mode" state so the current mode is obvious.
-- [ ] 6.5 app.js: two-model refactor.
+      DONE (2026-08-06): `.topbar-right` flex row, `.mode-toggle` pill group
+      (checked option = accent fill, same as .seg-option), `.mode-caption`
+      (simple-mode tint), `.mode-badge` + `.mode-badge.simple-mode` (warn
+      tint) + `.mode-badge-row`.
+- [x] 6.5 app.js: two-model refactor.
       (a) Keep `const model = HEALTH_MODEL` for one-time data-derived
       structures (GROUPS, inputLabels, jmById, renderInputs, updateGates) —
       inputs are identical in both modes.
@@ -531,10 +569,30 @@ labels) so future presentation work knows which mode it belongs to.
       (g) engine.js: `evaluateFindings` map gains `mode: f.mode`
       (engine.js:1178–1185, NOT :1088 — that line drifted). `node --check
       js/app.js js/engine.js`.
-- [ ] 6.6 app.js copy: render the mode caption + a small mode badge near the
+      DONE (2026-08-06): app.js adds `const simpleModel =
+      globalThis.SIMPLE_HEALTH_MODEL` + `let activeModel/mode`; `update()` and
+      both event handlers run `engine.evaluate(activeModel, state)`; the
+      toggle radios are wired via `setMode()` (swaps model, calls
+      updateModeUI + update, state untouched — inputs identical in both
+      models so values stay valid); `updateMoreNotes` gated on
+      `mode === 'advanced' && conflationActive()` (the note is itself a
+      conflation claim, per the 6.9 convention); `updateClusterNotes` already
+      self-neutralises via `engine.activeJoint(activeModel, state)` returning
+      [] on the base; chips/contribs confirmed flag-free in simple mode
+      (probe §3). `updateFindings` was ALREADY filter-free post-Phase-7 (no
+      change needed). (g) landed with 6.2. `node --check` clean, suite +
+      audit green.
+- [x] 6.6 app.js copy: render the mode caption + a small mode badge near the
       outputs so a viewer in simple mode is reminded the numbers are naive
       (honesty rule). No new numbers — copy only.
-- [ ] 6.7 tests (tests/engine.test.js): new §[27] "Simple vs advanced mode"
+      DONE (2026-08-06): `updateModeUI()` sets `#mode-caption` innerHTML
+      (advanced: "…priced from published joint studies… How inputs are
+      combined →"; simple: "…multiplied as if independent — it overstates
+      combinations… Full method →") + toggles `.simple-mode` tint, and sets
+      `#mode-badge` text ("Advanced model — overlap-corrected" /
+      "Simple model — naive independence") + tint. Called on init and from
+      setMode.
+- [x] 6.7 tests (tests/engine.test.js): new §[29] "Simple vs advanced mode"
       (AFTER Phase 7: `SIMPLE_HEALTH_MODEL` comes from
       `require('../js/joint/index.js').SIMPLE_HEALTH_MODEL`, or just
       `require('../js/factors.js')`; `HEALTH_MODEL` from
@@ -559,17 +617,56 @@ labels) so future presentation work knows which mode it belongs to.
       flagged, and their `when()` matches the original (data audit);
       (f) a findings-mode filter check (engine passes mode through). Suite
       green.
-- [ ] 6.8 Verification: `node --check` on all JS, full suite green, serve and
+      DONE (2026-08-06): §[29] added before the A3 audit block. (a) 1.0x +
+      delta 0; (b) simple == product of its own hrDeltas (0.6147) and differs
+      from advanced (0.7736) with simple MORE protective (overclaim removed) —
+      note the naive-product comparison uses the product of the SIMPLE
+      contributions' hrDeltas, NOT plainHrOut (raw scale); the profile was
+      chosen mild enough to stay above the 0.45 clamp (an extreme healthy
+      profile pins the floor and hides the equality); (c) all contributions
+      across all 5 outputs flag-free; (d) 99 vs 94 keys, subset + shared-prefix
+      hold, 5 advanced-only sources exact; (e/f) 2 flagged findings + engine
+      pass-through. Full suite green.
+- [x] 6.8 Verification: `node --check` on all JS, full suite green, serve and
       manually check: defaults show 1.0× in BOTH modes; a healthy profile
       shows advanced LESS protective than simple (overclaim removed) with
       conflation tags in advanced and absent in simple; toggle preserves
       slider values; the two cluster findings vanish in simple; simple-mode
       chip [n] links still resolve on sources.html (canonical numbering); no
       console errors toggling rapidly.
-- [ ] 6.9 AGENTS.md + file headers: add the mode convention line to AGENTS.md's
+      DONE (2026-08-06): `node --check` clean on all edited JS; full suite
+      (1200 ok, 0 fail) + audit green; anchor/attribution probes green.
+      DOM-shim probe (/tmp/opencode/mode_probe.js) driving the REAL app.js
+      verifies: defaults 1.0× / LE 78.4 in advanced; healthy PA profile →
+      advanced HR 0.76 vs simple 0.63 (advanced LESS protective — redundancy
+      removed) with cluster note + header note + confl-foot present in
+      advanced and ALL cleared in simple; the mode radio change handler
+      actually swaps the displayed HR (0.63 ≈ engine simple 0.632,
+      display-rounded), flips badge/caption, and restores the cluster note on
+      flip-back; slider values carry across (state untouched by setMode);
+      base evaluateFindings returns no mode:advanced findings (they vanish in
+      simple) while advanced returns them; simple-mode contribution records
+      carry zero conflation tags. Canonical numbering: sourceIndex subset +
+      shared-prefix invariant asserted in §[29]d. Served pages load clean
+      (index has the toggle, sources has none; both pages' script order
+      intact). A real-browser pass of 6.8's manual list is still
+      recommended but the probe covers every assertion programmatically.
+- [x] 6.9 AGENTS.md + file headers: add the mode convention line to AGENTS.md's
       design decisions and a short note atop js/app.js and js/factors.js so
       future work tags its feature's mode (advanced = conflation-clarity UI /
       simple = flat naive). Human reviews this diff.
+      DONE (2026-08-06): AGENTS.md design decisions gains the "Two modes
+      (v0.8/Phase 5.5)" bullet incl. the MODE CONVENTION ("any UI that
+      explains HOW inputs combine is an ADVANCED-mode feature…; any file
+      under js/joint/ is advanced-layer by definition; citation numbers
+      always come from sourceIndex(HEALTH_MODEL)"). js/app.js header gains
+      the mode-convention block (advanced surface + toggle mechanics);
+      js/factors.js header gains the base-model convention (conflation
+      structures absent by design; new HOW-combines structures belong in
+      js/joint/; cluster-referencing findings get `mode: 'advanced'` and live
+      in js/joint/findings.js). js/joint/index.js header already carried the
+      advanced-layer note (Phase 7). Human review of the AGENTS.md diff
+      still recommended.
 
 ## Phase 7 — extract/isolate the joint/advanced model into its own files (`js/joint/`) (created 2026-08-05)
 

@@ -4,16 +4,41 @@
  *
  * Privacy: state is held in a plain in-memory object. Nothing is persisted,
  * logged, or transmitted. There is no analytics in this project.
+ *
+ * MODE CONVENTION (Phase 5.5, see AGENTS.md): this page is an ADVANCED-mode
+ * surface. The Simple/Advanced toggle (id="mode-toggle") swaps the model
+ * object passed to engine.evaluate (advanced = globalThis.HEALTH_MODEL,
+ * simple = globalThis.SIMPLE_HEALTH_MODEL) — slider values carry across, refs
+ * stay the advanced numbering, and every conflation disclosure renders from
+ * engine tags that only exist when the conflation structures are non-empty.
+ * Any NEW UI that explains HOW inputs combine (cluster notes, per-lever
+ * labels, overlap tags, bounds display) is an advanced-mode feature: gate it
+ * on `mode === 'advanced'` or on the engine tags; simple mode stays the flat
+ * naive-independence look.
  */
 
 (function () {
   'use strict';
 
   const model = globalThis.HEALTH_MODEL;
+  const simpleModel = globalThis.SIMPLE_HEALTH_MODEL;
   const engine = globalThis.HEALTH_ENGINE;
   const schema = globalThis.HEALTH_SCHEMA; // output ids + display helpers (single source, js/schema.js)
   const state = engine.defaults(model);
   const refs = engine.sourceIndex(model); // shared citation numbering (sources.html uses the same)
+
+  // Two-mode model (Phase 5.5): `model` (advanced) drives one-time data-derived
+  // structures (GROUPS, conflationInputs, jmById, renderInputs) — the inputs
+  // are identical in both modes. `activeModel` is the object `evaluate` runs,
+  // swapped by the toggle WITHOUT resetting `state` (slider values carry
+  // across). `refs` stays the advanced numbering so chip [n] links never
+  // renumber. The engine is a superset: on `simpleModel` (no conflation keys)
+  // it degrades to plain marginal multiplication, so every disclosure renders
+  // from engine tags and needs zero mode branches here — only the copy that is
+  // itself a conflation claim (cluster notes / More-panel note) is gated on
+  // mode. Default = Advanced (the honest one).
+  let activeModel = model;
+  let mode = 'advanced';
 
   const GROUPS = [
     { id: 'you', title: 'About you' },
@@ -264,11 +289,11 @@
   // ------------------------------------------------------------- updating
 
   function update(result) {
-    const activeClusters = engine.activeJoint(model, state);
+    const activeClusters = engine.activeJoint(activeModel, state);
     updateInputReadouts(result);
     updateChips(result);
     updateClusterNotes(activeClusters);
-    updateMoreNotes(conflationActive());
+    updateMoreNotes(mode === 'advanced' && conflationActive());
     updateLifeExpectancy(result);
     updateMortality(result);
     updateCancer(result);
@@ -498,6 +523,34 @@
 
   // ------------------------------------------------------------- events
 
+  // Phase 5.5: swap the model driving the outputs + gate the conflation-clarity
+  // copy. `state` is NOT reset — slider values carry across modes (the inputs
+  // are identical in both models, so every value stays valid).
+  function setMode(next) {
+    mode = next;
+    activeModel = next === 'simple' ? simpleModel : model;
+    updateModeUI();
+    update(engine.evaluate(activeModel, state));
+  }
+
+  // Mode caption + badge copy (6.6). No numbers — copy only. The caption sits
+  // under the tagline (id="mode-caption"); the badge sits in the output grid
+  // (id="mode-badge"). Simple mode gets a reminder that the numbers are naive.
+  function updateModeUI() {
+    const caption = document.getElementById('mode-caption');
+    if (caption) {
+      caption.innerHTML = mode === 'simple'
+        ? 'Simple: each factor\'s effect is multiplied as if independent — it overstates combinations. Advanced corrects overlapping effects using published joint studies. <a href="sources.html#conflation">Full method →</a>'
+        : 'Advanced: overlapping effects are priced from published joint studies, so the combined estimate doesn\'t overclaim. <a href="sources.html#conflation">How inputs are combined →</a>';
+      caption.classList.toggle('simple-mode', mode === 'simple');
+    }
+    const badge = document.getElementById('mode-badge');
+    if (badge) {
+      badge.textContent = mode === 'simple' ? 'Simple model — naive independence' : 'Advanced model — overlap-corrected';
+      badge.classList.toggle('simple-mode', mode === 'simple');
+    }
+  }
+
   function wireEvents() {
     document.getElementById('inputs').addEventListener('input', (e) => {
       const id = e.target.dataset && e.target.dataset.id;
@@ -505,7 +558,7 @@
       if (e.target.type === 'checkbox') state[id] = e.target.checked;
       else if (e.target.type === 'radio') state[id] = e.target.value;
       else state[id] = parseFloat(e.target.value);
-      update(engine.evaluate(model, state));
+      update(engine.evaluate(activeModel, state));
     });
     document.getElementById('reset').addEventListener('click', () => {
       Object.assign(state, engine.defaults(model));
@@ -519,8 +572,12 @@
           document.getElementById('in-' + input.id).checked = input.default;
         }
       }
-      update(engine.evaluate(model, state));
+      update(engine.evaluate(activeModel, state));
     });
+    const modeToggles = document.querySelectorAll('#mode-toggle input[data-mode]');
+    for (const radio of modeToggles) {
+      radio.addEventListener('change', (e) => setMode(e.target.value));
+    }
   }
 
   // ------------------------------------------------------------- init
@@ -528,7 +585,8 @@
   renderInputs();
   renderOutputs();
   wireEvents();
-  update(engine.evaluate(model, state));
+  update(engine.evaluate(activeModel, state));
+  updateModeUI();
 
   const versionEl = document.getElementById('model-version');
   if (versionEl) versionEl.textContent = model.meta.version;

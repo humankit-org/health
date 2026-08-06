@@ -12,12 +12,25 @@
   <header class="site-header">
     <div class="topbar">
       <h1>HumanKit <span class="accent">Health</span></h1>
-      <nav class="page-nav" aria-label="Pages">
-        <a href="index.html" aria-current="page">Calculator</a>
-        <a href="sources.html">Method &amp; Sources</a>
-      </nav>
+      <div class="topbar-right">
+        <div class="mode-toggle" id="mode-toggle" role="radiogroup" aria-label="Model mode">
+          <label class="seg-option">
+            <input type="radio" name="mode" value="simple" data-mode="simple">
+            <span>Simple</span>
+          </label>
+          <label class="seg-option">
+            <input type="radio" name="mode" value="advanced" data-mode="advanced" checked>
+            <span>Advanced</span>
+          </label>
+        </div>
+        <nav class="page-nav" aria-label="Pages">
+          <a href="index.html" aria-current="page">Calculator</a>
+          <a href="sources.html">Method &amp; Sources</a>
+        </nav>
+      </div>
     </div>
     <p class="tagline">An overview of what matters, and how much. What lifestyle changes are associated with, according to published research.</p>
+    <p class="mode-caption" id="mode-caption"></p>
     <!--<span class="privacy-pill">100% client-side: everything you enter stays in this browser tab. Nothing is stored, sent, or logged — there isn't even a server to send it to.</span>
 -->
     <div class="disclaimer" role="note">
@@ -123,6 +136,7 @@
       <p class="confl-foot" id="confl-foot"></p>
     </template>
 
+    <p class="mode-badge-row"><span class="mode-badge" id="mode-badge">Advanced model — overlap-corrected</span></p>
     <div id="outputs" aria-live="polite"></div>
   </main>
 

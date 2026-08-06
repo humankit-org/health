@@ -144,6 +144,21 @@ integrity: sorted steps, bracketing CIs, existing sources).
   it. No credible cancer/cognition data, so it shows as no-data on those
   cards. A separate "doomscrolling" input was rejected (only correlational
   scale-development studies exist).
+- **Two modes (v0.8/Phase 5.5): Simple vs Advanced toggle.** `js/factors.js`
+  is the base SIMPLE model (no conflation structures — absence === empty for
+  every `|| []` guard); `js/joint/index.js` assembles the ADVANCED
+  `HEALTH_MODEL` (joint models, overlap ρ blends, per-lever-only
+  psychosocial). The engine is a superset: on the base it degrades to plain
+  marginal multiplication. MODE CONVENTION for future work: any UI that
+  explains HOW inputs combine (cluster notes, subcategorised More panels,
+  per-lever labels, bounds display, the mode caption/badge themselves) is an
+  ADVANCED-mode feature — gate it on advanced mode (or rely on engine tags
+  `viaJoint`/`overlapBlend`/`perLever`, which are only set when the
+  structures are non-empty). SIMPLE mode is the flat naive-independence look.
+  Any file under `js/joint/` is advanced-layer by definition; the base model
+  and the toggle caption are the only simple-mode surfaces. Citation numbers
+  always come from `engine.sourceIndex(HEALTH_MODEL)` (advanced) on both
+  pages regardless of mode — simple mode never renumbers anything.
 - **Every verified number was checked against the primary source** (PubMed
   abstracts) on 2026-07-24. Items still needing a second look are marked in
   their `note`: sauna all-cause HRs (verify vs paper Table 2), NCHS baseline

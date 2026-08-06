@@ -42,6 +42,14 @@
  * The conflation machinery lives in engine.js; the structures it reads are
  * its data. The safest READ for a new agent is engine.js's own file manifest
  * first, then js/joint/index.js.
+ *
+ * MODE CONVENTION (Phase 5.5, see AGENTS.md): this file IS the SIMPLE model —
+ * a base-model surface. The conflation structures (jointModels/overlaps/
+ * perLeverOnly) are absent BY DESIGN (absence === empty for every `|| []`
+ * guard). Any new top-level structure that describes HOW inputs combine is
+ * ADVANCED-layer and belongs in js/joint/ (assembled into HEALTH_MODEL by
+ * js/joint/index.js) — not here. Findings that reference joint-model totals
+ * also belong in js/joint/findings.js with `mode: 'advanced'`.
  */
 
 const HEALTH_MODEL = {

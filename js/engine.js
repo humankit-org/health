@@ -1233,7 +1233,7 @@
       .filter((f) => {
         try { return f.when(values); } catch { return false; }
       })
-      .map((f) => ({ dir: f.dir, input: f.input, text: f.text, source: f.source }));
+      .map((f) => ({ dir: f.dir, input: f.input, text: f.text, source: f.source, mode: f.mode }));
   }
 
   // Default values for every input (used to initialise the UI).
