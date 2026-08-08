@@ -416,7 +416,14 @@ invented), `ratio {axis:1, referent:0}` (total = cell(PA, adj)/cell(PA,
 normal) — the PA-row main effect divides away, owned by Ekelund on mortality),
 `calibrate: true` (defaults ratio total 0.9533 vs the bmi marginal 1.20 ≈ 26%
 off → constant log-space offset; cancels in the page's normalization, matters
-for clusterTotals/bounds displays). Covers all three HR outputs; bmi/bodyFat
+for clusterTotals/bounds displays). **Anchor note (2026-08-08):** the weight
+default moved from 84 kg (BMI 29.8, US-average-ish) to 70 kg (BMI 24.8,
+worldwide average ≈ 25), which puts the reset profile in the NORMAL column —
+so the calibration offset is now 0 (cluster total at defaults = the bmi
+marginal 1.00) and every mayo cell reads as the raw published ratio. The
+0.9533-vs-1.20 offset described above was the OLD (overweight-default) anchor;
+the mayo worked example on the conflation page changed 1.402 → 1.336 with it.
+Covers all three HR outputs; bmi/bodyFat
 marginals retire on all three (bodyFat gains CVD+cancer data, bmi gains cancer
 data — noData lists shrink). UK-Biobank overweight-paradox artifact: the
 normal-weight-low-PA cell (1.22) is elevated by reverse causality + smoking;

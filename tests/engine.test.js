@@ -129,7 +129,7 @@ console.log('\n[3] Reference profile = raw HR 1.0');
   // assert a direction vs the average person — just document the gap.
   ok(Math.abs(r.mortality.hrAvg - 1) > 0.01, 'reference profile differs from average person (hrAvg ' + r.mortality.hrAvg.toFixed(2) + ')');
   const avg = engine.averageEval(model);
-  ok(avg.hr > 0.3 && avg.hr < 2.0, 'average profile raw HR is sane (' + avg.hr.toFixed(3) + ')');
+  ok(avg.hr > 0.2 && avg.hr < 2.0, 'average profile raw HR is sane (' + avg.hr.toFixed(3) + ')');
 }
 
 console.log('\n[4] Calibration cross-checks (Gompertz vs published year-estimates)');
@@ -155,6 +155,9 @@ console.log('\n[5] Combination + clamping');
     ...referenceValues(),
     cardio: 500, strength: 3, fiber: 40, fruitVeg: 8,
     coffee: 4, sauna: 5, social: 7, stress: 2, sleep: 8,
+    sleepRegularity: 10, // extra healthy lever — the old profile no longer
+    // clamps because the default weight is now BMI 24.8 (reference BMI 22 is
+    // no longer a protective deviation from the average)
     heightCm: 176, weightKg: 68,
   });
   ok(allHealthy.mortality.clamped, 'all-healthy profile hits the humility floor (hrAvg ' + allHealthy.mortality.hrAvg + ')');
@@ -492,10 +495,12 @@ console.log('\n[17] Cluster dispatch (Phase 2 machinery; synthetic lookups + shi
   ok(Math.abs(shippedTot[2].outputs.mortality.hr - 0.85) < 1e-9, 'defaults: Momma (none, MS) cell 0.85 (no calibrate — within band)');
   ok(Math.abs(shippedTot[3].outputs.mortality.hr - 1.0) < 1e-12, 'defaults: Duncan ratio Inactive-Rec/Inactive-Rec = 1.00 exactly (no calibrate needed)');
   // 3.3: the Mayo PA×adiposity table replaces the bmi marginal on
-  // mortality (1.20) and cvd (1.25); there is no bmi cancer marginal, so
-  // the cancer total calibrates to exactly 1.0 at defaults.
-  ok(Math.abs(shippedTot[4].outputs.mortality.hr - 1.20) < 1e-9, 'defaults: Mayo cluster anchored to the bmi marginal 1.20 (calibrate: true)');
-  ok(Math.abs(shippedTot[4].outputs.cvd.hr - 1.25) < 1e-9, 'defaults: Mayo CVD anchored to the bmi CVD marginal 1.25');
+  // mortality and cvd. With the worldwide-average default weight (70 kg →
+  // BMI 24.8, the normal column), the members' product at defaults is the
+  // bmi marginal 1.00, so the calibration offset is 0 and the table anchors
+  // to exactly 1.00 at defaults on every output.
+  ok(Math.abs(shippedTot[4].outputs.mortality.hr - 1.00) < 1e-9, 'defaults: Mayo cluster anchored to the bmi marginal 1.00 (calibrate: true, weight default now BMI 24.8)');
+  ok(Math.abs(shippedTot[4].outputs.cvd.hr - 1.00) < 1e-9, 'defaults: Mayo CVD anchored to the bmi CVD marginal 1.00');
   ok(Math.abs(shippedTot[4].outputs.cancer.hr - 1.0) < 1e-9, 'defaults: Mayo cancer total exactly 1.0 (no bmi cancer marginal)');
 
   // Synthetic joint models exercise the machinery without touching the data.
@@ -1212,26 +1217,33 @@ console.log('\n[26] Shipped Mayo PA×adiposity cluster (Phase 3.3 — conflation
   const mayo = (v, output) => engine.clusterTotals(model, v).find((t) => t.id === 'mayoCells').outputs[output].hr;
 
   // Published cells land exactly (offset cancels inside ratios of ratios).
-  // Mortality cells at the overweight column: G3 1.12/1.22 = 0.91803,
-  // G2 1.02/1.07 = 0.95327, G1 1.00/1.00 = 1.0 (overweight-paradox
-  // artifact: the G1 normal ref is 1.00, disclosed in the note).
+  // With the weight default now 70 kg → BMI 24.8, the reset profile sits in
+  // the NORMAL column, so the mayo calibration offset is 0 (cluster total at
+  // defaults = the bmi marginal 1.00) and every cell reads as the raw
+  // published ratio — no 1.25882 constant. The overweight-column cells are
+  // probed with an explicit weightKg 71 (BMI 25.16 → overweight col):
+  // G3 1.12/1.22 = 0.91803, G2 1.02/1.07 = 0.95327, G1 1.00/1.00 = 1.0
+  // (overweight-paradox artifact: the G1 normal ref is 1.00, disclosed in
+  // the note).
   const mort = (v) => mayo(v, 'mortality');
-  approx(mort({ ...d, cardio: 0, steps: 0 }), 1.25882 * (1.12 / 1.22), 1e-5, 'G3 overweight: published cell ratio 1.12/1.22 x offset');
-  approx(mort(d), 1.25882 * (1.02 / 1.07), 1e-5, 'G2 overweight (defaults): 1.02/1.07 x offset = bmi marginal 1.20');
-  approx(mort({ ...d, cardio: 300 }), 1.25882 * 1.0, 1e-5, 'G1 overweight: ratio 1.00/1.00 = 1.0');
-  approx(mort({ ...d, weightKg: 110 }), 1.25882 * (1.43 / 1.07), 1e-5, 'G2 obese II (BMI >=35): 1.43/1.07 — no crash on the last column (transposition regression)');
-  approx(mort({ ...d, weightKg: 55 }), 1.25882, 1e-5, 'underweight BMI <18.5 maps into the normal column (study excluded <18.5)');
-  approx(mort({ ...d, weightKg: 65 }), 1.25882, 1e-5, 'normal weight: ratio exactly 1.0 -> offset only');
+  approx(mort({ ...d, cardio: 0, steps: 0 }), 1.0, 1e-5, 'G3 normal (default weight, BMI 24.8): referent col ratio 1.0');
+  approx(mort({ ...d, cardio: 0, steps: 0, weightKg: 71 }), 1.12 / 1.22, 1e-5, 'G3 overweight: published cell ratio 1.12/1.22');
+  approx(mort(d), 1.0, 1e-5, 'G2 normal (defaults): bmi marginal 1.00 anchored -> ratio 1.0');
+  approx(mort({ ...d, weightKg: 71 }), 1.02 / 1.07, 1e-5, 'G2 overweight: published cell ratio 1.02/1.07');
+  approx(mort({ ...d, cardio: 300, weightKg: 71 }), 1.0, 1e-5, 'G1 overweight: ratio 1.00/1.00 = 1.0');
+  approx(mort({ ...d, weightKg: 110 }), 1.43 / 1.07, 1e-5, 'G2 obese II (BMI >=35): 1.43/1.07 — no crash on the last column (transposition regression)');
+  approx(mort({ ...d, weightKg: 55 }), 1.0, 1e-5, 'underweight BMI <18.5 maps into the normal column (study excluded <18.5)');
+  approx(mort({ ...d, weightKg: 65 }), 1.0, 1e-5, 'normal weight: ratio exactly 1.0 -> offset only');
   // Obese-I cells as published: G2 1.09/1.07, G1 1.15/1.00 (the G1 normal
   // ref is the unattenuated 1.00, so the G1 ratio looks higher — the
   // disclosed overweight-paradox artifact, never protected).
-  approx(mort({ ...d, weightKg: 95 }), 1.25882 * (1.09 / 1.07), 1e-5, 'G2 obese I: 1.09/1.07');
-  approx(mort({ ...d, weightKg: 95, cardio: 300 }), 1.25882 * (1.15 / 1.00), 1e-5, 'G1 obese I: 1.15/1.00');
+  approx(mort({ ...d, weightKg: 95 }), 1.09 / 1.07, 1e-5, 'G2 obese I: 1.09/1.07');
+  approx(mort({ ...d, weightKg: 95, cardio: 300 }), 1.15 / 1.00, 1e-5, 'G1 obese I: 1.15/1.00');
 
   // Body-fat mode: sex-specific quartile cutoffs (Deurenberg translation).
   const vf = { ...d, bodyFatOn: true, bodyFat: 40 }; // male 40% -> high (>=39)
-  approx(mort(vf), 1.25882 * (1.36 / 1.05), 1e-5, 'BF male high, G2: 1.36/1.05 (vs low col)');
-  approx(mayo({ ...d, bodyFatOn: true, bodyFat: 22 }, 'mortality'), 1.25882 * (1.01 / 1.05), 1e-5, 'BF male low-ish, G2: 1.01/1.05');
+  approx(mort(vf), 1.36 / 1.05, 1e-5, 'BF male high, G2: 1.36/1.05 (vs low col)');
+  approx(mayo({ ...d, bodyFatOn: true, bodyFat: 22 }, 'mortality'), 1.01 / 1.05, 1e-5, 'BF male low-ish, G2: 1.01/1.05');
 
   // Supersession: bodyFatOn retires the bmi marginal (mortality + cvd) and
   // the Mayo totals replace the bodyFat marginal; the bmi marginal never
@@ -1494,7 +1506,7 @@ console.log('\n[30] Conflation explainer page data contract (Phase 8)');
   approx(clusterNorm('duncanCells', 'mortality', duncanProf), 1.310, 0.001, 'duncan worked example: long-sleep joint estimate');
   const mayoProf = { ...d, weightKg: 100 };
   approx(engine.computeBmi(mayoProf), 35.4, 0.1, 'mayo worked-example setup: BMI ~35.4');
-  approx(clusterNorm('mayoCells', 'mortality', mayoProf), 1.402, 0.001, 'mayo worked example: PA x weight joint estimate');
+  approx(clusterNorm('mayoCells', 'mortality', mayoProf), 1.336, 0.001, 'mayo worked example: PA x weight joint estimate (weight default now BMI 24.8)');
 
   // (c) overlap worked examples: standalone marginal -> blended hrDelta.
   const magProf = { ...d, magnesium: 0, fruitVeg: 0, fiber: 0, nuts: 0, fish: 'none' };

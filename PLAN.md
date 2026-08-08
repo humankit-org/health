@@ -650,6 +650,86 @@ Both features are pure app.js + css + (maybe) template work.
       the grouped More list; toggle to simple → flat chips + flat list; reset →
       nothing; all `[n]` links resolve on sources.html (canonical numbering).
 
+## Phase 4.7 — Weight default → worldwide-average BMI ≈ 25 (created 2026-08-08)
+
+### Goal
+
+The site's reset anchor is "the average person" (AGENTS.md v0.3), but the
+weight default (84 kg @ 168 cm) yields **BMI ≈ 29.8 ≈ 30** — the US average,
+not the worldwide average (~25). The human wants the reset default to reflect
+the worldwide-average BMI so "reset = exactly the average person" reads
+credibly to a global visitor. Scope: the `weightKg` default only. Height
+stays 168 cm (fine for a generic adult; a height change is not requested).
+
+### Impact analysis (probe-verified 2026-08-08, /tmp/opencode/bmi_default_probe2.js)
+
+- Candidate defaults (step 1 kg): **70 kg → BMI 24.80**, **71 kg → BMI 25.16**.
+  Both keep the reset invariant (reset hrAvg exactly 1.0 / LE delta 0 — the
+  engine normalises by `averageEval(model)` regardless of the default value).
+- **The mayo adiposity band boundary sits at BMI 25.** 70 kg (24.80) drops the
+  default into the **Normal band (col 0)**; 71 kg (25.16) keeps it in
+  **Overweight (col 1), exactly like today**. Because mayoCells is
+  `calibrate: true` and ratio-mode, the default band determines the
+  calibration offset AND the whole §[26]/§[30] cell-pin test block:
+  - 71 kg: mayo@defaults mortality 1.0700 / cvd 1.1000 / cancer 1.0000;
+    §[30] mayo worked-example stays **1.402** (unchanged); §[26] cell pins
+    (1.25882·…) all shift.
+  - 70 kg: mayo@defaults mortality 1.0000 / cvd 1.0000 / cancer 1.0000
+    (cleanest anchor); §[30] mayo worked-example becomes **1.336**.
+- Other shipped clusters (dietScore, ekelundTable, mommaCells, duncanCells)
+  do NOT consume weight → untouched. `engine.sourceIndex` numbering
+  unchanged (no new/changed sources).
+- Tests that must change: §[3.3] shippedTot mayo defaults (engine.test.js:
+  497–499) and §[26] (1219–1229, 1233–1234) and §[30] mayo worked-example
+  (1497) only if 70 kg. Nothing else references the weight default.
+- sources.html:39–42 copy hard-codes the BMI-30 anchor — must be updated
+  regardless of which candidate wins ("…30 BMI = 1.0 as 30 BMI is closer to
+  the average" → reworded for the ≈25 anchor).
+
+### Decision needed (human)
+
+**70 kg (BMI 24.80)** vs **71 kg (BMI 25.16)**. Recommendation: **71 kg** —
+it is the closest integer to BMI 25 at 168 cm, keeps the mayo cluster on its
+current default band (Overweight) so the conflation page's mayo worked-example
+(1.402) stays truthful, and the calibration story in joint-models.js:426–432
+stays valid. 70 kg gives the "cleaner" 1.0× mayo anchor but silently changes
+a documented worked example and the displayed mayo numbers.
+
+### Steps
+
+- [x] 4.7.1 factors.js: `weightKg` default 84 → **70** (chosen by the human
+      2026-08-08); hint now reads "Default ≈ worldwide average BMI 25".
+      `node --check js/factors.js` clean.
+- [x] 4.7.2 tests/engine.test.js: §[3.3] mayo@defaults 1.20/1.25 → **1.00/1.00**
+      (offset now 0 — reset profile sits in the normal column); §[26] cell pins
+      re-written to probe the overweight column via explicit `weightKg: 71`
+      (raw published ratios, the 1.25882 offset constant is gone); §[30] mayo
+      worked example 1.402 → **1.336**; §[3] raw-average-HR sanity bound
+      widened (0.3 → 0.2 — the default bmi marginal is now 1.00, so the raw
+      average product is lower); §[5] all-healthy profile gains
+      `sleepRegularity: 10` to re-pin the floor (reference BMI 22 is no longer
+      a protective deviation from the BMI 24.8 default). All values
+      probe-verified (/tmp/opencode/bmi_default_probe*.js).
+- [x] 4.7.3 sources.html:39–42: "How it works" BMI example re-anchored — "the
+      BMI curve is J-shaped with its lowest risk at 20–25, and we anchor
+      HR = 1.0 at the average person's BMI ≈ 25 — so 20 BMI = 1.13 and 30 BMI =
+      1.20 as ratios to that reference" (verified against engine.bmi.steps:
+      default BMI 24.8 sits on the hr 1.00 step; 20/30 read 1.13/1.20).
+- [x] 4.7.4 Docs: research.md §4.1 engine-notes gains the anchor note (default
+      84→70 kg; offset now 0; mayo worked example 1.402→1.336); PLAN.md Phase
+      8.6 worked-example list updated to the new mayo figure. AGENTS.md needs
+      no change (v0.3 bullet "defaults = population averages" still accurate —
+      weight is now the worldwide average; the others are US averages as noted
+      per input).
+- [x] 4.7.5 Verify: `node tests/engine.test.js` (All passed) + `node
+      tests/audit.js` (OK) green; probes re-run; reset still exactly 1.0× /
+      LE Δ 0 on the real assembled model; `node --check` clean. NOTE: the
+      mid-session `git stash` + failed `git stash pop` (Windows file lock on
+      tests/engine.test.js) briefly reset the working tree to HEAD — recovered
+      via `git reset --hard HEAD` + `git stash pop`; ALL edits verified present
+      afterwards (the dev-gotcha in the TODO header about vanished edits
+      happened again; the `js/*` source is intact).
+
 ## Phase 5.5 — Simple/Advanced model toggle (created 2026-08-04)
 
 Feature: a toggle at the top of the calculator switching between the ADVANCED
@@ -1197,7 +1277,9 @@ literals it may contain are the illustrative profiles in the worked examples
       → naive ≈0.592 vs cluster ≈0.910; mommaCells: strength 2 + cardio 300 →
       cluster mortality ≈0.882 (prices aerobic×strength once); duncanCells:
       sleep 9.5 → cluster ≈1.310; mayoCells: weightKg 100 (BMI ≈35.4) →
-      cluster ≈1.402. Overlap examples (pick a profile where both sides deviate
+      cluster ≈1.336 (was ≈1.402 pre-4.7 — the 2026-08-08 weight-default change
+      to BMI 24.8 re-anchored the mayo cluster; §[30] re-pinned). Overlap
+      examples (pick a profile where both sides deviate
       same-direction): magnesium 0 + diet crash (fruitVeg 0 / fiber 0 / nuts 0 /
       fish 'none') → magnesium hrDelta ≈1.071 blended ρ 0.5 vs dietScore; snus
       'yes' + alcohol 15 → alcohol hrDelta ≈1.134 blended ρ 0.15. If a pair is

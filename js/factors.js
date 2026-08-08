@@ -191,8 +191,8 @@ const HEALTH_MODEL = {
       label: 'Weight',
       kind: 'slider',
       unit: 'kg',
-      min: 40, max: 180, step: 1, default: 84,
-      hint: 'Combined with height to compute BMI.',
+      min: 40, max: 180, step: 1, default: 70,
+      hint: 'Combined with height to compute BMI. Default ≈ worldwide average BMI 25.',
       effects: [],
     },
 
