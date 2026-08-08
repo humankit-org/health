@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conflation — HumanKit Health</title>
+  <meta name="description" content="Why the HumanKit Health calculator doesn't just multiply each lifestyle factor's effect together. How inputs that overlap are combined honestly, and the exact math behind every cluster.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="topbar">
+      <h1>HumanKit <span class="accent">Health</span></h1>
+      <nav class="page-nav" aria-label="Pages">
+        <a href="index.html">Calculator</a>
+        <a href="conflation.html" aria-current="page">Conflation</a>
+        <a href="sources.html">Method &amp; Sources</a>
+      </nav>
+    </div>
+    <p class="tagline">Why "multiply everything together" is wrong — and exactly how the calculator combines your inputs instead.</p>
+    <div class="disclaimer" role="note">
+      <strong>This page explains the math, it doesn't give medical advice.</strong>
+      Every figure here is generated live from the same model the calculator uses, and every
+      estimate on the calculator is a rough population-level association from published research —
+      not a prediction about any individual. The ρ values below are model parameters, not published
+      numbers.
+    </div>
+  </header>
+
+  <section class="page-section" id="problem">
+    <h1>Conflation — why we can't just multiply the sliders together</h1>
+
+    <p>Every slider on the calculator is backed by a number from a published study — a
+    <strong>hazard ratio</strong> (HR): how much one lifestyle trait is associated with the risk of
+    dying, compared to not having that trait. Move several sliders at once and, intuitively, the
+    effects should add up. They do — but only when the traits are truly independent. And a lot of
+    these sliders are secretly measuring the same thing.</p>
+
+    <p>Take the movement sliders. <em>Cardio</em>, <em>steps</em> and <em>sitting</em> each come
+    from their own study comparing people who do more against people who do less. But all three are
+    really asking "how physically active are you?" Multiply the three study numbers together and you
+    count the same activity roughly three times:</p>
+
+    <div class="worked-example" id="example-problem"></div>
+
+    <p>This is <strong>conflation</strong>: inputs that share a pathway or overlap being priced as if
+    they were independent. It sneaks in three ways:</p>
+    <ul>
+      <li><strong>One trait, several sliders.</strong> Fiber, fruit &amp; veg, nuts and fish are four
+      sliders but roughly one "diet quality" trait. Each study hands you the whole benefit of eating
+      well — multiply them and you've charged the same benefit four times.</li>
+      <li><strong>Shared pathway.</strong> Exercise lowers body weight; the weight slider then charges
+      the weight part of the exercise benefit a second time.</li>
+      <li><strong>Overlapping studies.</strong> Studies adjust for each other's variables, but never
+      perfectly, so a little of each factor is already hiding inside the others' numbers.</li>
+    </ul>
+
+    <p>This matters. Multiplying blindly, a merely-average healthy lifestyle used to come out as a
+    <strong>93% lower mortality risk</strong> — statistically absurd. Even the standard method for
+    combining risk factors (the comparative-risk approach used by the WHO and the Global Burden of
+    Disease project) is only valid <em>when the factors are weakly correlated and do not share
+    pathways</em> (Ezzati 2003). That caveat <em>is</em> the conflation problem.</p>
+
+    <p>So how do we fix it? <a href="#math">Three mechanisms, with the math</a> · <a href="#clusters">every
+    cluster, with the exact numbers</a>.</p>
+  </section>
+
+  <section class="page-section" id="math">
+    <h2>How the combination math works</h2>
+    <p>The calculator's Advanced mode (the default) combines inputs with three mechanisms, then
+    applies guardrails. Each mechanism below comes with a live worked example, computed from the
+    same model the calculator uses — change the model and these numbers change with it.</p>
+
+    <div class="math-step" id="step-hr">
+      <h3>1 · Hazard ratios, and why they multiply</h3>
+      <p>An HR is a risk ratio: HR 0.7 means "30% lower risk of dying in a given period", HR 1.3
+      means "30% higher". If two risks were truly independent, the combined risk is their product —
+      0.9 × 0.9 = 0.81. That works because on the log scale, multiplication becomes addition:
+      ln(0.9) + ln(0.9) = ln(0.81).</p>
+      <p>The product rule itself is fine. The problem is its one assumption — <em>independence</em> —
+      and lifestyle traits are not independent. That's what the next steps fix.</p>
+    </div>
+
+    <div class="math-step" id="step-overclaim">
+      <h3>2 · Why the naive product overclaims</h3>
+      <p>Each study's HR is a <strong>marginal</strong> effect: it attributes the whole association to
+      one trait, comparing "high" vs "low" without fully separating the other traits. When the traits
+      overlap, multiplying the marginals charges the shared part again and again — eight diet sliders
+      become one benefit counted eight times.</p>
+    </div>
+
+    <div class="math-step" id="step-joint">
+      <h3>3 · Fix 1 — joint models: one published study, one number</h3>
+      <p>Where a study publishes a <strong>joint estimate</strong> — several factors combined in one
+      model — we use it directly and stop multiplying those sliders individually. The sliders become
+      <em>shares of one estimate</em>, not independent effects.</p>
+      <p>The movement cluster is the cleanest example. Cardio, steps and sitting are priced by one
+      published PA × sitting table (Ekelund 2016):</p>
+      <div class="worked-example" id="example-joint"></div>
+      <p>Same inputs, two answers — the difference is the "physical activity" the naive product
+      charged three times. The joint number is the honest one.</p>
+    </div>
+
+    <div class="math-step" id="step-overlap">
+      <h3>4 · Fix 2 — overlap discounts (ρ) for the leftovers</h3>
+      <p>Not every overlapping pair has a joint study. For those, we discount the <em>weaker</em> of
+      the two effects by ρ — our estimate of how much the pair overlaps. ρ = 0 means independent (no
+      discount); ρ = 1 means the two are the same thing (the weaker effect counts for nothing).</p>
+      <p>Technically: the smaller same-direction deviation from the average level is multiplied by
+      (1 − ρ) in log space. For the non-math inclined: <strong>if two things are half the same thing,
+      the smaller one counts at half strength.</strong></p>
+      <p>Magnesium is a good example — its food sources <em>are</em> the healthy-diet foods, so it
+      overlaps the diet score heavily (ρ 0.5):</p>
+      <div class="worked-example" id="example-overlap"></div>
+      <p><em>Honesty note:</em> ρ is a model parameter, not a published number. Its plausible range is
+      reflected in the uncertainty band (step 6).</p>
+    </div>
+
+    <div class="math-step" id="step-perlever">
+      <h3>5 · Fix 3 — no combination: shown per lever only</h3>
+      <p>For the psychosocial factors — purpose in life, stress, social connection, sleep regularity —
+      there is no published joint model, and their pairwise correlations are so tangled (people with
+      purpose tend to have better social lives, less stress…) that even pairwise discounting can't be
+      trusted. So we don't combine them at all: each is shown individually, and only their weak,
+      correlational wellbeing points feed the happiness &amp; cognition bands. None enter the
+      mortality, cancer or CVD totals.</p>
+    </div>
+
+    <div class="math-step" id="step-guardrails">
+      <h3>6 · After combining — the guardrails</h3>
+      <ul>
+        <li><strong>Average-person anchor.</strong> Everything is normalised so 1.0× = the average
+        person. Reset the calculator and you're exactly average.</li>
+        <li><strong>Clamp.</strong> The combined HR is clamped to 0.45–4.0 so no combination can
+        claim more than the studies support.</li>
+        <li><strong>Honest uncertainty.</strong> Each effect's confidence interval is widened where
+        evidence is thin and combined in quadrature — you get a range, not a false-precision point.
+        ρ's uncertainty widens the band too.</li>
+        <li><strong>HR → years.</strong> Life expectancy is a sex-specific US baseline (NCHS 2023)
+        shifted by your combined risk via a Gompertz approximation (adult risk doubles every
+        ~7 years).</li>
+      </ul>
+    </div>
+
+    <div class="math-step" id="step-boundary">
+      <h3>7 · Where multiplying is fair — and where it isn't</h3>
+      <p>Combining HRs under an independence assumption is a published WHO/GBD-family method — valid
+      <em>when the factors are weakly correlated and do not share pathways</em> (Ezzati 2003). We hold
+      every combination we make against this boundary:</p>
+      <table class="jm-tbl conflation" id="fair-boundary">
+        <thead>
+          <tr><th>Zone</th><th>Rule</th><th>Where it applies</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Fair multiplication</strong></td>
+            <td>multiply marginal HRs, uncertainty only</td>
+            <td>across clusters — movement × diet × mind × substances × sleep: different exposure
+            domains, modestly correlated</td>
+          </tr>
+          <tr>
+            <td><strong>Fair</strong></td>
+            <td>coefficients from the published joint model (no per-slider multiplication)</td>
+            <td>within clusters <em>inside</em> a joint model (the five below)</td>
+          </tr>
+          <tr>
+            <td><strong>Unfair multiplication</strong></td>
+            <td>within clusters with no joint model — marginal HRs multiplied</td>
+            <td>must be replaced by a joint estimate or moved to per-lever</td>
+          </tr>
+          <tr>
+            <td><strong>No combination</strong></td>
+            <td>per-lever only; no cluster total, no combined claim</td>
+            <td>psychosocial (purpose, stress, social, sleep regularity); screen time → happiness
+            already treated this way</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="page-section" id="clusters">
+    <h2>Every cluster, and how it combines</h2>
+    <p>These are all the ways the Advanced model combines inputs — the five published joint
+    estimates, the eight residual overlap pairs, and the psychosocial cluster we refuse to combine.
+    Click a card for the exact numbers: the math table for every metric the cluster affects, a worked
+    example, and the source. Everything is generated from the same data as the calculator, so the
+    two can never disagree.</p>
+
+    <div class="cluster-group" id="group-joint">
+      <h3>Joint estimates — one published study, one number</h3>
+      <div class="cluster-flex" id="cluster-grid-joint"></div>
+    </div>
+
+    <div class="cluster-group" id="group-overlap">
+      <h3>Residual overlaps — the ρ discounts</h3>
+      <div class="cluster-flex" id="cluster-grid-overlap"></div>
+    </div>
+
+    <div class="cluster-group" id="group-perlever">
+      <h3>Psychosocial — per lever only</h3>
+      <div class="cluster-flex" id="cluster-grid-perlever"></div>
+    </div>
+  </section>
+
+  <dialog id="cluster-dialog" class="dialog">
+    <div class="dialog-head">
+      <h3 id="dialog-title"></h3>
+      <button type="button" class="dialog-close" aria-label="Close">Close ×</button>
+    </div>
+    <div class="dialog-body" id="dialog-body"></div>
+  </dialog>
+
+  <footer>
+    <p>Educational estimates from population-level research — not medical advice. The ρ values on
+    this page are model parameters, not published numbers.
+    <a href="sources.html">Full method, limitations &amp; sources →</a></p>
+    <p>HumanKit Health · open source (MIT) · model v<span id="model-version"></span></p>
+  </footer>
+
+  <noscript>This page needs JavaScript to render the worked examples and cluster cards — but it all runs on your own machine.</noscript>
+  <script src="js/factors.js"></script>
+  <script src="js/schema.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/joint/joint-models.js"></script>
+  <script src="js/joint/overlaps.js"></script>
+  <script src="js/joint/per-lever-only.js"></script>
+  <script src="js/joint/joint-sources.js"></script>
+  <script src="js/joint/findings.js"></script>
+  <script src="js/joint/index.js"></script>
+  <script src="js/conflation.js"></script>
+</body>
+</html>

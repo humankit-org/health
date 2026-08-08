@@ -174,6 +174,10 @@ that cluster**; edit the number + its note/source in the same commit, run
 - **Phase 5.5** — Simple/Advanced model toggle.
 - **Phase 7** — refactor: extract the joint model into `js/joint/` (separate
   the base SIMPLE model from the conflation layer; steps below).
+- **Phase 8** — the Conflation explainer page (`conflation.html`): a new static
+  page explaining the conflation problem and the combination math at a
+  first-year-university level, plus an interactive flex-grid overview of every
+  conflation cluster whose cards pop open into exact-math dialogs. Steps below.
 
 ### Next (needs sourcing/design)
 - Replace indirect citations for mind outputs with dedicated sources.
@@ -264,6 +268,12 @@ Dev gotchas (learned the hard way):
 - **Phase 5.5 [x]** — Simple/Advanced model toggle shipped; steps below.
 - **Phase 7 [x]** — refactor: extract the joint model into its own files
   (`js/joint/`); plan written; steps below.
+- **Phase 8 [x]** — the Conflation explainer page (`conflation.html`) shipped
+  (2026-08-06): all steps 8.1–8.11 done below (prose + live worked-example
+  boxes + 5/8/1 cluster-card flex grid + exact-math dialogs; §[30]
+  data-contract tests; DOM-shim probe green; index.html disclosure links
+  re-pointed to the explainer; AGENTS.md file map updated, human reviews the
+  diff).
 - **Phase 5** — deferred (list at the end).
 
 ## Phase 4.5 — UI disclosure of conflation (chips / More panels)
@@ -1032,6 +1042,204 @@ Verified against the code:
       LE, all joint models/overlaps still listed); toggle-free pages have no
       console errors. Confirm `node tests/engine.test.js` + `node tests/audit.js`
       still green.
+
+## Phase 8 — the Conflation explainer page (`conflation.html`) (created 2026-08-06)
+
+### Goal
+
+A new static, dependency-free page that (a) briefly explains the **conflation
+problem** ("why can't you just multiply the sliders' effects together?"), (b)
+walks through **how the combination math works at a first-year-university
+level** (hazard ratios, log space, why marginals overclaim, the three fixes,
+normalisation/clamp/uncertainty), and (c) gives an **interactive overview of
+every conflation cluster** — the 5 joint models, the 8 overlap ρ pairs, and
+the psychosocial per-lever cluster — as a **flex-grid of cards that pop open
+into detailed dialogs** showing the exact math for every metric the cluster
+affects, by how much and how.
+
+Audience: a curious visitor who is not a statistician (the human designing this
+is also not a statistician — this page is our chance to make the math legible).
+Tone: patient, concrete, honest about uncertainty, zero fake precision.
+
+**No new numbers, no engine changes.** The page is pure presentation: every
+figure it shows is computed at render time from `globalThis.HEALTH_MODEL` via
+existing engine/schema helpers (`engine.clusterTotals`, `engine.evaluate`,
+`engine.activeOverlaps`, `engine.sourceIndex`, `schema.displayName`). The only
+literals it may contain are the illustrative profiles in the worked examples
+(step 8.6) and prose copy — never coefficients.
+
+### Design decisions (from the planning pass — read before coding)
+
+- **Placement & nav.** New file `conflation.html` at repo root. Add a third
+  link to the `<nav class="page-nav">` on ALL three pages: Calculator |
+  Conflation | Method &amp; Sources. On conflation.html the Conflation link
+  carries `aria-current="page"`. conflation.html mirrors sources.html's simple
+  topbar (title + nav only — NO mode toggle; the page describes the advanced
+  model and says so in a note, "the calculator defaults to Advanced, which is
+  what this page describes; Simple mode multiplies everything as if
+  independent").
+- **Sections (in-page anchors).**
+  1. `#problem` — "The problem: inputs overlap". Plain-language: each slider's
+     HR is the study's whole association for that trait, but traits share
+     pathways and study populations — cardio+steps+sitting are all "physical
+     activity", fiber+fruitVeg+nuts+fish are all "diet quality". The Ezzati
+     2003 independence qualifier (research.md §1.1) is the whole issue. A
+     mini-example box (the same 0.632→0.820 ekelund numbers as #math) plus
+     links onward.
+  2. `#math` — "How the combination math works" (the 1st-year-uni explainer,
+     step 8.4). HR primer; risk multiplies so ln-HR adds; marginal vs partial
+     effects; the three fixes each with a **computed** worked example; the
+     fair/unfair boundary table (same copy as sources.html#fair-boundary);
+     "average person" normalisation (reset = 1.0×); clamp [0.45, 4.0]; CI
+     quadrature; Gompertz years; uncertainty framing (assumption-space bounds,
+     not truth).
+  3. `#clusters` — "How each cluster combines": the card grid + dialogs
+     (steps 8.5–8.6).
+- **Cluster cards (the flex grid).** Three sub-groups, each a `<h3>` + a flex
+  container: "Joint estimates (one study, one number)" = 5 cards (dietScore,
+  ekelundTable, mommaCells, duncanCells, mayoCells); "Residual overlaps (ρ
+  pairs)" = 8 cards (one per pair); "Psychosocial — per lever only" = 1 card.
+  Card = a `<button class="cluster-card">` (keyboard-accessible), styled
+  `flex: 1 1 260px; max-width: 340px` inside a `display:flex; flex-wrap:wrap;
+  gap:1rem` container. Card contents: title (schema.displayName), members (or
+  the pair), the outputs it drives as chips, a one-line summary
+  (jm.note/o.note trimmed), evidence badge, source `[n]`, and a "How it works
+  →" affordance.
+- **Dialogs.** Native `<dialog>` via `showModal()`: Esc closes, backdrop
+  click closes, close button, focus returns to the card. One dialog element
+  reused; its innerHTML is rebuilt per open target (joint model / overlap /
+  psychosocial).
+  - *Joint dialogs:* header (title, evidence, sources, close); "What this
+    cluster is" (jm.note); "What feeds it" (owned `jm.members` + any read-only
+    axis inputs referenced by `o.axes[].inputs`, with their role — own vs
+    read-only); "What it drives" (outputs); per output, the exact-math tables
+    reusing sources.js's rendering (`js/sources.js:62–124`: components +
+    gradient for score models; `gridCells` axes+table for cell models,
+    including mayoCells' bmi/bodyFat grids map); a **worked-example box**
+    (step 8.6); and a link "Raw data table on the method page →
+    sources.html#conflation".
+  - *Overlap dialogs:* pair, ρ, ρU, kind/tier, note, sources; the blend rule
+    in words + the formula (excess = ln(HR) − ln(rdHr); blended ln(HR) =
+    ln(rdHr) + (1−ρ)·excess for the weaker same-direction deviation — PLAN.md
+    design-decision §5, and an explicit "ρ is a model parameter, not a
+    published number" line per the sources.html convention); a worked-example
+    box; link to sources.html#conflation.
+  - *Psychosocial dialog:* members; why no combination (no published joint
+    estimate; pairwise ρ does not compose in dense triangles — research.md
+    §5.1); what happens instead (points feed the cognition/happiness bands
+    only, never an HR product); no worked example (nothing combines).
+- **Worked examples are computed at render time** from engine calls at fixed
+  illustrative profiles (the profiles are the only literals — see step 8.6 for
+  the exact profiles + expected values, pinned in §[30] tests). Prose never
+  hard-codes the numbers ("as the box shows, 0.63 became 0.82" is forbidden —
+  the copy explains the concept, the `<code>` box carries the live number), so
+  the page cannot drift from the model.
+- **Drift-proofing & reuse.** conflation.js is a plain IIFE (like app.js /
+  sources.js), reads the globals, uses `schema.displayName` for every label and
+  `engine.sourceIndex` for every `[n]` (deep-linking to `sources.html#ref-N` —
+  NOTE sources.js uses same-page `#ref-N`; conflation.js must prefix
+  `sources.html#`). It re-implements sources.js's small table-builders
+  (components/gradient/gridCells ≈ 40 lines). **Do NOT refactor sources.js to
+  share them** — presentational duplication is acceptable (the DATA comes from
+  the model, so it can't drift) and touching sources.js risks a working page.
+  Flag this as a deliberate trade-off in a code comment.
+- **Honesty requirements.** Mandatory disclaimer block (same spirit as the
+  other pages); evidence badge + CI ranges on every card/dialog; the
+  assumption-space framing; the "not medical advice, not a prediction about
+  you" line. Simple-mode note (above). No analytics, no storage — a static
+  page like the others.
+- **Script order** on conflation.html (same stack as sources.html): factors.js
+  → schema.js → engine.js → joint-models.js → overlaps.js → per-lever-only.js
+  → joint-sources.js → findings.js → index.js → conflation.js.
+
+### Steps
+
+- [x] 8.1 Record this plan (the design block above) + the roadmap entry. No
+      code. DONE (2026-08-06): section written.
+- [x] 8.2 `conflation.html` — static skeleton: topbar + 3-link page-nav
+      (Conflation `aria-current`), tagline, disclaimer block, the three
+      `<section class="page-section">`s (#problem copy, #math host
+      `#math-steps`, #clusters host `#cluster-grid` with the three sub-groups'
+      `<h3>` + empty flex containers), footer with the privacy/not-medical
+      lines + link to sources.html#references. Script stack at the bottom in
+      the order above. No inline JS. Validate: `python3 -m http.server 8000`
+      loads with a clean console (JS renders nothing yet is fine).
+- [x] 8.3 Nav — add the Conflation link to index.html:26–29 and
+      sources.html:15–18 page-navs (`<a href="conflation.html">Conflation</a>`
+      between Calculator and Method &amp; Sources). Verify both pages still
+      load and their script order is untouched.
+- [x] 8.4 `js/conflation.js` — section #math renderer. For each of the three
+      fixes, render a `.math-step` block: prose + a live `<code>` worked
+      example box. Helpers:
+      `clusterNormalized(id, out, prof)` = `clusterTotals(model, prof)[out].hr
+      / clusterTotals(model, defaults)[out].hr`;
+      `naiveProduct(memberIds, out, prof)` = product of
+      `evaluate(model, prof).contributions[out]` hrDeltas over the members
+      (`c.hrDelta || 1`). Render the fair/unfair boundary table (copy from
+      sources.html:56–91) + the normalise/clamp/Gompertz/uncertainty bullets.
+      `node --check js/conflation.js`.
+- [x] 8.5 `js/conflation.js` — cluster card grid. Iterate `jointModels` (5),
+      `overlaps` (8), `perLeverOnly` (1) → cards into their group containers.
+      Card = `<button class="cluster-card" data-kind data-id>`: title via
+      `schema.displayName(model, id)` (for overlaps, "A ↔ B"), members/pair
+      line, output chips (`Object.keys(jm.outputs)`), one-line summary
+      (first sentence of jm.note/o.note), `evBadge`, `citeKeys` (refs prefixed
+      `sources.html#ref-`), "How it works →". Empty-state text if a group is
+      empty. `node --check`.
+- [x] 8.6 `js/conflation.js` — dialog builder. One `<dialog id="cluster-dialog">`
+      reused; on card click, `buildDialog(data)` fills innerHTML per kind and
+      `showModal()`. Joint dialog per the design block (reuse the sources.js
+      table markup patterns for components/gradient/gridCells — including the
+      mayoCells `grids` map branch). **Worked-example profiles** (the only
+      literals; expected values from the real engine, verified 2026-08-06):
+      ekelundTable: cardio 300 / steps 10000 / sitting 5 → naive ≈0.632 vs
+      cluster ≈0.820; dietScore: fiber 40 / fruitVeg 6 / nuts 30 / fish 'lots'
+      → naive ≈0.592 vs cluster ≈0.910; mommaCells: strength 2 + cardio 300 →
+      cluster mortality ≈0.882 (prices aerobic×strength once); duncanCells:
+      sleep 9.5 → cluster ≈1.310; mayoCells: weightKg 100 (BMI ≈35.4) →
+      cluster ≈1.402. Overlap examples (pick a profile where both sides deviate
+      same-direction): magnesium 0 + diet crash (fruitVeg 0 / fiber 0 / nuts 0 /
+      fish 'none') → magnesium hrDelta ≈1.071 blended ρ 0.5 vs dietScore; snus
+      'yes' + alcohol 15 → alcohol hrDelta ≈1.134 blended ρ 0.15. If a pair is
+      inactive at its profile, the box honestly says "no shared deviation at
+      this profile — the discount is off." Close wiring: Esc (native), backdrop
+      click, `.dialog-close` button, focus restore. `node --check`.
+- [x] 8.7 css/style.css — `.cluster-group`, `.cluster-flex`, `.cluster-card`
+      (+ hover/focus-visible lift + border accent), `.cluster-card .outputs`,
+      `.dialog` + `::backdrop`, `.dialog-head`, `.worked-example`,
+      `.math-step`, `.jm-axes`, responsive collapse at 900px (mirror the
+      existing `main` grid breakpoint). Reuse existing tokens (`--accent`,
+      `--card`, `--line`, `--radius`), `.ev`, `.chip.topic`, `.jm-tbl`.
+- [x] 8.8 Tests (tests/engine.test.js) — new §[30] "Conflation explainer page
+      data contract": (a) inventory: `jointModels.length === 5`, `overlaps.length
+      === 8`, `perLeverOnly.length === 1` (== what the page renders); (b) for the
+      fixed profiles in 8.6, the naive-vs-cluster numbers the page will display
+      are asserted with tolerance (so a model change that alters a displayed
+      figure fails the suite); (c) two overlap blend factors match (magnesium
+      ρ0.5, alcohol ρ0.15 — reuse the §[18] scenario); (d) every cluster id /
+      overlap pair / perLeverOnly id resolves via `schema.displayName` (no
+      undefined titles on the page). Full suite + audit green.
+- [x] 8.9 Verification — `node --check` on conflation.js; full suite + audit
+      green; DOM-shim probe (/tmp/opencode/conflation_probe.js) driving the
+      REAL conflation.js against a fake document: card counts per group (5/8/1),
+      dialog opens with per-output tables present, worked-example numbers equal
+      the engine's (same calls), Esc/backdrop/close handlers, empty-state
+      fallbacks, simple-mode note + disclaimer present; serve and manual pass:
+      all three pages nav correctly, dialogs readable, `[n]` links land on
+      sources.html#ref-N. Implemented 2026-08-06: `node --check` clean; full
+      suite + audit green; probe ALL checks pass (ekelund 0.63→0.82,
+      magnesium 1.15→1.07, cards 5/8/1, joint/overlap/per-lever dialogs, all
+      displayName resolutions, model-version footer); all three pages serve 200
+      with the nav intact and untouched script order.
+- [x] 8.10 IA follow-up — re-point the `.confl-more-note` (→ conflation.html#math)
+      and `.confl-foot` (→ conflation.html#clusters, the per-cluster cards it
+      describes) links on index.html (js/app.js `updateMoreNotes`), leaving the
+      Simple/Advanced mode-caption "Full method →" links on sources.html#conflation
+      (the raw methodology). conflation.html already links back to
+      sources.html#conflation for the raw tables. Implemented 2026-08-06.
+- [x] 8.11 Docs — AGENTS.md file map: add `conflation.html` + `js/conflation.js`
+      lines; note the page renders the advanced model on both modes. Implemented
+      2026-08-06. Human reviews the AGENTS.md diff (as with 7.8/6.9).
 
 ## Phase 5 — deferred (not now)
 

@@ -32,6 +32,8 @@ Working v0.2: plain HTML/CSS/JS, zero build step, zero runtime dependencies.
 ```
 index.html          main page: nav, short disclaimer, calculator (inputs/outputs)
 sources.html        method, limitations, full disclaimer, reference list
+conflation.html     the conflation explainer: why "multiply everything" is wrong,
+                    the combination math, and every cluster's exact tables (Phase 8)
 PLAN.md             current model, design decisions, roadmap, candidate backlog
 research.md         verified evidence base (primary-source cells, ρ justifications, sweep audit) — read before changing any number
 css/style.css       all styling
@@ -50,6 +52,11 @@ js/joint/index.js         assembles the ADVANCED HEALTH_MODEL = factors.js (SIMP
                     + the joint layer; sets globalThis.HEALTH_MODEL + SIMPLE_HEALTH_MODEL
 js/app.js           main-page DOM rendering/wiring only; no numbers in this file
 js/sources.js       renders the reference list on sources.html
+js/conflation.js    renders conflation.html: the worked-example boxes, the
+                    cluster-card grid, and the exact-math dialogs — ALL figures
+                    computed live from the model (no numbers of its own, only
+                    the worked-example profiles); describes the ADVANCED model
+                    on both modes
 tests/engine.test.js  dependency-free smoke tests: `node tests/engine.test.js`
 tests/audit.js      standalone runner for schema.auditModel: `node tests/audit.js`
 ```

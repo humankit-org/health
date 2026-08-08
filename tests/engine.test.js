@@ -1450,6 +1450,82 @@ console.log('\n[29] Simple vs advanced mode (Phase 5.5)');
   ok(fvo2 && fvo2.mode === 'advanced', 'engine passes mode:advanced through on evaluateFindings');
 }
 
+// [30] Conflation explainer page (conflation.html, Phase 8) — data contract.
+// The page renders NO numbers of its own: every figure comes from the model
+// at render time, so these tests pin the EXACT naive-vs-joint figures the
+// page's worked-example boxes display (PLAN.md Phase 8 step 8.6). If a number
+// here changes, the page's boxes change with it — that is the point of the
+// suite: no invented coefficients, and a model edit that silently alters a
+// displayed figure fails the tests.
+console.log('\n[30] Conflation explainer page data contract (Phase 8)');
+{
+  const schema = require('../js/schema.js');
+  const d = engine.defaults(model);
+
+  // (a) inventory the page renders: 5 joint + 8 overlap + 1 per-lever cards.
+  ok(model.jointModels.length === 5, 'jointModels: 5 cards (dietScore, ekelundTable, mommaCells, duncanCells, mayoCells)');
+  ok(model.overlaps.length === 8, 'overlaps: 8 pair cards');
+  ok(model.perLeverOnly.length === 1, 'perLeverOnly: 1 card');
+
+  // naive product exactly as conflation.js computes it (SIMPLE-model hrDeltas).
+  const naiveProduct = (jmId, prof) => {
+    const jm = model.jointModels.find((j) => j.id === jmId);
+    const s = engine.evaluate(plainModel, prof);
+    return jm.members
+      .map((m) => s.contributions.mortality.find((c) => c.inputId === m).hrDelta)
+      .reduce((a, b) => a * b, 1);
+  };
+  const clusterNorm = (jmId, out, prof) => {
+    const t = engine.clusterTotals(model, prof).find((x) => x.id === jmId);
+    const a = engine.clusterTotals(model, d).find((x) => x.id === jmId);
+    return t.outputs[out].hr / a.outputs[out].hr;
+  };
+
+  // (b) worked-example numbers the page displays (naive -> cluster).
+  const ekeProf = { ...d, cardio: 300, steps: 10000, sitting: 5 };
+  approx(naiveProduct('ekelundTable', ekeProf), 0.632, 0.001, 'ekelund worked example: naive product');
+  approx(clusterNorm('ekelundTable', 'mortality', ekeProf), 0.820, 0.001, 'ekelund worked example: joint cluster total');
+  const dietProf = { ...d, fiber: 40, fruitVeg: 6, nuts: 30, fish: 'lots' };
+  approx(naiveProduct('dietScore', dietProf), 0.592, 0.001, 'diet worked example: naive product');
+  approx(clusterNorm('dietScore', 'mortality', dietProf), 0.910, 0.001, 'diet worked example: joint cluster total');
+  const mommaProf = { ...d, strength: 2, cardio: 300 };
+  approx(clusterNorm('mommaCells', 'mortality', mommaProf), 0.882, 0.001, 'momma worked example: aerobic x strength joint estimate');
+  const duncanProf = { ...d, sleep: 9.5 };
+  approx(clusterNorm('duncanCells', 'mortality', duncanProf), 1.310, 0.001, 'duncan worked example: long-sleep joint estimate');
+  const mayoProf = { ...d, weightKg: 100 };
+  approx(engine.computeBmi(mayoProf), 35.4, 0.1, 'mayo worked-example setup: BMI ~35.4');
+  approx(clusterNorm('mayoCells', 'mortality', mayoProf), 1.402, 0.001, 'mayo worked example: PA x weight joint estimate');
+
+  // (c) overlap worked examples: standalone marginal -> blended hrDelta.
+  const magProf = { ...d, magnesium: 0, fruitVeg: 0, fiber: 0, nuts: 0, fish: 'none' };
+  const magS = engine.evaluate(plainModel, magProf).contributions.mortality.find((c) => c.inputId === 'magnesium').hrDelta;
+  const magA = engine.evaluate(model, magProf).contributions.mortality.find((c) => c.inputId === 'magnesium').hrDelta;
+  approx(magS, 1.147, 0.001, 'magnesium worked example: standalone marginal');
+  approx(magA, 1.071, 0.001, 'magnesium worked example: blended at (1-0.5)');
+  ok(model.overlaps.some((o) => o.a === 'magnesium' && o.b === 'dietScore' && Math.abs(o.rho - 0.5) < 1e-9),
+    'magnesium pair rho = 0.5 (the page shows the 50% strength note)');
+
+  const alcProf = { ...d, snus: 'yes', alcohol: 15 };
+  const alcS = engine.evaluate(plainModel, alcProf).contributions.mortality.find((c) => c.inputId === 'alcohol').hrDelta;
+  const alcA = engine.evaluate(model, alcProf).contributions.mortality.find((c) => c.inputId === 'alcohol').hrDelta;
+  approx(alcS, 1.160, 0.001, 'snus+alcohol worked example: standalone marginal');
+  approx(alcA, 1.134, 0.001, 'snus+alcohol worked example: blended at (1-0.15)');
+  ok(model.overlaps.some((o) => o.a === 'snus' && o.b === 'alcohol' && Math.abs(o.rho - 0.15) < 1e-9),
+    'snus-alcohol pair rho = 0.15 (the page shows the 85% strength note)');
+
+  // (d) every id the page looks up resolves to a readable title (no undefined
+  // titles on the cards or in the dialogs).
+  let unresolved = 0;
+  const resolve = (id) => {
+    const t = schema.displayName(model, id);
+    if (!t || t === id) { unresolved++; console.error('      FAIL  unresolved title: ' + id); }
+  };
+  for (const jm of model.jointModels) resolve(jm.id);
+  for (const o of model.overlaps) { resolve(o.a); resolve(o.b); }
+  for (const g of model.perLeverOnly) for (const m of g.members) resolve(m);
+  ok(unresolved === 0, 'every cluster id / overlap side / per-lever member has a readable title');
+}
+
 console.log('\n[A3] Conflation schema audit (tests/audit.js)');
 {
   const { audit } = require('./audit.js');

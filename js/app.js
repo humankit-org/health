@@ -108,10 +108,12 @@
     }
   };
 
-  // More-panel header note + output-grid footer link (4.5.3): one shared note
-  // ("already adjusted for overlaps…") shown in every contrib panel, and a
-  // link to sources.html#conflation from the output grid — both only while a
-  // conflation adjustment is actually live. The trigger is "any
+  // More-panel header note + output-grid footer link (4.5.3, re-pointed by
+  // Phase 8 step 8.10): one shared note ("already adjusted for overlaps…")
+  // shown in every contrib panel, and a link from the output grid — both only
+  // while a conflation adjustment is actually live. The links lead to the
+  // conflation explainer page (conflation.html#math, prose + dialogs); the
+  // explainer itself links back to sources.html#conflation for the raw tables. The trigger is "any
   // conflation-relevant input (a joint-model member, overlap member or
   // per-lever member) moved off its default" — false at reset by construction.
   // It is NOT driven by engine.activeOverlaps(): the overlap blend runs on raw
@@ -141,7 +143,7 @@
   };
   const updateMoreNotes = (on) => {
     const note = on
-      ? `The values below already account for overlapping effects: joint-model members are shares of one published estimate, overlap pairs are counted at partial strength, and psychosocial factors are shown per lever only. <a href="sources.html#conflation">Full breakdown: how inputs are combined →</a>`
+      ? `The values below already account for overlapping effects: joint-model members are shares of one published estimate, overlap pairs are counted at partial strength, and psychosocial factors are shown per lever only. <a href="conflation.html#math">Full breakdown: how inputs are combined →</a>`
       : "";
     for (const outputId of schema.OUTPUTS) {
       const host = document.getElementById("confl-more-" + outputId);
@@ -150,7 +152,7 @@
     const foot = document.getElementById("confl-foot");
     if (foot)
       foot.innerHTML = on
-        ? '<a href="sources.html#conflation">How these inputs are combined (overlaps &amp; joint estimates) →</a>'
+        ? '<a href="conflation.html#clusters">How these inputs are combined (overlaps &amp; joint estimates) →</a>'
         : "";
   };
 
@@ -756,14 +758,14 @@
   // Mode caption copy (6.6). No numbers — copy only. Sits under the tagline
   // (id="mode-caption"). Simple mode gets a reminder that the numbers are naive.
   function updateModeUI() {
-    const caption = document.getElementById("mode-caption");
-    if (caption) {
-      caption.innerHTML =
-        mode === "simple"
-          ? 'Simple: each factor\'s effect is multiplied as if independent — it overstates combinations. Advanced corrects overlapping effects using published joint studies. <a href="sources.html#conflation">Full method →</a>'
-          : 'Advanced: overlapping effects are priced from published joint studies, so the combined estimate doesn\'t overclaim. <a href="sources.html#conflation">How inputs are combined →</a>';
-      caption.classList.toggle("simple-mode", mode === "simple");
-    }
+    // const caption = document.getElementById("mode-caption");
+    // if (caption) {
+    //   caption.innerHTML =
+    //     mode === "simple"
+    //       ? 'Simple: each factor\'s effect is multiplied as if independent — it overstates combinations. Advanced corrects overlapping effects using published joint studies. <a href="sources.html#conflation">Full method →</a>'
+    //       : 'Advanced: overlapping effects are priced from published joint studies, so the combined estimate doesn\'t overclaim. <a href="sources.html#conflation">How inputs are combined →</a>';
+    //   caption.classList.toggle("simple-mode", mode === "simple");
+    // }
   }
 
   function wireEvents() {
